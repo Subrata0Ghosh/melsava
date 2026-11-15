@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../../../core/services/supabase_service.dart';
 import '../domain/app_user.dart';
 
@@ -9,22 +10,41 @@ abstract class AuthRepository {
   Future<AppUser> signUpWithEmail({required String email, required String password});
   Future<void> sendPasswordResetEmail({required String email});
   Future<void> signOut();
+  Future<void> restoreSession();
 }
 
-/// Unified Auth Repository supporting both live Supabase and development mode
+/// Unified Auth Repository supporting session persistence across app launches
 class SupabaseAuthRepository implements AuthRepository {
   final _controller = StreamController<AppUser?>.broadcast();
   AppUser? _cachedUser;
 
   SupabaseAuthRepository() {
+    _initAuth();
+  }
+
+  Future<void> _initAuth() async {
+    // 1. Check live Supabase session
     if (SupabaseService.isConfigured && SupabaseService.client != null) {
+      final session = SupabaseService.client!.auth.currentSession;
+      if (session != null) {
+        _cachedUser = AppUser(
+          id: session.user.id,
+          email: session.user.email ?? '',
+          displayName: session.user.userMetadata?['display_name'] ?? session.user.email?.split('@').first,
+          isEmailVerified: session.user.emailConfirmedAt != null,
+          onboardingCompleted: true,
+        );
+        _controller.add(_cachedUser);
+      }
+
       SupabaseService.client!.auth.onAuthStateChange.listen((data) {
-        final session = data.session;
-        if (session != null) {
+        final currentSession = data.session;
+        if (currentSession != null) {
           _cachedUser = AppUser(
-            id: session.user.id,
-            email: session.user.email ?? '',
-            isEmailVerified: session.user.emailConfirmedAt != null,
+            id: currentSession.user.id,
+            email: currentSession.user.email ?? '',
+            displayName: currentSession.user.userMetadata?['display_name'] ?? currentSession.user.email?.split('@').first,
+            isEmailVerified: currentSession.user.emailConfirmedAt != null,
             onboardingCompleted: true,
           );
         } else {
@@ -33,6 +53,28 @@ class SupabaseAuthRepository implements AuthRepository {
         _controller.add(_cachedUser);
       });
     }
+
+    // 2. Check local persistence
+    if (_cachedUser == null) {
+      final prefs = await SharedPreferences.getInstance();
+      final savedEmail = prefs.getString('melsava_user_email');
+      if (savedEmail != null) {
+        _cachedUser = AppUser(
+          id: prefs.getString('melsava_user_id') ?? 'user-saved',
+          email: savedEmail,
+          displayName: prefs.getString('melsava_user_name') ?? savedEmail.split('@').first,
+          city: prefs.getString('melsava_user_city') ?? 'Mumbai',
+          isEmailVerified: true,
+          onboardingCompleted: true,
+        );
+        _controller.add(_cachedUser);
+      }
+    }
+  }
+
+  @override
+  Future<void> restoreSession() async {
+    await _initAuth();
   }
 
   @override
@@ -56,25 +98,34 @@ class SupabaseAuthRepository implements AuthRepository {
       _cachedUser = AppUser(
         id: user.id,
         email: user.email ?? email,
+        displayName: user.userMetadata?['display_name'] ?? email.split('@').first,
+        city: 'Mumbai',
         isEmailVerified: user.emailConfirmedAt != null,
         onboardingCompleted: true,
       );
-      _controller.add(_cachedUser);
-      return _cachedUser!;
     } else {
-      // Local dev simulation
-      await Future.delayed(const Duration(milliseconds: 600));
+      await Future.delayed(const Duration(milliseconds: 500));
       _cachedUser = AppUser(
-        id: 'dev-user-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'user-${email.hashCode}',
         email: email,
         displayName: email.split('@').first,
         city: 'Mumbai',
         isEmailVerified: true,
         onboardingCompleted: true,
       );
-      _controller.add(_cachedUser);
-      return _cachedUser!;
     }
+
+    // Persist locally
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('melsava_user_id', _cachedUser!.id);
+    await prefs.setString('melsava_user_email', _cachedUser!.email);
+    if (_cachedUser!.displayName != null) {
+      await prefs.setString('melsava_user_name', _cachedUser!.displayName!);
+    }
+    await prefs.setString('melsava_user_city', _cachedUser!.city ?? 'Mumbai');
+
+    _controller.add(_cachedUser);
+    return _cachedUser!;
   }
 
   @override
@@ -86,30 +137,41 @@ class SupabaseAuthRepository implements AuthRepository {
       final res = await SupabaseService.client!.auth.signUp(
         email: email,
         password: password,
+        data: {'display_name': email.split('@').first},
       );
       final user = res.user;
       if (user == null) throw Exception('Sign up failed');
       _cachedUser = AppUser(
         id: user.id,
         email: user.email ?? email,
+        displayName: email.split('@').first,
+        city: 'Mumbai',
         isEmailVerified: user.emailConfirmedAt != null,
-        onboardingCompleted: false,
+        onboardingCompleted: true,
       );
-      _controller.add(_cachedUser);
-      return _cachedUser!;
     } else {
-      await Future.delayed(const Duration(milliseconds: 600));
+      await Future.delayed(const Duration(milliseconds: 500));
       _cachedUser = AppUser(
-        id: 'dev-user-${DateTime.now().millisecondsSinceEpoch}',
+        id: 'user-${email.hashCode}',
         email: email,
         displayName: email.split('@').first,
         city: 'Mumbai',
         isEmailVerified: true,
         onboardingCompleted: true,
       );
-      _controller.add(_cachedUser);
-      return _cachedUser!;
     }
+
+    // Persist locally
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('melsava_user_id', _cachedUser!.id);
+    await prefs.setString('melsava_user_email', _cachedUser!.email);
+    if (_cachedUser!.displayName != null) {
+      await prefs.setString('melsava_user_name', _cachedUser!.displayName!);
+    }
+    await prefs.setString('melsava_user_city', _cachedUser!.city ?? 'Mumbai');
+
+    _controller.add(_cachedUser);
+    return _cachedUser!;
   }
 
   @override
@@ -117,15 +179,25 @@ class SupabaseAuthRepository implements AuthRepository {
     if (SupabaseService.isConfigured && SupabaseService.client != null) {
       await SupabaseService.client!.auth.resetPasswordForEmail(email);
     } else {
-      await Future.delayed(const Duration(milliseconds: 500));
+      await Future.delayed(const Duration(milliseconds: 400));
     }
   }
 
   @override
   Future<void> signOut() async {
     if (SupabaseService.isConfigured && SupabaseService.client != null) {
-      await SupabaseService.client!.auth.signOut();
+      try {
+        await SupabaseService.client!.auth.signOut();
+      } catch (_) {}
     }
+
+    // Clear local persistence
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('melsava_user_id');
+    await prefs.remove('melsava_user_email');
+    await prefs.remove('melsava_user_name');
+    await prefs.remove('melsava_user_city');
+
     _cachedUser = null;
     _controller.add(null);
   }
