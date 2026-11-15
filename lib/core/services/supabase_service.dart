@@ -18,8 +18,13 @@ class SupabaseService {
   static Future<void> initialize() async {
     if (_isInitialized) return;
 
-    final url = dotenv.maybeGet('SUPABASE_URL') ?? '';
-    final anonKey = dotenv.maybeGet('SUPABASE_ANON_KEY') ?? '';
+    String url = const String.fromEnvironment('SUPABASE_URL');
+    String anonKey = const String.fromEnvironment('SUPABASE_ANON_KEY');
+
+    if (dotenv.isInitialized) {
+      url = dotenv.maybeGet('SUPABASE_URL') ?? url;
+      anonKey = dotenv.maybeGet('SUPABASE_ANON_KEY') ?? anonKey;
+    }
 
     final isValidConfig =
         url.isNotEmpty &&

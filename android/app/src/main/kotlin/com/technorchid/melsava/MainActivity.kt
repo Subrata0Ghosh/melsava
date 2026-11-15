@@ -1,4 +1,4 @@
-package com.melsava.melsava
+package com.technorchid.melsava
 
 import io.flutter.embedding.android.FlutterActivity
 

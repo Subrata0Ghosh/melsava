@@ -49,6 +49,12 @@ app.*.map.json
 .env.*
 !.env.example
 
+# Keystore & Signing
+*.jks
+*.keystore
+**/key.properties
+
+
 # Generated files
 *.g.dart
 *.freezed.dart
