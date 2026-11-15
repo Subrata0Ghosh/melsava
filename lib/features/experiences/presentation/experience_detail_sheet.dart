@@ -24,6 +24,7 @@ class ExperienceDetailSheet extends StatelessWidget {
   }) {
     return showModalBottomSheet(
       context: context,
+      useRootNavigator: true, // Pushes above the bottom navigation bar
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => ExperienceDetailSheet(
@@ -35,14 +36,21 @@ class ExperienceDetailSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat('EEEE, MMMM d • h:mm a');
 
+    final sheetBg = isDark ? const Color(0xFF161224) : AppColors.white;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? AppColors.darkElevated : AppColors.warmIvory;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
     return Container(
-      height: MediaQuery.of(context).size.height * 0.88,
-      decoration: const BoxDecoration(
-        color: AppColors.white,
-        borderRadius: BorderRadius.vertical(
-          top: Radius.circular(AppConstants.cardRadiusLarge),
+      height: MediaQuery.of(context).size.height * 0.90,
+      decoration: BoxDecoration(
+        color: sheetBg,
+        borderRadius: const BorderRadius.vertical(
+          top: Radius.circular(28),
         ),
       ),
       child: Column(
@@ -53,7 +61,7 @@ class ExperienceDetailSheet extends StatelessWidget {
             width: 44,
             height: 4,
             decoration: BoxDecoration(
-              color: AppColors.divider,
+              color: isDark ? Colors.white24 : AppColors.divider,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -88,16 +96,24 @@ class ExperienceDetailSheet extends StatelessWidget {
                           vertical: 4,
                         ),
                         decoration: BoxDecoration(
-                          color: AppColors.sage,
+                          color: isDark
+                              ? AppColors.luminousMauve.withValues(alpha: 0.2)
+                              : AppColors.sage,
                           borderRadius: BorderRadius.circular(
                             AppConstants.buttonRadiusSmall,
                           ),
+                          border: isDark
+                              ? Border.all(
+                                  color: AppColors.luminousMauve.withValues(alpha: 0.4),
+                                  width: 0.8,
+                                )
+                              : null,
                         ),
                         child: Text(
                           '${experience.categoryIcon} ${experience.categoryName}',
                           style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.deepPlum,
-                            fontWeight: FontWeight.w600,
+                            color: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
@@ -105,7 +121,7 @@ class ExperienceDetailSheet extends StatelessWidget {
                       Text(
                         '${experience.currentParticipants} of ${experience.maxParticipants} spots filled',
                         style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.mutedText,
+                          color: mutedTextColor,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
@@ -116,7 +132,7 @@ class ExperienceDetailSheet extends StatelessWidget {
                   Text(
                     experience.title,
                     style: AppTypography.headlineMedium.copyWith(
-                      color: AppColors.deepPlum,
+                      color: primaryTextColor,
                       fontWeight: FontWeight.w800,
                     ),
                   ),
@@ -126,10 +142,11 @@ class ExperienceDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(AppConstants.spacingMD),
                     decoration: BoxDecoration(
-                      color: AppColors.warmIvory,
+                      color: cardBg,
                       borderRadius: BorderRadius.circular(
                         AppConstants.buttonRadiusSmall,
                       ),
+                      border: Border.all(color: borderColor, width: 0.8),
                     ),
                     child: Column(
                       children: [
@@ -137,26 +154,38 @@ class ExperienceDetailSheet extends StatelessWidget {
                           icon: Icons.access_time_rounded,
                           title: 'Date & Time',
                           value: dateFormat.format(experience.startsAt),
+                          primaryColor: primaryTextColor,
+                          mutedColor: mutedTextColor,
+                          isDark: isDark,
                         ),
-                        const Divider(height: 20),
+                        Divider(height: 20, color: borderColor),
                         _buildMetaRow(
                           icon: Icons.timer_outlined,
                           title: 'Duration',
                           value: '${experience.durationMinutes} minutes',
+                          primaryColor: primaryTextColor,
+                          mutedColor: mutedTextColor,
+                          isDark: isDark,
                         ),
-                        const Divider(height: 20),
+                        Divider(height: 20, color: borderColor),
                         _buildMetaRow(
                           icon: Icons.place_outlined,
                           title: 'Public Venue',
                           value:
                               '${experience.venueName}\n${experience.venueAddress}',
+                          primaryColor: primaryTextColor,
+                          mutedColor: mutedTextColor,
+                          isDark: isDark,
                         ),
-                        const Divider(height: 20),
+                        Divider(height: 20, color: borderColor),
                         _buildMetaRow(
                           icon: Icons.group_outlined,
                           title: 'Group Size',
                           value:
                               'Micro-group capped at ${experience.maxParticipants} people',
+                          primaryColor: primaryTextColor,
+                          mutedColor: mutedTextColor,
+                          isDark: isDark,
                         ),
                       ],
                     ),
@@ -167,13 +196,14 @@ class ExperienceDetailSheet extends StatelessWidget {
                     'About This Experience',
                     style: AppTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: primaryTextColor,
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingSM),
                   Text(
                     experience.description,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.deepPlum,
+                      color: primaryTextColor,
                       height: 1.6,
                     ),
                   ),
@@ -184,6 +214,7 @@ class ExperienceDetailSheet extends StatelessWidget {
                     'Curated Host',
                     style: AppTypography.titleMedium.copyWith(
                       fontWeight: FontWeight.w700,
+                      color: primaryTextColor,
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingSM),
@@ -201,12 +232,13 @@ class ExperienceDetailSheet extends StatelessWidget {
                             experience.hostName,
                             style: AppTypography.titleSmall.copyWith(
                               fontWeight: FontWeight.w600,
+                              color: primaryTextColor,
                             ),
                           ),
                           Text(
                             'Verified MELSAVA Community Host',
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.mutedText,
+                              color: mutedTextColor,
                             ),
                           ),
                         ],
@@ -219,27 +251,30 @@ class ExperienceDetailSheet extends StatelessWidget {
                   Container(
                     padding: const EdgeInsets.all(AppConstants.spacingMD),
                     decoration: BoxDecoration(
-                      color: AppColors.sage.withOpacity(0.35),
+                      color: (isDark ? AppColors.darkElevated : AppColors.sage)
+                          .withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(
                         AppConstants.buttonRadiusSmall,
                       ),
-                      border: Border.all(color: AppColors.sage),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : AppColors.sage,
+                      ),
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
                           children: [
-                            const Icon(
+                            Icon(
                               Icons.shield_outlined,
                               size: 18,
-                              color: AppColors.mauve,
+                              color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                             ),
                             const SizedBox(width: AppConstants.spacingSM),
                             Text(
                               'Safe Public Meeting Guarantee',
                               style: AppTypography.labelMedium.copyWith(
-                                color: AppColors.deepPlum,
+                                color: primaryTextColor,
                                 fontWeight: FontWeight.w700,
                               ),
                             ),
@@ -249,46 +284,61 @@ class ExperienceDetailSheet extends StatelessWidget {
                         Text(
                           'All MELSAVA experiences take place exclusively in public, vetted venues. No private addresses or live GPS tracking. After the event, you choose privately if you wish to reconnect.',
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.deepPlum,
+                            color: primaryTextColor,
                             height: 1.4,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingXXL),
+                  const SizedBox(height: AppConstants.spacingXL),
                 ],
               ),
             ),
           ),
 
-          // Bottom sticky action bar
-          Container(
-            padding: const EdgeInsets.all(AppConstants.spacingLG),
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              border: Border(top: BorderSide(color: AppColors.divider)),
-            ),
-            child: PrimaryButton(
-              label: experience.hasJoined
-                  ? 'Leave Experience'
-                  : 'Join Experience',
-              backgroundColor: experience.hasJoined
-                  ? AppColors.error
-                  : AppColors.deepPlum,
-              onPressed: () {
-                onToggleJoin();
-                Navigator.of(context).pop();
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(
-                      experience.hasJoined
-                          ? 'You have cancelled your RSVP.'
-                          : 'You\'ve joined ${experience.title}! See you there.',
-                    ),
+          // Bottom sticky action bar with SafeArea
+          SafeArea(
+            top: false,
+            child: Container(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppConstants.spacingLG,
+                vertical: AppConstants.spacingMD,
+              ),
+              decoration: BoxDecoration(
+                color: sheetBg,
+                border: Border(top: BorderSide(color: borderColor, width: 0.8)),
+                boxShadow: [
+                  BoxShadow(
+                    color: isDark
+                        ? Colors.black38
+                        : AppColors.deepPlum.withValues(alpha: 0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, -3),
                   ),
-                );
-              },
+                ],
+              ),
+              child: PrimaryButton(
+                label: experience.hasJoined
+                    ? 'Leave Experience'
+                    : 'Join Experience',
+                backgroundColor: experience.hasJoined
+                    ? AppColors.error
+                    : (isDark ? AppColors.luminousMauve : AppColors.deepPlum),
+                onPressed: () {
+                  onToggleJoin();
+                  Navigator.of(context).pop();
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(
+                        experience.hasJoined
+                            ? 'You have cancelled your RSVP.'
+                            : 'You\'ve joined ${experience.title}! See you there.',
+                      ),
+                    ),
+                  );
+                },
+              ),
             ),
           ),
         ],
@@ -300,11 +350,18 @@ class ExperienceDetailSheet extends StatelessWidget {
     required IconData icon,
     required String title,
     required String value,
+    required Color primaryColor,
+    required Color mutedColor,
+    required bool isDark,
   }) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: AppColors.mauve),
+        Icon(
+          icon,
+          size: 20,
+          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+        ),
         const SizedBox(width: AppConstants.spacingMD),
         Expanded(
           child: Column(
@@ -313,14 +370,14 @@ class ExperienceDetailSheet extends StatelessWidget {
               Text(
                 title,
                 style: AppTypography.labelSmall.copyWith(
-                  color: AppColors.mutedText,
+                  color: mutedColor,
                 ),
               ),
               const SizedBox(height: 2),
               Text(
                 value,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.deepPlum,
+                  color: primaryColor,
                   fontWeight: FontWeight.w600,
                 ),
               ),
