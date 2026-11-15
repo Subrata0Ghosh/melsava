@@ -1,0 +1,1192 @@
+# MASTER BUILD PROMPT — MELSAVA
+
+Act as a senior product designer, Flutter mobile architect, UX researcher, PostgreSQL/Supabase engineer and application security engineer.
+
+Your job is to design and build a production-minded MVP of **MELSAVA**, an activity-first social connection application for adults.
+
+Do not make another Tinder, Bumble or swipe-based dating clone. Build a distinctive experience around real activities, small groups, friendship and mutually chosen relationships.
+
+Follow every requirement below. Inspect the existing project before modifying it. If no project exists, create the Flutter project. Do not destroy existing files or overwrite working functionality without checking first.
+
+---
+
+# 1. BRAND IDENTITY
+
+**App name:** MELSAVA  
+**Primary tagline:** Meet through moments.  
+**Secondary tagline:** Less swiping. More living.
+
+**Brand description:**
+
+MELSAVA helps adults discover shared experiences, meet compatible people, build genuine friendships and explore romantic connections when both people want them.
+
+It is not exclusively a dating app or a random-chat app. It is an experience-first social discovery platform.
+
+**Brand personality:**
+- Warm
+- Welcoming
+- Trustworthy
+- Modern
+- Inclusive
+- Premium but approachable
+- Social and human
+- Emotionally positive without being overly romantic
+
+**Brand positioning:**
+
+"People don't always connect by looking at profiles. Sometimes they connect by doing something together."
+
+Use MELSAVA as a configurable provisional brand name. Do not hardcode it throughout the application. Put the application name, tagline, brand colors and other identity settings in central configuration files so the brand can be changed easily if trademark clearance requires it.
+
+---
+
+# 2. THE PRODUCT CONCEPT
+
+The main product loop is:
+
+DISCOVER AN EXPERIENCE → JOIN A SMALL GROUP → PARTICIPATE → CHOOSE PEOPLE TO RECONNECT WITH → MUTUAL CONNECTION → CONTINUE THE RELATIONSHIP.
+
+A user should not need to swipe through hundreds of profiles to find someone.
+
+Instead, users discover activities they genuinely want to participate in, meet other people with compatible interests and intentions, and decide privately who they would like to connect with afterwards.
+
+The app must support different adult intentions:
+
+1. Genuine friendship
+2. Activity partner
+3. Casual dating
+4. Meaningful dating
+5. Serious relationship
+6. Marriage-minded connection
+7. Open to discovering where a connection goes
+
+Users may select multiple intentions and choose a primary intention.
+
+Do not force all users into a romantic experience. Friendship must be a complete and valuable use case.
+
+Do not promise that matching guarantees compatibility or a successful relationship.
+
+**Target market:** India first, followed by international markets.
+
+**Initial audience:** Adults aged 18 and above. Do not impose an arbitrary upper age limit. Respect individual age and discovery preferences.
+
+**Launch strategy:** Start with one city or concentrated community, then expand.
+
+---
+
+# 3. THE DIFFERENTIATING FEATURE
+
+The most important feature is the post-experience mutual connection system.
+
+Example:
+
+Four people attend a coffee and conversation activity.
+
+After the activity, each participant privately sees the eligible people they met.
+
+Each participant can select:
+
+- Connect as friends
+- Connect as activity partners
+- Explore dating
+- No connection
+
+Selections must remain private.
+
+Example:
+
+Person A privately selects Person B for friendship.
+
+Person B privately selects Person A for friendship.
+
+The system creates a connection and opens a private conversation.
+
+If only one person selects the other, nothing happens.
+
+For dating, both participants must independently select a compatible dating intention. A friendship selection must never automatically become a romantic match.
+
+For group experiences, process each participant pair separately.
+
+Never publicly reveal who rejected or did not select somebody.
+
+Do not allow somebody to purchase, unlock or force another person's consent.
+
+This mutual-choice experience is the core product feature and must be implemented correctly on the backend, not just visually in Flutter.
+
+---
+
+# 4. COMPLETE USER WORKFLOW
+
+Implement the following user journey.
+
+## A. First launch
+
+1. Splash screen with MELSAVA logo.
+2. Welcome screen with the tagline.
+3. Short explanation of the experience-first concept.
+4. Get Started and Sign In options.
+5. Terms of Service, Privacy Policy and Community Guidelines.
+
+Suggested welcome copy:
+
+"Meet people through experiences, not endless swiping."
+
+"Discover activities, enjoy genuine moments and choose who you'd like to meet again."
+
+## B. Authentication
+
+For the first MVP, implement:
+
+- Email sign-up
+- Email sign-in
+- Password reset
+- Email verification
+- Session persistence
+- Sign-out
+
+Use Supabase Auth.
+
+Do not require paid SMS OTP or paid third-party login services for the first version.
+
+## C. Adult eligibility
+
+The application is exclusively for adults.
+
+Implement an adult eligibility and age-assurance flow before allowing profile creation or social interaction.
+
+Do not claim someone is identity-verified merely because they entered a birth date.
+
+Do not publicly expose exact date of birth.
+
+Do not collect government ID or Aadhaar by default.
+
+The implementation must make it possible to add an appropriate third-party age-verification service later, after reviewing applicable laws and app-store requirements.
+
+## D. Profile onboarding
+
+Create a friendly multi-step onboarding process.
+
+Required sections:
+
+1. Display name
+2. Profile photograph
+3. Short introduction
+4. Broad city or area
+5. Interests
+6. Preferred activities
+7. Connection intentions
+8. Communication preferences
+9. Discovery preferences
+10. Community guidelines acceptance
+
+Do not expose precise home location.
+
+Allow users to skip nonessential profile details and complete them later.
+
+Create a progress indicator so users know how many onboarding steps remain.
+
+## E. Discover screen
+
+This is the main entry screen.
+
+Main heading:
+
+"What would you like to experience?"
+
+Supporting text:
+
+"Find something you enjoy. Meet people who enjoy it too."
+
+Display:
+
+- Featured experiences
+- Recommended activities
+- Popular categories
+- Upcoming local experiences
+- Small curated experience groups
+- A limited number of suggested compatible people
+
+Avoid an endless swipe interface.
+
+Activity categories:
+
+- Coffee and conversation
+- Board games
+- Nature walks
+- Sports and fitness
+- Photography
+- Music
+- Art and creative workshops
+- Food experiences
+- Reading and book clubs
+- Volunteering
+- Learning and skill-sharing
+- Cultural activities
+
+Do not include alcohol-centred experiences in the initial product.
+
+## F. Experience discovery
+
+Create a dedicated Experiences page.
+
+Filters:
+
+- Category
+- City or broad area
+- Date
+- Online or in-person
+- Group size
+- Available places
+- Activity type
+
+Each experience card should display:
+
+- Cover image
+- Experience name
+- Category
+- Date and time
+- Broad location
+- Group capacity
+- Brief description
+- Host information
+- Join button
+
+Example experience:
+
+"Coffee & Conversation"
+
+"Meet a small group of people, share interesting stories and enjoy a relaxed conversation."
+
+Example:
+
+"Weekend Photography Walk"
+
+"Explore your city and capture interesting moments together."
+
+## G. Experience details
+
+When a user selects an experience, display:
+
+- Activity title
+- Description
+- Cover photograph
+- Date and time
+- Duration
+- Public venue or online format
+- Host information
+- Group size
+- Participant information that is appropriate to disclose
+- Safety guidance
+- Cancellation policy
+- Join Experience button
+
+Initially, experiences should be curated by the application administrator or approved hosts.
+
+Do not allow unrestricted user-created public events in the first MVP.
+
+For in-person activities, use public venues. Provide sufficient participant and host information before attendance. Do not make users completely anonymous to one another during real-world activities.
+
+## H. Join experience
+
+After selecting Join Experience:
+
+1. Validate account eligibility.
+2. Check available capacity.
+3. Check whether the user already joined.
+4. Create an RSVP record.
+5. Show confirmation.
+6. Display the activity in My Experiences.
+
+Implement cancellation and waitlist handling where appropriate.
+
+Keep groups small, typically 3–5 participants for the initial curated activities. Make group capacity configurable.
+
+## I. Experience room
+
+Before an activity, provide a basic experience information page and, where appropriate, a moderated participant group space.
+
+Use guided prompts to make interaction easier.
+
+Examples:
+
+- What is something you have always wanted to try?
+- Which place would you love to visit?
+- What makes a weekend enjoyable?
+- What hobby would you like to learn?
+- Would you prefer a spontaneous adventure or a planned day?
+
+Do not build random anonymous video chat.
+
+Do not add live location tracking.
+
+## J. Post-experience connection selection
+
+After the activity, each participant receives an individual private selection page.
+
+Heading:
+
+"Who would you like to meet again?"
+
+For each eligible participant, provide these choices:
+
+- Friendship
+- Activity partner
+- Explore dating
+- No connection
+
+Explain that choices are private and a connection happens only when compatible choices are mutual.
+
+If A selects B and B selects A with compatible intentions, create a connection.
+
+If not mutual, do nothing.
+
+Do not send rejection notifications.
+
+Do not expose private selections.
+
+Prevent duplicate connections.
+
+Make the operation atomic and secure on the server.
+
+## K. Connections
+
+Display:
+
+- New connections
+- Existing connections
+- Connection type
+- Shared experiences
+- Connection date
+
+Users can view the profile details that the other person has approved for sharing.
+
+## L. Messaging
+
+Create basic one-to-one text chat after a mutual connection.
+
+Features:
+
+- Message list
+- Conversation screen
+- Message timestamps
+- Realtime delivery
+- Read status if practical
+- Empty state
+- Loading state
+- Error state
+- Block user
+- Report conversation
+
+Do not implement voice calls, video calls, disappearing messages or media uploads in the first MVP.
+
+Ensure users can only read conversations where they are members.
+
+## M. Profile
+
+Include:
+
+- Profile photograph
+- Display name
+- Bio
+- Interests
+- Intentions
+- Preferred activities
+- Broad city/area
+- Edit profile
+- Privacy controls
+- Notification settings
+- Community guidelines
+
+## N. Bottom navigation
+
+Use five primary tabs:
+
+1. Discover
+2. Experiences
+3. Connections
+4. Inbox
+5. Profile
+
+Use a clean, persistent bottom navigation bar.
+
+---
+
+# 5. UI AND VISUAL DESIGN SYSTEM
+
+The app should feel like a modern lifestyle and community product, not a conventional dating interface.
+
+Design inspiration:
+
+- Premium lifestyle applications
+- Modern editorial design
+- Warm community platforms
+- Clean productivity interfaces
+- Contemporary social applications
+
+Do not copy Tinder, Bumble, Hinge or any other competitor's visual identity.
+
+## Color palette
+
+Use these exact starting colors:
+
+- Warm Ivory: #F7F3EF
+- Deep Plum: #292332
+- Mauve: #795B91
+- Soft Coral: #E9A18B
+- Sage: #DCE8DF
+- White: #FFFFFF
+- Muted Text: #77717A
+
+Use deep plum for strong primary elements, warm ivory for the main background and mauve as the primary accent.
+
+Use coral and sage sparingly for highlights, activity categories and status indicators.
+
+Maintain accessible text contrast.
+
+## Typography
+
+Use:
+
+- Manrope for headings
+- Inter for body text and supporting information
+
+Use locally included font files where practical.
+
+Keep typography readable, with a clear hierarchy.
+
+## Layout
+
+- Use a consistent 8-point spacing system.
+- Use 16–22 px rounded card corners.
+- Use approximately 14–16 px rounded button corners.
+- Use subtle shadows.
+- Use generous whitespace.
+- Maintain comfortable touch targets of at least 44–48 logical pixels.
+- Support different Android screen sizes.
+- Design responsive layouts.
+- Handle keyboard, safe-area and system navigation insets properly.
+
+## UI components
+
+Create reusable components:
+
+- PrimaryButton
+- SecondaryButton
+- CustomTextField
+- ExperienceCard
+- CategoryChip
+- ProfilePreviewCard
+- ParticipantCard
+- ConnectionCard
+- MessageBubble
+- EmptyStateWidget
+- LoadingWidget
+- ErrorWidget
+- SectionHeader
+- CustomBottomNavigation
+- ConfirmationDialog
+- ReportDialog
+
+Avoid duplicated screen-specific UI code.
+
+## Discover screen design
+
+Design a polished home screen:
+
+Top:
+- Small MELSAVA logo
+- Greeting
+- Notification icon
+- Broad location selection
+
+Main:
+- Heading: "What would you like to experience?"
+- Subtitle: "Good moments start with shared interests."
+- Featured activity card
+
+Below:
+- Browse by category
+- Experiences near you
+- Recommended activities
+- People who share your interests
+
+The experience cards must be the visual priority, not profile photographs.
+
+## Experience card design
+
+Each card should contain:
+
+- A visually appealing photograph
+- Small category label
+- Title
+- Date/time
+- Broad location
+- Available places
+- Join or View Details action
+
+## Connections screen
+
+Use a warm, positive interface.
+
+Heading:
+
+"Good moments can become great connections."
+
+Display mutual connections and show which experience brought the people together.
+
+## Empty states
+
+Examples:
+
+No experiences:
+
+"Nothing nearby just yet. Explore another category or check back soon."
+
+No connections:
+
+"Your next connection could start with your next experience."
+
+No messages:
+
+"Enjoyed meeting someone? Your mutual connections will appear here."
+
+---
+
+# 6. LOGO AND APP ICON DESIGN
+
+Design an original visual identity for MELSAVA.
+
+Logo concept:
+
+Create a minimal abstract symbol representing multiple paths or people coming together through shared experiences.
+
+A possible concept:
+
+Three independent flowing paths or nodes converge around one subtle central point. The overall geometry can subtly suggest an abstract letter M without making the symbol look like a literal alphabet icon.
+
+The symbol should communicate:
+
+- Shared moments
+- Meeting
+- Human connection
+- Community
+- Discovery
+- Continuity
+
+Avoid:
+
+- Generic hearts
+- Cupid arrows
+- Wedding rings
+- Location pins
+- Handshake symbols
+- Generic speech bubbles
+- Tinder-style flame symbols
+- Copying another app's logo
+
+Logo versions required:
+
+1. Primary horizontal logo with symbol and MELSAVA wordmark.
+2. Standalone symbol.
+3. App icon in a square format.
+4. Light-background version.
+5. Dark-background version.
+6. Monochrome version.
+
+The mark must be recognisable when displayed at 24 px and must also work as an Android launcher icon.
+
+Preferred colors:
+
+Deep Plum, Mauve, Soft Coral and Warm Ivory.
+
+Deliver SVG source and high-resolution transparent PNG exports where possible.
+
+Use original shapes, not stock icons as the brand mark.
+
+---
+
+# 7. FLUTTER TECHNICAL STACK
+
+Build with Flutter and Dart.
+
+Do not use PHP.
+
+Do not create an expensive separate backend server.
+
+Use:
+
+- Flutter
+- Dart
+- Riverpod
+- GoRouter
+- Supabase Flutter SDK
+- PostgreSQL
+- Supabase Auth
+- Supabase Storage
+- Supabase Realtime
+- Supabase Edge Functions using TypeScript, only where server-side logic is required
+- Firebase Cloud Messaging later for push notifications
+
+Initial Flutter dependencies should be minimal:
+
+- flutter_riverpod
+- go_router
+- supabase_flutter
+- image_picker
+- cached_network_image
+- intl
+
+Check compatible stable package versions when implementing.
+
+Do not add dependencies without a clear purpose.
+
+Use a feature-first architecture.
+
+Suggested structure:
+
+lib/
+  main.dart
+
+  app/
+    melsava_app.dart
+    app_router.dart
+    app_theme.dart
+
+  core/
+    constants/
+    services/
+    utils/
+    widgets/
+
+  features/
+    auth/
+    onboarding/
+    profile/
+    discovery/
+    experiences/
+    connections/
+    chat/
+    safety/
+
+  shared/
+    models/
+    widgets/
+
+  test/
+
+Separate presentation, domain and data responsibilities when a feature grows.
+
+Use repositories to separate application code from Supabase implementation.
+
+Use Riverpod for dependency injection and application state.
+
+Use GoRouter for navigation and authentication redirects.
+
+Handle loading, empty, error and success states consistently.
+
+---
+
+# 8. SUPABASE DATABASE DESIGN
+
+Use PostgreSQL with UUID primary keys, foreign keys, timestamps, indexes and appropriate constraints.
+
+Create the following initial tables:
+
+1. profiles
+2. profile_private
+3. interests
+4. profile_interests
+5. intentions
+6. profile_intentions
+7. activity_categories
+8. experiences
+9. experience_sessions
+10. experience_members
+11. experience_prompts
+12. experience_answers
+13. post_experience_choices
+14. connections
+15. conversations
+16. conversation_members
+17. messages
+18. blocks
+19. reports
+20. moderation_actions
+21. device_tokens
+
+Use auth.users as the authentication identity.
+
+Store public profile information separately from private account information.
+
+Never return private data through public discovery queries.
+
+Avoid storing exact dates of birth unless there is an appropriate legal and product need. If required, store it in a private server-controlled location.
+
+Create migrations in a version-controlled folder.
+
+Create seed SQL for activity categories and example experiences.
+
+Enable Row Level Security on every user-data table.
+
+Create specific least-privilege RLS policies.
+
+Examples of the security model:
+
+- Users can update their own profile.
+- Users cannot update another person's profile.
+- Public discovery returns only approved profile fields.
+- Private account fields are not readable by other users.
+- Users can read messages only in conversations they belong to.
+- Users cannot create a connection unilaterally.
+- Users can see only their own post-experience choices.
+- A blocked relationship prevents new interaction.
+- Reports must not reveal the reporter's private identity to the reported user.
+- Users cannot modify their own moderation status.
+
+Do not trust the Flutter client to enforce mutual selection, age eligibility, event capacity or moderation restrictions.
+
+Implement critical operations server-side using PostgreSQL functions or protected Edge Functions.
+
+Make the mutual connection operation transactional and idempotent.
+
+Never use the Supabase service_role key in the Flutter client.
+
+Use only the Supabase publishable key on the client, protected by correctly configured RLS.
+
+Keep all private keys out of Git.
+
+Create a safe environment configuration approach using Flutter build-time configuration.
+
+---
+
+# 9. MUTUAL CONNECTION BUSINESS LOGIC
+
+Implement the post-experience choice flow carefully.
+
+For each completed experience:
+
+1. Retrieve eligible participants.
+2. Show only information approved for post-experience selection.
+3. Save each participant's private selections.
+4. Prevent repeated submissions or invalid participant IDs.
+5. Compare both sides of each potential connection.
+6. Check that the selected connection types are compatible.
+7. Check that neither participant blocked the other.
+8. Create one connection for each valid mutual selection.
+9. Create a conversation for that connection.
+10. Notify both users without disclosing rejected selections.
+
+Use a database unique constraint to prevent duplicate connections.
+
+Make the workflow safe against duplicate requests and concurrent selections.
+
+The system must never reveal one person's selection to another before mutual agreement.
+
+---
+
+# 10. SAFETY, PRIVACY AND MODERATION
+
+Safety is a core requirement from the first release.
+
+Implement:
+
+- Adult eligibility gate
+- Terms acceptance
+- Community rules acceptance
+- Profile reporting
+- Experience reporting
+- Message reporting
+- Blocking
+- Account suspension support
+- Moderation status
+- Account deletion
+- Privacy settings
+- Notification privacy
+- Safe public-meeting guidance
+- Experience-host approval
+- Cancellation and participant-removal workflows
+
+For in-person activities:
+
+- Use public venues.
+- Do not reveal private home addresses.
+- Do not expose live GPS location.
+- Provide clear activity and host information.
+- Allow users to cancel or report an unsafe experience.
+- Do not allow suspended or blocked users to rejoin through another flow.
+- Provide guidance for safe independent travel.
+
+Do not launch unrestricted anonymous random chat.
+
+Build a basic moderation process before accepting public user-created experiences.
+
+For the initial closed beta, activity publishing should be controlled by an administrator or approved host.
+
+---
+
+# 11. FREE ASSETS AND DESIGN RESOURCES
+
+Use free resources only for the initial MVP.
+
+Preferred sources:
+
+FONTS:
+https://fonts.google.com/
+
+Use Manrope and Inter, checking the individual font-family license before bundling.
+
+ICONS:
+https://lucide.dev/
+
+Use Lucide icons. Retain the applicable license and notices in the project.
+
+Alternative:
+https://fonts.google.com/icons
+
+Use Google Material Symbols where appropriate.
+
+PHOTOGRAPHS:
+https://www.pexels.com/
+
+https://unsplash.com/
+
+Use photographs for experience covers and onboarding illustrations only.
+
+Do not use stock photographs to impersonate actual users or as fake verified member profiles.
+
+Avoid images containing visible third-party trademarks or people in contexts that could suggest they endorse MELSAVA.
+
+Record image source, creator and license details in:
+
+assets/ASSET_LICENSES.md
+
+ANIMATIONS:
+https://lottiefiles.com/
+
+Use only animations explicitly available under the Lottie Simple License, and verify each asset's license before inclusion.
+
+For the MVP, prefer Flutter's built-in animations to keep the application small and fast.
+
+Do not use paid icon packs, premium templates, copyrighted competitor screenshots or unlicensed illustrations.
+
+Download and store approved local assets instead of depending on random remote image URLs in production.
+
+Create an original placeholder illustration system for unavailable images and empty states.
+
+---
+
+# 12. SAMPLE CONTENT
+
+Create attractive demonstration content so the interface does not look empty during development.
+
+Seed experiences such as:
+
+- Coffee & Conversation
+- Weekend Photography Walk
+- Board Game Evening
+- Sketch and Create
+- Beginner Badminton Meetup
+- Book Lovers Circle
+- Explore Your City
+- Creative Workshop
+- Nature Walk
+- Music Discovery Session
+
+Use sample dates, places and participant profiles clearly marked as demo content.
+
+Do not present sample people as real or verified users.
+
+Keep all demo content separate from production data.
+
+---
+
+# 13. PERFORMANCE AND COST CONTROL
+
+The first version must remain inexpensive to operate.
+
+Do not add:
+
+- A dedicated VPS
+- Paid SMS authentication
+- Paid AI APIs
+- Paid maps APIs
+- Video-call infrastructure
+- Live location tracking
+- Paid analytics
+- Heavy third-party animation libraries
+
+Use Supabase Free for development and a limited closed beta, subject to its limits.
+
+Compress user-uploaded images before uploading.
+
+Limit file sizes and accepted image formats.
+
+Use pagination for discovery and experience lists.
+
+Use appropriate indexes.
+
+Avoid repetitive database calls.
+
+Use image caching.
+
+Do not download entire tables into Flutter.
+
+Design the app to make upgrading Supabase later straightforward.
+
+Track database, storage and bandwidth usage.
+
+Do not assume a free-tier project is a permanent production hosting solution.
+
+---
+
+# 14. DEVELOPMENT PHASES
+
+Build incrementally. Do not attempt to dump the entire app in one giant file.
+
+PHASE 1 — FOUNDATION
+- Flutter project setup
+- App theme
+- Logo assets
+- Navigation
+- Authentication UI
+- Supabase configuration
+
+PHASE 2 — ONBOARDING
+- Adult eligibility
+- Profile creation
+- Interests
+- Activity preferences
+- Intentions
+- Privacy settings
+
+PHASE 3 — EXPERIENCE DISCOVERY
+- Discover screen
+- Activity categories
+- Experience cards
+- Experience detail
+- RSVP
+- Capacity validation
+- My Experiences
+
+PHASE 4 — POST-EXPERIENCE CONNECTION
+- Completion status
+- Participant selection
+- Private choices
+- Mutual selection processing
+- Connection creation
+
+PHASE 5 — MESSAGING
+- Connections
+- Conversation list
+- Realtime text chat
+- Message permissions
+- Blocking
+
+PHASE 6 — SAFETY
+- Reporting
+- Moderation
+- Account deletion
+- Privacy controls
+- Safety guidance
+
+PHASE 7 — TESTING
+- Database security testing
+- RLS testing
+- Navigation testing
+- Two-account workflow testing
+- Error handling
+- Performance testing
+- Device testing
+
+PHASE 8 — CLOSED BETA
+- Test in one city
+- Seed curated experiences
+- Invite a small adult community
+- Collect feedback
+- Fix issues before expansion
+
+After each phase:
+- Run flutter pub get.
+- Run dart format.
+- Run flutter analyze.
+- Run flutter test.
+- Fix compilation errors and warnings.
+- Update the README.
+
+Do not silently skip failed tests.
+
+Do not create nonfunctional buttons.
+
+If a feature is not yet implemented, label it clearly as unavailable or coming later.
+
+Do not display fake success messages for operations that have not succeeded.
+
+---
+
+# 15. MVP ACCEPTANCE CRITERIA
+
+The first MVP is complete only when:
+
+1. A user can register and sign in.
+2. Adult eligibility is enforced.
+3. A user can create and edit a profile.
+4. A user can choose interests and intentions.
+5. A user can browse experiences.
+6. A user can join and cancel an experience.
+7. Capacity limits are respected.
+8. Experience completion can be recorded.
+9. Participants can independently select people to reconnect with.
+10. A connection is created only after compatible mutual selections.
+11. Private selections remain private.
+12. A mutual connection can start a text conversation.
+13. Unauthorised conversation access is blocked.
+14. A user can report and block another user.
+15. Account deletion is supported.
+16. Database access is protected with RLS.
+17. There are no private service keys in the app.
+18. The app runs on a real Android device without critical errors.
+
+---
+
+# 16. UI COPYWRITING
+
+Use friendly, natural language.
+
+Avoid aggressive dating language.
+
+Recommended copy:
+
+Welcome:
+"Good connections begin with shared moments."
+
+Discover:
+"What would you like to experience?"
+
+Experiences:
+"Find something you love doing. Meet people who love it too."
+
+Before activity:
+"Show up as yourself. Enjoy the moment."
+
+After activity:
+"Who would you like to meet again?"
+
+Mutual connection:
+"Looks like you both enjoyed meeting. Start a conversation."
+
+Friendship:
+"Good friendships grow one experience at a time."
+
+No connections:
+"Your next great connection may begin with your next experience."
+
+Never pressure users to select someone or to choose romance.
+
+---
+
+# 17. LOGO GENERATION PROMPT
+
+Use this separate prompt in an image generator or logo design tool:
+
+"Design an original premium minimalist vector brand identity for a modern adult social connection and experience-discovery application named MELSAVA.
+
+Brand tagline: Meet through moments.
+
+Create a distinctive abstract symbol that represents separate human paths coming together through shared experiences. Explore a subtle geometric M created from three flowing paths or connected forms that converge into one meaningful central point.
+
+The symbol should feel warm, intelligent, modern, welcoming, inclusive, memorable and internationally suitable.
+
+Use a sophisticated palette of deep plum (#292332), mauve (#795B91), soft coral (#E9A18B) and warm ivory (#F7F3EF).
+
+The logo must look excellent as a small Android application icon, as a horizontal wordmark and as a monochrome symbol.
+
+Use clean vector geometry, balanced negative space, restrained curves, strong silhouette and elegant typography.
+
+Make the MELSAVA wordmark uppercase, clean, distinctive and highly readable.
+
+Do not use hearts, Cupid arrows, wedding rings, location pins, handshakes, generic speech bubbles, flames or copied dating-app imagery.
+
+Do not imitate Tinder, Bumble, Hinge or any existing company's logo.
+
+Do not create a 3D render, phone mockup, business card or presentation board.
+
+First create the standalone symbol without text so the symbol can be refined independently. Then create a horizontal version with the exact spelling MELSAVA and the tagline Meet through moments.
+
+Deliver a clean flat vector-style logo on a transparent background. Provide a version on a warm ivory background and a version on a deep plum background.
+
+The final result should be a timeless, ownable brand mark rather than a trendy generic dating logo."
+
+Important: AI image tools may misspell wordmarks. Generate the symbol first and add the exact wordmark in Figma, Inkscape or another vector editor. Export a clean SVG for the app.
+
+---
+
+# 18. DOCUMENTATION AND FINAL DELIVERABLES
+
+Create:
+
+- README.md
+- PRODUCT_OVERVIEW.md
+- APP_WORKFLOW.md
+- DESIGN_SYSTEM.md
+- DATABASE_SCHEMA.md
+- SECURITY_AND_RLS.md
+- ASSET_LICENSES.md
+- DEVELOPMENT_ROADMAP.md
+- .gitignore
+- .env.example or equivalent safe configuration template
+
+Also create:
+
+- Flutter source code
+- SQL migrations
+- Seed data
+- Reusable widgets
+- Theme and typography
+- Navigation
+- Unit tests
+- Widget tests
+- RLS verification checklist
+- Android build instructions
+
+Do not claim the app is production-ready merely because the screens render.
+
+Identify incomplete integrations, security requirements, external configuration steps and manual moderation responsibilities honestly.
+
+---
+
+# 19. HOW TO WORK WITH ME
+
+I am a solo developer with Flutter/Dart experience and a limited starting budget.
+
+Teach and implement in practical steps.
+
+Do not overwhelm me with unnecessary enterprise architecture.
+
+Do not use PHP.
+
+Do not buy paid templates, stock assets, plugins or APIs without asking.
+
+Do not introduce complicated technologies unless they solve a real requirement.
+
+Prefer simple, maintainable and testable solutions.
+
+First inspect the existing workspace and report what is already present.
+
+Then establish the project structure, visual design system and working navigation.
+
+Implement one phase at a time, keeping the app runnable after each phase.
+
+Explain:
+1. What you are building.
+2. Which files you are creating or changing.
+3. Which commands I need to run.
+4. How I can test the functionality.
+5. What remains incomplete.
+
+Start with PHASE 1, then proceed sequentially. Do not merely return a product plan. Implement the actual project files and verify the result.
+
+**FINAL PRODUCT VISION:**
+
+MELSAVA is a place where people don't just discover profiles. They discover experiences, share real moments and choose the people they want to meet again.
+
+Meet through moments. Less swiping. More living.
