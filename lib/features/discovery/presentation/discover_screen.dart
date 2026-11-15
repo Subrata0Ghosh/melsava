@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
+import '../../../shared/widgets/activity_radar_map_card.dart';
 import '../../../shared/widgets/category_chip.dart';
 import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
@@ -23,6 +24,7 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 }
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
+  int _selectedSegment = 0; // 0: Curated, 1: Activity Radar, 2: All Vibes
   String _selectedCategory = 'All';
 
   final List<Map<String, dynamic>> _categories = [
@@ -205,212 +207,368 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
-            // Curated Meetup Venue Banner (Cafes, Restaurants, Board Games)
+            // Segmented Pill Control (Proxima / Dribbble inspired)
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: AppConstants.spacingLG,
-                  vertical: AppConstants.spacingSM,
+                  vertical: AppConstants.spacingMD,
                 ),
-                child: GestureDetector(
-                  onTap: () => LocationVenuePickerSheet.show(
-                    context,
-                    selectVenueMode: true,
-                  ),
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      gradient: isDark
-                          ? const LinearGradient(
-                              colors: [Color(0xFF261D3B), Color(0xFF1B1528)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            )
-                          : const LinearGradient(
-                              colors: [Color(0xFFEFE8DE), Color(0xFFF7F3EE)],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
-                            ),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: isDark
-                            ? AppColors.luminousMauve.withValues(alpha: 0.3)
-                            : AppColors.mauve.withValues(alpha: 0.2),
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: isDark
-                                ? AppColors.luminousMauve.withValues(alpha: 0.2)
-                                : AppColors.mauve.withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(14),
-                          ),
-                          child: Icon(
-                            Icons.storefront_rounded,
-                            color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                            size: 22,
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Explore Meetup Cafes & Venues',
-                                style: AppTypography.titleSmall.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryTextColor,
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                'Vetted coffee spots, board game lounges & restaurants in ${userLoc.city}',
-                                style: AppTypography.bodySmall.copyWith(
-                                  fontSize: 11,
-                                  color: mutedTextColor,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 14,
-                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
+                child: _buildSegmentControl(isDark),
               ),
             ),
 
-            // Category Horizontal Scroll
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: AppConstants.spacingMD,
-                ),
-                child: SizedBox(
-                  height: 40,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.spacingLG,
-                    ),
-                    scrollDirection: Axis.horizontal,
-                    itemCount: _categories.length,
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(width: AppConstants.spacingSM),
-                    itemBuilder: (context, index) {
-                      final cat = _categories[index];
-                      final isSelected = _selectedCategory == cat['name'];
-                      return CategoryChip(
-                        label: cat['name'],
-                        icon: cat['icon'],
-                        isSelected: isSelected,
-                        onTap: () =>
-                            setState(() => _selectedCategory = cat['name']),
+            // ── TAB 0: CURATED FOR YOU ────────────────────────────────────
+            if (_selectedSegment == 0) ...[
+              // Curated Activity Radar Preview
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingLG,
+                    vertical: AppConstants.spacingSM,
+                  ),
+                  child: ActivityRadarMapCard(
+                    location: userLoc,
+                    onVenueSelected: (venue) {
+                      // Find experience matching venue or open detail
+                      final match = allExperiences.firstWhere(
+                        (e) => e.venueName.toLowerCase().contains(venue.name.toLowerCase()),
+                        orElse: () => allExperiences.first,
+                      );
+                      ExperienceDetailSheet.show(
+                        context,
+                        experience: match,
+                        onToggleJoin: () {
+                          ref.read(experiencesRepositoryProvider).toggleJoin(match.id);
+                          ref.invalidate(experiencesListProvider);
+                        },
                       );
                     },
                   ),
                 ),
               ),
-            ),
 
-            // Featured Experience Hero Section
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppConstants.spacingLG,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SectionHeader(
-                      title: 'Featured Experience',
-                      subtitle: 'Specially curated for your area this week',
-                    ),
-                    const SizedBox(height: AppConstants.spacingMD),
-                    ExperienceCard(
-                      experience: featured,
-                      onTap: () => ExperienceDetailSheet.show(
-                        context,
+              // Featured Experience Hero Section
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    left: AppConstants.spacingLG,
+                    right: AppConstants.spacingLG,
+                    top: AppConstants.spacingLG,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SectionHeader(
+                        title: 'Featured Experience',
+                        subtitle: 'Specially curated for your area this week',
+                      ),
+                      const SizedBox(height: AppConstants.spacingMD),
+                      ExperienceCard(
                         experience: featured,
-                        onToggleJoin: () {
+                        onTap: () => ExperienceDetailSheet.show(
+                          context,
+                          experience: featured,
+                          onToggleJoin: () {
+                            ref
+                                .read(experiencesRepositoryProvider)
+                                .toggleJoin(featured.id);
+                            ref.invalidate(experiencesListProvider);
+                          },
+                        ),
+                        onJoinTap: () {
                           ref
                               .read(experiencesRepositoryProvider)
                               .toggleJoin(featured.id);
                           ref.invalidate(experiencesListProvider);
                         },
                       ),
-                      onJoinTap: () {
-                        ref
-                            .read(experiencesRepositoryProvider)
-                            .toggleJoin(featured.id);
-                        ref.invalidate(experiencesListProvider);
-                      },
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
-            ),
 
-            // Experiences List
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spacingLG,
-              ),
-              sliver: SliverToBoxAdapter(
-                child: SectionHeader(
-                  title: 'Upcoming Near You',
-                  subtitle: 'Small groups of 3–5 participants',
-                  actionLabel: 'See All',
-                  onActionTap: () => context.go('/experiences'),
+              // Upcoming Near You Section
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLG,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: SectionHeader(
+                    title: 'Upcoming Near You',
+                    subtitle: 'Small groups of 3–5 participants',
+                    actionLabel: 'See All',
+                    onActionTap: () => context.go('/experiences'),
+                  ),
                 ),
               ),
-            ),
 
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: AppConstants.spacingLG,
-                vertical: AppConstants.spacingMD,
-              ),
-              sliver: SliverList(
-                delegate: SliverChildBuilderDelegate((context, index) {
-                  final exp = filteredExperiences[index];
-                  return ExperienceCard(
-                    experience: exp,
-                    onTap: () => ExperienceDetailSheet.show(
-                      context,
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLG,
+                  vertical: AppConstants.spacingMD,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final exp = allExperiences[index];
+                    return ExperienceCard(
                       experience: exp,
-                      onToggleJoin: () {
+                      onTap: () => ExperienceDetailSheet.show(
+                        context,
+                        experience: exp,
+                        onToggleJoin: () {
+                          ref
+                              .read(experiencesRepositoryProvider)
+                              .toggleJoin(exp.id);
+                          ref.invalidate(experiencesListProvider);
+                        },
+                      ),
+                      onJoinTap: () {
                         ref
                             .read(experiencesRepositoryProvider)
                             .toggleJoin(exp.id);
                         ref.invalidate(experiencesListProvider);
                       },
-                    ),
-                    onJoinTap: () {
-                      ref
-                          .read(experiencesRepositoryProvider)
-                          .toggleJoin(exp.id);
-                      ref.invalidate(experiencesListProvider);
-                    },
-                  );
-                }, childCount: filteredExperiences.length),
+                    );
+                  }, childCount: allExperiences.length),
+                ),
               ),
-            ),
+            ],
+
+            // ── TAB 1: LIVE ACTIVITY RADAR ─────────────────────────────────
+            if (_selectedSegment == 1) ...[
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacingLG,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Live Area Radar',
+                        style: AppTypography.titleMedium.copyWith(
+                          fontWeight: FontWeight.w800,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'Verified cafes, gaming hubs & meetup spaces in ${userLoc.city}.',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: mutedTextColor,
+                        ),
+                      ),
+                      const SizedBox(height: AppConstants.spacingMD),
+                      ActivityRadarMapCard(
+                        location: userLoc,
+                        onVenueSelected: (venue) {
+                          final match = allExperiences.firstWhere(
+                            (e) => e.venueName.toLowerCase().contains(venue.name.toLowerCase()),
+                            orElse: () => allExperiences.first,
+                          );
+                          ExperienceDetailSheet.show(
+                            context,
+                            experience: match,
+                            onToggleJoin: () {
+                              ref.read(experiencesRepositoryProvider).toggleJoin(match.id);
+                              ref.invalidate(experiencesListProvider);
+                            },
+                          );
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+
+              SliverPadding(
+                padding: const EdgeInsets.only(
+                  left: AppConstants.spacingLG,
+                  right: AppConstants.spacingLG,
+                  top: AppConstants.spacingLG,
+                ),
+                sliver: SliverToBoxAdapter(
+                  child: SectionHeader(
+                    title: 'Active Meetups in ${userLoc.city}',
+                    subtitle: 'Hosted exclusively in vetted public venues',
+                  ),
+                ),
+              ),
+
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLG,
+                  vertical: AppConstants.spacingMD,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final exp = allExperiences[index];
+                    return ExperienceCard(
+                      experience: exp,
+                      onTap: () => ExperienceDetailSheet.show(
+                        context,
+                        experience: exp,
+                        onToggleJoin: () {
+                          ref.read(experiencesRepositoryProvider).toggleJoin(exp.id);
+                          ref.invalidate(experiencesListProvider);
+                        },
+                      ),
+                      onJoinTap: () {
+                        ref.read(experiencesRepositoryProvider).toggleJoin(exp.id);
+                        ref.invalidate(experiencesListProvider);
+                      },
+                    );
+                  }, childCount: allExperiences.length),
+                ),
+              ),
+            ],
+
+            // ── TAB 2: ALL VIBES & CATEGORIES ─────────────────────────────
+            if (_selectedSegment == 2) ...[
+              // Category Horizontal Scroll
+              SliverToBoxAdapter(
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    vertical: AppConstants.spacingSM,
+                  ),
+                  child: SizedBox(
+                    height: 40,
+                    child: ListView.separated(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppConstants.spacingLG,
+                      ),
+                      scrollDirection: Axis.horizontal,
+                      itemCount: _categories.length,
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(width: AppConstants.spacingSM),
+                      itemBuilder: (context, index) {
+                        final cat = _categories[index];
+                        final isSelected = _selectedCategory == cat['name'];
+                        return CategoryChip(
+                          label: cat['name'],
+                          icon: cat['icon'],
+                          isSelected: isSelected,
+                          onTap: () =>
+                              setState(() => _selectedCategory = cat['name']),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+              ),
+
+              SliverPadding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLG,
+                  vertical: AppConstants.spacingMD,
+                ),
+                sliver: SliverList(
+                  delegate: SliverChildBuilderDelegate((context, index) {
+                    final exp = filteredExperiences[index];
+                    return ExperienceCard(
+                      experience: exp,
+                      onTap: () => ExperienceDetailSheet.show(
+                        context,
+                        experience: exp,
+                        onToggleJoin: () {
+                          ref.read(experiencesRepositoryProvider).toggleJoin(exp.id);
+                          ref.invalidate(experiencesListProvider);
+                        },
+                      ),
+                      onJoinTap: () {
+                        ref.read(experiencesRepositoryProvider).toggleJoin(exp.id);
+                        ref.invalidate(experiencesListProvider);
+                      },
+                    );
+                  }, childCount: filteredExperiences.length),
+                ),
+              ),
+            ],
 
             // Adequate bottom buffer for floating glassmorphic navbar
             const SliverToBoxAdapter(
-              child: SizedBox(height: 100),
+              child: SizedBox(height: 120),
             ),
           ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSegmentControl(bool isDark) {
+    final activeBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
+    final inactiveText = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+
+    return Container(
+      height: 44,
+      padding: const EdgeInsets.all(4),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
+        borderRadius: BorderRadius.circular(22),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.divider,
+          width: 0.8,
+        ),
+      ),
+      child: Row(
+        children: [
+          _buildSegmentItem(0, 'Curated', Icons.auto_awesome_rounded, isDark, activeBg, inactiveText),
+          _buildSegmentItem(1, 'Activity Radar', Icons.radar_rounded, isDark, activeBg, inactiveText),
+          _buildSegmentItem(2, 'All Vibes', Icons.category_rounded, isDark, activeBg, inactiveText),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSegmentItem(
+    int index,
+    String label,
+    IconData icon,
+    bool isDark,
+    Color activeBg,
+    Color inactiveText,
+  ) {
+    final isSelected = _selectedSegment == index;
+
+    return Expanded(
+      child: GestureDetector(
+        behavior: HitTestBehavior.opaque,
+        onTap: () => setState(() => _selectedSegment = index),
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          decoration: BoxDecoration(
+            color: isSelected ? activeBg : Colors.transparent,
+            borderRadius: BorderRadius.circular(18),
+            boxShadow: isSelected
+                ? [
+                    BoxShadow(
+                      color: activeBg.withValues(alpha: 0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ]
+                : null,
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                icon,
+                size: 14,
+                color: isSelected ? Colors.white : inactiveText,
+              ),
+              const SizedBox(width: 5),
+              Text(
+                label,
+                style: AppTypography.labelSmall.copyWith(
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                  fontSize: 11.5,
+                  color: isSelected ? Colors.white : inactiveText,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

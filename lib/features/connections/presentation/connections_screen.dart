@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
+import 'orbital_connections_view.dart';
 
 class ConnectionItem {
   final String id;
@@ -32,13 +33,15 @@ class ConnectionsScreen extends StatefulWidget {
 }
 
 class _ConnectionsScreenState extends State<ConnectionsScreen> {
+  bool _isOrbitView = true;
+
   final List<ConnectionItem> _connections = [
     ConnectionItem(
       id: 'conn-1',
       name: 'Rhea Sen',
       avatarUrl:
           'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
-      connectionType: 'Friendship',
+      connectionType: 'Exploring Dating',
       experienceName: 'Coffee & Conversation: Weekend Musings',
       connectedAt: DateTime.now().subtract(const Duration(hours: 6)),
     ),
@@ -71,6 +74,96 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             color: primaryTextColor,
           ),
         ),
+        actions: [
+          // Segmented Orbit vs List Toggle Pill
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: Container(
+              height: 36,
+              padding: const EdgeInsets.all(3),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkElevated : AppColors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.divider,
+                ),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: () => setState(() => _isOrbitView = true),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: _isOrbitView
+                            ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.bubble_chart_rounded,
+                            size: 14,
+                            color: _isOrbitView
+                                ? Colors.white
+                                : (isDark ? AppColors.darkMutedText : AppColors.mutedText),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Orbit',
+                            style: AppTypography.labelSmall.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: _isOrbitView
+                                  ? Colors.white
+                                  : (isDark ? AppColors.darkMutedText : AppColors.mutedText),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _isOrbitView = false),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: !_isOrbitView
+                            ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                            : Colors.transparent,
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.format_list_bulleted_rounded,
+                            size: 14,
+                            color: !_isOrbitView
+                                ? Colors.white
+                                : (isDark ? AppColors.darkMutedText : AppColors.mutedText),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'List',
+                            style: AppTypography.labelSmall.copyWith(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w700,
+                              color: !_isOrbitView
+                                  ? Colors.white
+                                  : (isDark ? AppColors.darkMutedText : AppColors.mutedText),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
@@ -88,8 +181,8 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 padding: const EdgeInsets.only(
                   left: AppConstants.spacingLG,
                   right: AppConstants.spacingLG,
-                  top: AppConstants.spacingMD,
-                  bottom: 100, // Bottom padding for glassmorphic navbar
+                  top: AppConstants.spacingSM,
+                  bottom: 120, // Bottom padding for glassmorphic navbar
                 ),
                 children: [
                   Text(
@@ -97,19 +190,23 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     style: AppTypography.headlineMedium.copyWith(
                       color: primaryTextColor,
                       fontWeight: FontWeight.w800,
-                      height: 1.3,
+                      height: 1.25,
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingSM),
+                  const SizedBox(height: AppConstants.spacingXS),
                   Text(
-                    'People you have met in real-world experiences who mutually chose to stay in touch.',
+                    'Connections from small-group meetups who mutually unlocked contact.',
                     style: AppTypography.bodySmall.copyWith(
                       color: mutedTextColor,
                     ),
                   ),
-                  const SizedBox(height: AppConstants.spacingXL),
+                  const SizedBox(height: AppConstants.spacingMD),
 
-                  ..._connections.map((conn) {
+                  // View Switch: Orbit Cosmic View vs List View
+                  if (_isOrbitView) ...[
+                    OrbitalConnectionsView(connections: _connections),
+                  ] else ...[
+                    ..._connections.map((conn) {
                     return Container(
                       margin: const EdgeInsets.only(
                         bottom: AppConstants.spacingMD,
@@ -224,6 +321,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       ),
                     );
                   }),
+                ],
                 ],
               ),
       ),

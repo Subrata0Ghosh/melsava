@@ -41,42 +41,46 @@ class MainShellScreen extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        left: 16,
-        right: 16,
+        left: 18,
+        right: 18,
         bottom: bottomInset > 0 ? bottomInset + 4 : 16,
       ),
-      child: ClipRRect(
-        borderRadius: BorderRadius.circular(34),
-        child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-          child: Container(
-            height: 66,
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            decoration: BoxDecoration(
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(36),
+          boxShadow: [
+            BoxShadow(
               color: isDark
-                  ? const Color(0xFF161224).withValues(alpha: 0.75)
-                  : Colors.white.withValues(alpha: 0.78),
-              borderRadius: BorderRadius.circular(34),
-              border: Border.all(
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.13)
-                    : Colors.white.withValues(alpha: 0.75),
-                width: 1.2,
-              ),
-              boxShadow: [
-                BoxShadow(
-                  color: isDark
-                      ? Colors.black.withValues(alpha: 0.45)
-                      : AppColors.deepPlum.withValues(alpha: 0.08),
-                  blurRadius: 28,
-                  offset: const Offset(0, 10),
-                  spreadRadius: 1,
-                ),
-              ],
+                  ? Colors.black.withValues(alpha: 0.45)
+                  : AppColors.deepPlum.withValues(alpha: 0.08),
+              blurRadius: 24,
+              offset: const Offset(0, 8),
+              spreadRadius: 0,
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceAround,
-              children: [
+          ],
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(36),
+          child: BackdropFilter(
+            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
+            child: Container(
+              height: 64,
+              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF14101F).withValues(alpha: 0.82)
+                    : Colors.white.withValues(alpha: 0.88),
+                borderRadius: BorderRadius.circular(36),
+                border: Border.all(
+                  color: isDark
+                      ? Colors.white.withValues(alpha: 0.14)
+                      : Colors.white.withValues(alpha: 0.90),
+                  width: 1.0,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
                 _buildNavItem(
                   index: 0,
                   currentIndex: currentIndex,
@@ -121,6 +125,7 @@ class MainShellScreen extends StatelessWidget {
             ),
           ),
         ),
+      ),
       ),
     );
   }

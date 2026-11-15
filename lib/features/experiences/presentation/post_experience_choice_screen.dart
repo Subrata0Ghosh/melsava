@@ -4,6 +4,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
+import '../../../shared/widgets/mutual_match_celebration_dialog.dart';
 import '../../../shared/widgets/primary_button.dart';
 
 class AttendeeChoice {
@@ -69,41 +70,73 @@ class _PostExperienceChoiceScreenState
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
+    setState(() => _isSubmitting = false);
 
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        backgroundColor: AppColors.white,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
-        ),
-        title: Text(
-          'Choices Recorded Privately',
-          style: AppTypography.headlineSmall.copyWith(
-            color: AppColors.deepPlum,
-            fontWeight: FontWeight.w700,
-          ),
-        ),
-        content: Text(
-          'Your preferences have been securely saved. If any compatible mutual matches occur, a connection will appear in your Connections tab. No one is ever informed of an unreturned choice.',
-          style: AppTypography.bodyMedium.copyWith(
-            color: AppColors.mutedText,
-            height: 1.5,
-          ),
-        ),
-        actions: [
-          PrimaryButton(
-            label: 'View Connections',
-            height: 44,
-            onPressed: () {
-              Navigator.of(context).pop();
-              context.go('/connections');
-            },
-          ),
-        ],
-      ),
+    // Find any attendee with an active selection
+    final selectedMatch = _attendees.firstWhere(
+      (a) => a.selectedOption != 'none',
+      orElse: () => _attendees.first,
     );
+
+    if (selectedMatch.selectedOption != 'none') {
+      final intentionLabel = selectedMatch.selectedOption == 'dating'
+          ? 'Exploring Dating'
+          : selectedMatch.selectedOption == 'friendship'
+              ? 'Friendship'
+              : 'Activity Partner';
+
+      await MutualMatchCelebrationDialog.show(
+        context,
+        userName: 'You',
+        userAvatarUrl:
+            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        matchName: selectedMatch.name,
+        matchAvatarUrl: selectedMatch.avatarUrl,
+        mutualIntention: intentionLabel,
+        experienceTitle: widget.experience.title,
+      );
+    } else {
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => AlertDialog(
+          backgroundColor: Theme.of(context).brightness == Brightness.dark
+              ? AppColors.darkSurface
+              : AppColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
+          ),
+          title: Text(
+            'Choices Recorded Privately',
+            style: AppTypography.headlineSmall.copyWith(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.darkTextPrimary
+                  : AppColors.deepPlum,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          content: Text(
+            'Your preferences have been securely saved. If any compatible mutual matches occur, a connection will appear in your Connections tab. No one is ever informed of an unreturned choice.',
+            style: AppTypography.bodyMedium.copyWith(
+              color: Theme.of(context).brightness == Brightness.dark
+                  ? AppColors.darkMutedText
+                  : AppColors.mutedText,
+              height: 1.5,
+            ),
+          ),
+          actions: [
+            PrimaryButton(
+              label: 'View Connections',
+              height: 44,
+              onPressed: () {
+                Navigator.of(context).pop();
+                context.go('/connections');
+              },
+            ),
+          ],
+        ),
+      );
+    }
   }
 
   @override

@@ -99,6 +99,7 @@ class MeetupVenue {
 /// Worldwide Location & Venue Service using free Photon (OpenStreetMap) API
 /// with instant offline fallback catalog.
 class WorldwideLocationService {
+  static final WorldwideLocationService instance = WorldwideLocationService();
   static const String _savedLocationKey = 'melsava_selected_world_location';
 
   final http.Client _client;
