@@ -6,6 +6,7 @@ import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
 import '../features/auth/presentation/verify_email_screen.dart';
 import '../features/auth/presentation/welcome_screen.dart';
+import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/chat/presentation/conversation_screen.dart';
 import '../features/chat/presentation/inbox_screen.dart';
 import '../features/connections/presentation/connections_screen.dart';
@@ -30,6 +31,12 @@ class AppRouter {
     routes: [
       // Splash
       GoRoute(path: '/', builder: (context, state) => const SplashScreen()),
+
+      // Onboarding
+      GoRoute(
+        path: '/onboarding',
+        builder: (context, state) => const OnboardingScreen(),
+      ),
 
       // Welcome & Auth routes
       GoRoute(

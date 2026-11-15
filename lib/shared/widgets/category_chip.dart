@@ -3,7 +3,7 @@ import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_typography.dart';
 
-/// Reusable category chip for activity discovery
+/// Reusable adaptive category chip for activity discovery
 class CategoryChip extends StatelessWidget {
   final String label;
   final IconData? icon;
@@ -20,6 +20,22 @@ class CategoryChip extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final selectedBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
+    final unselectedBg = isDark ? AppColors.darkElevated : AppColors.white;
+    final borderColor = isSelected
+        ? selectedBg
+        : (isDark ? AppColors.darkBorder : AppColors.divider);
+
+    final textColor = isSelected
+        ? AppColors.white
+        : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum);
+
+    final iconColor = isSelected
+        ? AppColors.white
+        : (isDark ? AppColors.luminousMauve : AppColors.mauve);
+
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
@@ -29,17 +45,14 @@ class CategoryChip extends StatelessWidget {
           vertical: AppConstants.spacingSM + 2,
         ),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.deepPlum : AppColors.white,
+          color: isSelected ? selectedBg : unselectedBg,
           borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
-          border: Border.all(
-            color: isSelected ? AppColors.deepPlum : AppColors.divider,
-            width: 1.2,
-          ),
+          border: Border.all(color: borderColor, width: 1.2),
           boxShadow: isSelected
               ? [
                   BoxShadow(
-                    color: AppColors.deepPlum.withOpacity(0.12),
-                    blurRadius: 8,
+                    color: selectedBg.withValues(alpha: 0.25),
+                    blurRadius: 10,
                     offset: const Offset(0, 3),
                   ),
                 ]
@@ -52,15 +65,15 @@ class CategoryChip extends StatelessWidget {
               Icon(
                 icon,
                 size: 16,
-                color: isSelected ? AppColors.white : AppColors.mauve,
+                color: iconColor,
               ),
               const SizedBox(width: AppConstants.spacingSM),
             ],
             Text(
               label,
               style: AppTypography.labelMedium.copyWith(
-                color: isSelected ? AppColors.white : AppColors.deepPlum,
-                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+                color: textColor,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ],

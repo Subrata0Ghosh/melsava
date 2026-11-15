@@ -55,16 +55,26 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
         title: Text(
           'Connections',
-          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            color: primaryTextColor,
+          ),
         ),
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
+        bottom: false,
         child: _connections.isEmpty
             ? EmptyStateWidget(
                 icon: Icons.people_outline_rounded,
@@ -75,12 +85,17 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 onActionPressed: () => context.go('/discover'),
               )
             : ListView(
-                padding: const EdgeInsets.all(AppConstants.spacingLG),
+                padding: const EdgeInsets.only(
+                  left: AppConstants.spacingLG,
+                  right: AppConstants.spacingLG,
+                  top: AppConstants.spacingMD,
+                  bottom: 100, // Bottom padding for glassmorphic navbar
+                ),
                 children: [
                   Text(
                     'Good moments can become\ngreat connections.',
                     style: AppTypography.headlineMedium.copyWith(
-                      color: AppColors.deepPlum,
+                      color: primaryTextColor,
                       fontWeight: FontWeight.w800,
                       height: 1.3,
                     ),
@@ -89,7 +104,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                   Text(
                     'People you have met in real-world experiences who mutually chose to stay in touch.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: AppColors.mutedText,
+                      color: mutedTextColor,
                     ),
                   ),
                   const SizedBox(height: AppConstants.spacingXL),
@@ -101,13 +116,16 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                       ),
                       padding: const EdgeInsets.all(AppConstants.spacingMD),
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(
                           AppConstants.cardRadiusSmall,
                         ),
+                        border: Border.all(color: borderColor, width: 0.8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.deepPlum.withOpacity(0.04),
+                            color: isDark
+                                ? Colors.black26
+                                : AppColors.deepPlum.withValues(alpha: 0.04),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),
@@ -129,6 +147,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                     Text(
                                       conn.name,
                                       style: AppTypography.titleMedium.copyWith(
+                                        color: primaryTextColor,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -139,19 +158,27 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                         vertical: 2,
                                       ),
                                       decoration: BoxDecoration(
-                                        color: AppColors.sage,
+                                        color: isDark
+                                            ? AppColors.darkElevated
+                                            : AppColors.sage,
                                         borderRadius: BorderRadius.circular(
                                           AppConstants.buttonRadiusSmall,
                                         ),
+                                        border: isDark
+                                            ? Border.all(
+                                                color: AppColors.darkBorder,
+                                                width: 0.6)
+                                            : null,
                                       ),
                                       child: Text(
                                         conn.connectionType,
-                                        style: AppTypography.labelSmall
-                                            .copyWith(
-                                              color: AppColors.deepPlum,
-                                              fontWeight: FontWeight.w600,
-                                              fontSize: 10,
-                                            ),
+                                        style: AppTypography.labelSmall.copyWith(
+                                          color: isDark
+                                              ? AppColors.luminousMauve
+                                              : AppColors.deepPlum,
+                                          fontWeight: FontWeight.w700,
+                                          fontSize: 10,
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -159,10 +186,12 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                 const SizedBox(height: 4),
                                 Row(
                                   children: [
-                                    const Icon(
-                                      Icons.event_available,
-                                      size: 12,
-                                      color: AppColors.mauve,
+                                    Icon(
+                                      Icons.event_available_rounded,
+                                      size: 13,
+                                      color: isDark
+                                          ? AppColors.luminousMauve
+                                          : AppColors.mauve,
                                     ),
                                     const SizedBox(width: 4),
                                     Expanded(
@@ -171,7 +200,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
                                         style: AppTypography.bodySmall.copyWith(
-                                          color: AppColors.mutedText,
+                                          color: mutedTextColor,
                                           fontSize: 11,
                                         ),
                                       ),
@@ -183,9 +212,11 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                           ),
                           const SizedBox(width: AppConstants.spacingSM),
                           IconButton(
-                            icon: const Icon(
+                            icon: Icon(
                               Icons.chat_bubble_outline_rounded,
-                              color: AppColors.mauve,
+                              color: isDark
+                                  ? AppColors.luminousMauve
+                                  : AppColors.mauve,
                             ),
                             onPressed: () => context.push('/chat/${conn.name}'),
                           ),

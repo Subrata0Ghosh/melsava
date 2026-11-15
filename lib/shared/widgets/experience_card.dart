@@ -20,23 +20,32 @@ class ExperienceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final dateFormat = DateFormat('EEE, MMM d • h:mm a');
     final isFull = experience.currentParticipants >= experience.maxParticipants;
     final spotsLeft =
         experience.maxParticipants - experience.currentParticipants;
+
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: const EdgeInsets.only(bottom: AppConstants.spacingLG),
         decoration: BoxDecoration(
-          color: AppColors.white,
+          color: cardBg,
           borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
+          border: Border.all(color: borderColor, width: 0.8),
           boxShadow: [
             BoxShadow(
-              color: AppColors.deepPlum.withOpacity(0.06),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: isDark
+                  ? Colors.black.withValues(alpha: 0.25)
+                  : AppColors.deepPlum.withValues(alpha: 0.05),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
@@ -54,7 +63,9 @@ class ExperienceCard extends StatelessWidget {
                       imageUrl: experience.coverImageUrl,
                       fit: BoxFit.cover,
                       placeholder: (context, url) => Container(
-                        color: AppColors.sage.withOpacity(0.3),
+                        color: isDark
+                            ? AppColors.darkElevated
+                            : AppColors.sage.withValues(alpha: 0.3),
                         child: const Center(
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
@@ -63,7 +74,9 @@ class ExperienceCard extends StatelessWidget {
                         ),
                       ),
                       errorWidget: (context, url, error) => Container(
-                        color: AppColors.sage.withOpacity(0.4),
+                        color: isDark
+                            ? AppColors.darkElevated
+                            : AppColors.sage.withValues(alpha: 0.4),
                         child: const Icon(
                           Icons.image_outlined,
                           size: 40,
@@ -83,7 +96,8 @@ class ExperienceCard extends StatelessWidget {
                         vertical: AppConstants.spacingXS + 2,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.deepPlum.withOpacity(0.85),
+                        color: (isDark ? const Color(0xFF13101C) : AppColors.deepPlum)
+                            .withValues(alpha: 0.85),
                         borderRadius: BorderRadius.circular(
                           AppConstants.buttonRadiusSmall,
                         ),
@@ -119,10 +133,10 @@ class ExperienceCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: experience.hasJoined
-                            ? AppColors.mauve
+                            ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
                             : (isFull
-                                  ? AppColors.mutedText
-                                  : AppColors.softCoral),
+                                ? AppColors.mutedText
+                                : (isDark ? AppColors.vividCoral : AppColors.softCoral)),
                         borderRadius: BorderRadius.circular(
                           AppConstants.buttonRadiusSmall,
                         ),
@@ -150,7 +164,7 @@ class ExperienceCard extends StatelessWidget {
                     Text(
                       experience.title,
                       style: AppTypography.titleLarge.copyWith(
-                        color: AppColors.deepPlum,
+                        color: primaryTextColor,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -159,16 +173,16 @@ class ExperienceCard extends StatelessWidget {
                     // Date & Location metadata
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.calendar_today_outlined,
                           size: 14,
-                          color: AppColors.mauve,
+                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                         ),
                         const SizedBox(width: 6),
                         Text(
                           dateFormat.format(experience.startsAt),
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.deepPlum,
+                            color: primaryTextColor,
                             fontWeight: FontWeight.w600,
                           ),
                         ),
@@ -177,10 +191,10 @@ class ExperienceCard extends StatelessWidget {
                     const SizedBox(height: AppConstants.spacingXS),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.place_outlined,
                           size: 14,
-                          color: AppColors.mauve,
+                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                         ),
                         const SizedBox(width: 6),
                         Expanded(
@@ -189,7 +203,7 @@ class ExperienceCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodySmall.copyWith(
-                              color: AppColors.mutedText,
+                              color: mutedColor,
                             ),
                           ),
                         ),
@@ -200,11 +214,10 @@ class ExperienceCard extends StatelessWidget {
                     // Attendees & Host row
                     Row(
                       children: [
-                        // Attendee overlapping circles
+                        // Overlapping Attendee avatars
                         SizedBox(
                           height: 28,
-                          width:
-                              (experience.attendeeAvatars.length * 18.0) + 12,
+                          width: (experience.attendeeAvatars.length * 18.0) + 12,
                           child: Stack(
                             children: [
                               for (
@@ -216,7 +229,7 @@ class ExperienceCard extends StatelessWidget {
                                   left: i * 18.0,
                                   child: CircleAvatar(
                                     radius: 14,
-                                    backgroundColor: AppColors.white,
+                                    backgroundColor: cardBg,
                                     child: CircleAvatar(
                                       radius: 12,
                                       backgroundImage: NetworkImage(
@@ -232,7 +245,7 @@ class ExperienceCard extends StatelessWidget {
                         Text(
                           '${experience.currentParticipants}/${experience.maxParticipants} attending',
                           style: AppTypography.bodySmall.copyWith(
-                            color: AppColors.mutedText,
+                            color: mutedColor,
                             fontWeight: FontWeight.w500,
                           ),
                         ),
@@ -244,10 +257,16 @@ class ExperienceCard extends StatelessWidget {
                             onPressed: onJoinTap,
                             style: TextButton.styleFrom(
                               backgroundColor: experience.hasJoined
-                                  ? AppColors.sage
-                                  : AppColors.deepPlum,
+                                  ? (isDark
+                                      ? AppColors.darkElevated
+                                      : AppColors.sage)
+                                  : (isDark
+                                      ? AppColors.luminousMauve
+                                      : AppColors.deepPlum),
                               foregroundColor: experience.hasJoined
-                                  ? AppColors.deepPlum
+                                  ? (isDark
+                                      ? AppColors.luminousMauve
+                                      : AppColors.deepPlum)
                                   : AppColors.white,
                               padding: const EdgeInsets.symmetric(
                                 horizontal: AppConstants.spacingMD,

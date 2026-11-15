@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/theme_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/location_providers.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
+import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../auth/presentation/auth_providers.dart';
 
 class ProfileScreen extends ConsumerWidget {
@@ -12,18 +15,29 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(currentUserProvider);
+    final userLoc = ref.watch(userLocationProvider);
+
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
         title: Text(
           'My Profile',
-          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            color: primaryTextColor,
+          ),
         ),
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
+        bottom: false,
         child: SingleChildScrollView(
           padding: const EdgeInsets.all(AppConstants.spacingLG),
           child: Column(
@@ -33,13 +47,16 @@ class ProfileScreen extends ConsumerWidget {
               Container(
                 padding: const EdgeInsets.all(AppConstants.spacingLG),
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(
                     AppConstants.cardRadiusLarge,
                   ),
+                  border: Border.all(color: borderColor, width: 0.8),
                   boxShadow: [
                     BoxShadow(
-                      color: AppColors.deepPlum.withOpacity(0.04),
+                      color: isDark
+                          ? Colors.black26
+                          : AppColors.deepPlum.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 3),
                     ),
@@ -47,36 +64,38 @@ class ProfileScreen extends ConsumerWidget {
                 ),
                 child: Column(
                   children: [
-                    const CircleAvatar(
+                    CircleAvatar(
                       radius: 44,
-                      backgroundColor: AppColors.sage,
+                      backgroundColor: isDark
+                          ? AppColors.darkElevated
+                          : AppColors.sage,
                       child: Icon(
-                        Icons.person,
+                        Icons.person_rounded,
                         size: 48,
-                        color: AppColors.mauve,
+                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingMD),
                     Text(
                       user?.displayName ?? 'Explorer',
                       style: AppTypography.headlineSmall.copyWith(
-                        color: AppColors.deepPlum,
+                        color: primaryTextColor,
                         fontWeight: FontWeight.w800,
                       ),
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      '${user?.city ?? 'Mumbai, India'} • Adult Certified (18+)',
+                      '${userLoc.shortLabel} • Verified (18+)',
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.mutedText,
+                        color: mutedTextColor,
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingMD),
                     Text(
-                      'Enjoys discovering specialty coffee roasters, weekend nature walks, and friendly board games.',
+                      'Enjoys discovering specialty coffee roasters, weekend nature walks, and tabletop board games.',
                       textAlign: TextAlign.center,
                       style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.deepPlum,
+                        color: primaryTextColor,
                       ),
                     ),
                   ],
@@ -89,6 +108,7 @@ class ProfileScreen extends ConsumerWidget {
                 'My Intentions',
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
                 ),
               ),
               const SizedBox(height: AppConstants.spacingSM),
@@ -96,9 +116,9 @@ class ProfileScreen extends ConsumerWidget {
                 spacing: AppConstants.spacingSM,
                 runSpacing: AppConstants.spacingSM,
                 children: [
-                  _buildTag('Genuine friendship', isPrimary: true),
-                  _buildTag('Activity partner', isPrimary: true),
-                  _buildTag('Meaningful dating', isPrimary: false),
+                  _buildTag('Genuine friendship', isPrimary: true, isDark: isDark),
+                  _buildTag('Activity partner', isPrimary: true, isDark: isDark),
+                  _buildTag('Meaningful dating', isPrimary: false, isDark: isDark),
                 ],
               ),
               const SizedBox(height: AppConstants.spacingLG),
@@ -108,6 +128,7 @@ class ProfileScreen extends ConsumerWidget {
                 'My Interests',
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
                 ),
               ),
               const SizedBox(height: AppConstants.spacingSM),
@@ -115,46 +136,112 @@ class ProfileScreen extends ConsumerWidget {
                 spacing: AppConstants.spacingSM,
                 runSpacing: AppConstants.spacingSM,
                 children: [
-                  _buildTag('Specialty Coffee', isPrimary: false),
-                  _buildTag('Nature Photography', isPrimary: false),
-                  _buildTag('Badminton', isPrimary: false),
-                  _buildTag('Historical Fiction', isPrimary: false),
-                  _buildTag('Board Games', isPrimary: false),
+                  _buildTag('Specialty Coffee', isPrimary: false, isDark: isDark),
+                  _buildTag('Nature Photography', isPrimary: false, isDark: isDark),
+                  _buildTag('Badminton', isPrimary: false, isDark: isDark),
+                  _buildTag('Historical Fiction', isPrimary: false, isDark: isDark),
+                  _buildTag('Board Games', isPrimary: false, isDark: isDark),
                 ],
               ),
               const SizedBox(height: AppConstants.spacingXL),
 
-              // Safety & Settings List
+              // Settings & Controls List
               Container(
                 decoration: BoxDecoration(
-                  color: AppColors.white,
+                  color: cardBg,
                   borderRadius: BorderRadius.circular(
                     AppConstants.cardRadiusSmall,
                   ),
+                  border: Border.all(color: borderColor, width: 0.8),
                 ),
                 child: Column(
                   children: [
+                    // Theme Switcher Tile
                     ListTile(
-                      leading: const Icon(
+                      leading: Icon(
+                        isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                      ),
+                      title: Text(
+                        'Appearance (Theme)',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: primaryTextColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        isDark ? 'Dark Obsidian Mode' : 'Warm Ivory Light Mode',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: mutedTextColor,
+                        ),
+                      ),
+                      trailing: Switch.adaptive(
+                        value: isDark,
+                        activeColor: AppColors.luminousMauve,
+                        onChanged: (val) {
+                          ref
+                              .read(themeModeProvider.notifier)
+                              .setThemeMode(val ? ThemeMode.dark : ThemeMode.light);
+                        },
+                      ),
+                    ),
+                    Divider(height: 1, color: borderColor),
+
+                    // Worldwide Location Tile
+                    ListTile(
+                      leading: Icon(
+                        Icons.public_rounded,
+                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                      ),
+                      title: Text(
+                        'Worldwide Location',
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: primaryTextColor,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      subtitle: Text(
+                        userLoc.shortLabel,
+                        style: AppTypography.bodySmall.copyWith(
+                          color: mutedTextColor,
+                        ),
+                      ),
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: mutedTextColor,
+                      ),
+                      onTap: () => LocationVenuePickerSheet.show(context),
+                    ),
+                    Divider(height: 1, color: borderColor),
+
+                    // Community Standards
+                    ListTile(
+                      leading: Icon(
                         Icons.shield_outlined,
-                        color: AppColors.mauve,
+                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                       ),
                       title: Text(
                         'Community Guidelines & Safety',
-                        style: AppTypography.bodyMedium,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: primaryTextColor,
+                        ),
                       ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
-                        color: AppColors.mutedText,
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: mutedTextColor,
                       ),
                       onTap: () {
                         showDialog(
                           context: context,
                           builder: (context) => AlertDialog(
-                            backgroundColor: AppColors.white,
-                            title: const Text('MELSAVA Community Standards'),
-                            content: const Text(
-                              '1. Respect & Consent: All connections are strictly mutual.\n2. Public Venues Only: All offline activities take place in public, vetted locations.\n3. Zero Harassment: Harassment or unwanted contact results in immediate account suspension.\n4. Adult Community: Exclusively for respectful adults.',
+                            backgroundColor: cardBg,
+                            title: Text(
+                              'MELSAVA Community Standards',
+                              style: TextStyle(color: primaryTextColor),
+                            ),
+                            content: Text(
+                              '1. Respect & Consent: All connections are strictly mutual.\n2. Public Venues Only: All offline activities take place in public, vetted locations.\n3. Zero Harassment: Harassment results in immediate account suspension.\n4. Adult Community: Exclusively for respectful adults 18+.',
+                              style: TextStyle(color: primaryTextColor),
                             ),
                             actions: [
                               TextButton(
@@ -166,60 +253,42 @@ class ProfileScreen extends ConsumerWidget {
                         );
                       },
                     ),
-                    const Divider(height: 1),
+                    Divider(height: 1, color: borderColor),
+
+                    // Sign Out
                     ListTile(
-                      leading: const Icon(
-                        Icons.lock_outline,
-                        color: AppColors.mauve,
-                      ),
-                      title: Text(
-                        'Privacy & Visibility Controls',
-                        style: AppTypography.bodyMedium,
-                      ),
-                      trailing: const Icon(
-                        Icons.chevron_right,
-                        color: AppColors.mutedText,
-                      ),
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'Your exact location and private choices are always hidden.',
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-                    const Divider(height: 1),
-                    ListTile(
-                      leading: const Icon(Icons.logout, color: AppColors.error),
+                      leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                       title: Text(
                         'Sign Out',
                         style: AppTypography.bodyMedium.copyWith(
                           color: AppColors.error,
+                          fontWeight: FontWeight.w600,
                         ),
                       ),
-                      onTap: () {
-                        ConfirmationDialog.show(
+                      onTap: () async {
+                        final confirmed = await ConfirmationDialog.show(
                           context,
-                          title: 'Sign Out?',
+                          title: 'Sign Out',
                           message:
-                              'Are you sure you want to sign out of MELSAVA?',
+                              'Are you sure you want to sign out from MELSAVA?',
                           confirmLabel: 'Sign Out',
                           isDestructive: true,
-                        ).then((confirmed) {
-                          if (confirmed == true && context.mounted) {
-                            ref.read(authRepositoryProvider).signOut();
-                            ref.read(currentUserProvider.notifier).state = null;
+                        );
+                        if (confirmed == true && context.mounted) {
+                          await ref.read(authRepositoryProvider).signOut();
+                          ref.read(currentUserProvider.notifier).state = null;
+                          if (context.mounted) {
                             context.go('/welcome');
                           }
-                        });
+                        }
                       },
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingXXL),
+
+              // Bottom padding buffer for floating glassmorphic navbar
+              const SizedBox(height: 100),
             ],
           ),
         ),
@@ -227,20 +296,32 @@ class ProfileScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildTag(String text, {required bool isPrimary}) {
+  Widget _buildTag(String text, {required bool isPrimary, required bool isDark}) {
+    final bg = isPrimary
+        ? (isDark
+            ? AppColors.luminousMauve.withValues(alpha: 0.18)
+            : AppColors.sage)
+        : (isDark ? AppColors.darkElevated : AppColors.white);
+
+    final border = isPrimary
+        ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+        : (isDark ? AppColors.darkBorder : AppColors.divider);
+
+    final textColor = isPrimary
+        ? (isDark ? AppColors.luminousMauve : AppColors.deepPlum)
+        : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum);
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
       decoration: BoxDecoration(
-        color: isPrimary ? AppColors.deepPlum : AppColors.white,
+        color: bg,
         borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
-        border: Border.all(
-          color: isPrimary ? AppColors.deepPlum : AppColors.divider,
-        ),
+        border: Border.all(color: border, width: isPrimary ? 1.2 : 0.8),
       ),
       child: Text(
         text,
         style: AppTypography.labelSmall.copyWith(
-          color: isPrimary ? AppColors.white : AppColors.deepPlum,
+          color: textColor,
           fontWeight: isPrimary ? FontWeight.w700 : FontWeight.w500,
         ),
       ),

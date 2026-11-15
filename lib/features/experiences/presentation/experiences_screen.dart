@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/location_providers.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/experience_card.dart';
+import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/experiences_repository.dart';
 import 'experience_detail_sheet.dart';
@@ -38,6 +40,8 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final userLoc = ref.watch(userLocationProvider);
     final allExperiences = ref.watch(experiencesListProvider);
     final myExperiences = allExperiences
         .where((e) => e.hasJoined || e.isCompleted)
@@ -46,30 +50,71 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
     final filteredAll = _searchQuery.isEmpty
         ? allExperiences
         : allExperiences
-              .where(
-                (e) =>
-                    e.title.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ) ||
-                    e.categoryName.toLowerCase().contains(
-                      _searchQuery.toLowerCase(),
-                    ),
-              )
-              .toList();
+            .where(
+              (e) =>
+                  e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                  e.categoryName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                  e.venueName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+                  e.city.toLowerCase().contains(_searchQuery.toLowerCase()),
+            )
+            .toList();
+
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
         title: Text(
           'Experiences',
-          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            color: primaryTextColor,
+          ),
         ),
+        actions: [
+          // Worldwide Location Pill
+          Padding(
+            padding: const EdgeInsets.only(right: 16),
+            child: GestureDetector(
+              onTap: () => LocationVenuePickerSheet.show(context),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: isDark ? AppColors.darkElevated : AppColors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.divider,
+                  ),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Icons.place_rounded,
+                      size: 14,
+                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      userLoc.city,
+                      style: AppTypography.labelSmall.copyWith(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
         backgroundColor: Colors.transparent,
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: AppColors.deepPlum,
-          labelColor: AppColors.deepPlum,
-          unselectedLabelColor: AppColors.mutedText,
+          indicatorColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
+          labelColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
+          unselectedLabelColor: mutedTextColor,
           labelStyle: AppTypography.labelLarge.copyWith(
             fontWeight: FontWeight.w700,
           ),
@@ -90,20 +135,22 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                 child: TextField(
                   controller: _searchController,
                   onChanged: (val) => setState(() => _searchQuery = val),
-                  style: AppTypography.bodyMedium,
+                  style: TextStyle(color: primaryTextColor),
                   decoration: InputDecoration(
-                    hintText: 'Search experiences, categories, or places...',
-                    prefixIcon: const Icon(
-                      Icons.search,
-                      color: AppColors.mauve,
+                    hintText: 'Search experiences, venues, or places...',
+                    prefixIcon: Icon(
+                      Icons.search_rounded,
+                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                     ),
                     filled: true,
-                    fillColor: AppColors.white,
+                    fillColor: isDark ? AppColors.darkSurface : AppColors.white,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(
                         AppConstants.buttonRadiusLarge,
                       ),
-                      borderSide: const BorderSide(color: AppColors.divider),
+                      borderSide: BorderSide(
+                        color: isDark ? AppColors.darkBorder : AppColors.divider,
+                      ),
                     ),
                   ),
                 ),
@@ -117,8 +164,10 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                             'Nothing matches your search just yet. Explore another category or check back soon.',
                       )
                     : ListView.builder(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: AppConstants.spacingLG,
+                        padding: const EdgeInsets.only(
+                          left: AppConstants.spacingLG,
+                          right: AppConstants.spacingLG,
+                          bottom: 100, // Bottom padding for glassmorphic navbar
                         ),
                         itemCount: filteredAll.length,
                         itemBuilder: (context, index) {
@@ -159,7 +208,12 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                   onActionPressed: () => _tabController.animateTo(0),
                 )
               : ListView.builder(
-                  padding: const EdgeInsets.all(AppConstants.spacingLG),
+                  padding: const EdgeInsets.only(
+                    left: AppConstants.spacingLG,
+                    right: AppConstants.spacingLG,
+                    top: AppConstants.spacingLG,
+                    bottom: 100, // Bottom padding for glassmorphic navbar
+                  ),
                   itemCount: myExperiences.length,
                   itemBuilder: (context, index) {
                     final exp = myExperiences[index];
@@ -188,29 +242,34 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                               AppConstants.spacingMD,
                             ),
                             decoration: BoxDecoration(
-                              color: AppColors.sage.withOpacity(0.4),
+                              color: (isDark ? AppColors.darkElevated : AppColors.sage)
+                                  .withValues(alpha: 0.5),
                               borderRadius: BorderRadius.circular(
                                 AppConstants.cardRadiusSmall,
                               ),
-                              border: Border.all(color: AppColors.sage),
+                              border: Border.all(
+                                color: isDark
+                                    ? AppColors.luminousMauve
+                                    : AppColors.sage,
+                              ),
                             ),
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Row(
                                   children: [
-                                    const Icon(
-                                      Icons.check_circle_outline,
-                                      color: AppColors.mauve,
+                                    Icon(
+                                      Icons.check_circle_rounded,
+                                      color: isDark
+                                          ? AppColors.luminousMauve
+                                          : AppColors.mauve,
                                       size: 20,
                                     ),
-                                    const SizedBox(
-                                      width: AppConstants.spacingSM,
-                                    ),
+                                    const SizedBox(width: AppConstants.spacingSM),
                                     Text(
                                       'Activity Completed!',
                                       style: AppTypography.titleSmall.copyWith(
-                                        color: AppColors.deepPlum,
+                                        color: primaryTextColor,
                                         fontWeight: FontWeight.w700,
                                       ),
                                     ),
@@ -219,7 +278,9 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                 const SizedBox(height: AppConstants.spacingXS),
                                 Text(
                                   'Choose privately who you enjoyed meeting and would like to reconnect with.',
-                                  style: AppTypography.bodySmall,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: mutedTextColor,
+                                  ),
                                 ),
                                 const SizedBox(height: AppConstants.spacingMD),
                                 PrimaryButton(

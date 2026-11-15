@@ -20,6 +20,8 @@ class SectionHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -31,7 +33,7 @@ class SectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: AppTypography.titleLarge.copyWith(
-                  color: AppColors.deepPlum,
+                  color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -42,7 +44,7 @@ class SectionHeader extends StatelessWidget {
                 child: Text(
                   actionLabel!,
                   style: AppTypography.labelMedium.copyWith(
-                    color: AppColors.mauve,
+                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                     fontWeight: FontWeight.w600,
                   ),
                 ),
@@ -53,7 +55,9 @@ class SectionHeader extends StatelessWidget {
           const SizedBox(height: AppConstants.spacingXS),
           Text(
             subtitle!,
-            style: AppTypography.bodySmall.copyWith(color: AppColors.mutedText),
+            style: AppTypography.bodySmall.copyWith(
+              color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+            ),
           ),
         ],
       ],

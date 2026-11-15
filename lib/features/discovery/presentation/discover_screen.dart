@@ -1,11 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../../app/theme_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/services/location_providers.dart';
 import '../../../shared/widgets/category_chip.dart';
 import '../../../shared/widgets/experience_card.dart';
+import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/melsava_logo.dart';
 import '../../../shared/widgets/section_header.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -21,42 +24,47 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String _selectedCategory = 'All';
-  String _selectedCity = 'Mumbai';
 
   final List<Map<String, dynamic>> _categories = [
-    {'name': 'All', 'icon': Icons.auto_awesome_outlined},
-    {'name': 'Coffee & Conversation', 'icon': Icons.coffee_outlined},
-    {'name': 'Board Games', 'icon': Icons.casino_outlined},
-    {'name': 'Photography', 'icon': Icons.camera_alt_outlined},
-    {'name': 'Nature Walks', 'icon': Icons.park_outlined},
-    {'name': 'Sports & Fitness', 'icon': Icons.fitness_center_outlined},
-    {'name': 'Reading & Books', 'icon': Icons.menu_book_outlined},
-    {'name': 'Creative Workshops', 'icon': Icons.palette_outlined},
+    {'name': 'All', 'icon': Icons.auto_awesome_rounded},
+    {'name': 'Coffee & Conversation', 'icon': Icons.coffee_rounded},
+    {'name': 'Board Games', 'icon': Icons.casino_rounded},
+    {'name': 'Photography', 'icon': Icons.camera_alt_rounded},
+    {'name': 'Nature Walks', 'icon': Icons.park_rounded},
+    {'name': 'Sports & Fitness', 'icon': Icons.fitness_center_rounded},
+    {'name': 'Reading & Books', 'icon': Icons.menu_book_rounded},
+    {'name': 'Creative Workshops', 'icon': Icons.palette_rounded},
   ];
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(currentUserProvider);
+    final userLoc = ref.watch(userLocationProvider);
     final allExperiences = ref.watch(experiencesListProvider);
 
     final filteredExperiences = _selectedCategory == 'All'
         ? allExperiences
         : allExperiences
-              .where(
-                (e) => e.categoryName.toLowerCase().contains(
-                  _selectedCategory.toLowerCase(),
-                ),
-              )
-              .toList();
+            .where(
+              (e) => e.categoryName.toLowerCase().contains(
+                    _selectedCategory.toLowerCase(),
+                  ),
+            )
+            .toList();
 
     final featured = allExperiences.first;
 
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       body: SafeArea(
+        bottom: false,
         child: CustomScrollView(
           slivers: [
-            // Top App Bar with brand logo, city picker & notifications
+            // Top App Bar with brand logo, worldwide location picker & theme toggle
             SliverToBoxAdapter(
               child: Padding(
                 padding: const EdgeInsets.symmetric(
@@ -71,62 +79,87 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       AppConstants.appName,
                       style: AppTypography.titleLarge.copyWith(
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 1.5,
+                        letterSpacing: 2.0,
+                        color: primaryTextColor,
                       ),
                     ),
                     const Spacer(),
 
-                    // City selector
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: AppColors.white,
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.buttonRadiusSmall,
+                    // Worldwide Location Selector Pill
+                    GestureDetector(
+                      onTap: () => LocationVenuePickerSheet.show(context),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
                         ),
-                        border: Border.all(color: AppColors.divider),
-                      ),
-                      child: Row(
-                        children: [
-                          const Icon(
-                            Icons.place,
-                            size: 14,
-                            color: AppColors.mauve,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkElevated : AppColors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.divider,
                           ),
-                          const SizedBox(width: 4),
-                          DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value: _selectedCity,
-                              isDense: true,
-                              style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.deepPlum,
-                                fontWeight: FontWeight.w600,
-                              ),
-                              items: const [
-                                DropdownMenuItem(
-                                  value: 'Mumbai',
-                                  child: Text('Mumbai'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Bengaluru',
-                                  child: Text('Bengaluru'),
-                                ),
-                                DropdownMenuItem(
-                                  value: 'Delhi NCR',
-                                  child: Text('Delhi NCR'),
-                                ),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) {
-                                  setState(() => _selectedCity = val);
-                                }
-                              },
+                          boxShadow: [
+                            BoxShadow(
+                              color: isDark
+                                  ? Colors.black26
+                                  : AppColors.deepPlum.withValues(alpha: 0.04),
+                              blurRadius: 6,
                             ),
+                          ],
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.place_rounded,
+                              size: 14,
+                              color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                            ),
+                            const SizedBox(width: 4),
+                            ConstrainedBox(
+                              constraints: const BoxConstraints(maxWidth: 88),
+                              child: Text(
+                                userLoc.city,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              Icons.keyboard_arrow_down_rounded,
+                              size: 14,
+                              color: mutedTextColor,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(width: 8),
+
+                    // Quick Dark / Light Theme Toggle Button
+                    GestureDetector(
+                      onTap: () => ref.read(themeModeProvider.notifier).toggleTheme(isDark),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkElevated : AppColors.white,
+                          shape: BoxShape.circle,
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : AppColors.divider,
                           ),
-                        ],
+                        ),
+                        child: Icon(
+                          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                          size: 17,
+                          color: isDark ? AppColors.softCoral : AppColors.mauve,
+                        ),
                       ),
                     ),
                   ],
@@ -147,26 +180,112 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     Text(
                       'Hello, ${user?.displayName ?? 'Explorer'}',
                       style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.mutedText,
+                        color: mutedTextColor,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingXS),
                     Text(
                       'What would you like\nto experience?',
                       style: AppTypography.displaySmall.copyWith(
-                        color: AppColors.deepPlum,
+                        color: primaryTextColor,
                         fontWeight: FontWeight.w800,
                         height: 1.2,
                       ),
                     ),
                     const SizedBox(height: AppConstants.spacingXS),
                     Text(
-                      'Find something you enjoy. Meet people who enjoy it too.',
+                      'Find activities you love in ${userLoc.city}. Meet people who love them too.',
                       style: AppTypography.bodySmall.copyWith(
-                        color: AppColors.mutedText,
+                        color: mutedTextColor,
                       ),
                     ),
                   ],
+                ),
+              ),
+            ),
+
+            // Curated Meetup Venue Banner (Cafes, Restaurants, Board Games)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppConstants.spacingLG,
+                  vertical: AppConstants.spacingSM,
+                ),
+                child: GestureDetector(
+                  onTap: () => LocationVenuePickerSheet.show(
+                    context,
+                    selectVenueMode: true,
+                  ),
+                  child: Container(
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      gradient: isDark
+                          ? const LinearGradient(
+                              colors: [Color(0xFF261D3B), Color(0xFF1B1528)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFEFE8DE), Color(0xFFF7F3EE)],
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                            ),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: isDark
+                            ? AppColors.luminousMauve.withValues(alpha: 0.3)
+                            : AppColors.mauve.withValues(alpha: 0.2),
+                      ),
+                    ),
+                    child: Row(
+                      children: [
+                        Container(
+                          width: 44,
+                          height: 44,
+                          decoration: BoxDecoration(
+                            color: isDark
+                                ? AppColors.luminousMauve.withValues(alpha: 0.2)
+                                : AppColors.mauve.withValues(alpha: 0.12),
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                          child: Icon(
+                            Icons.storefront_rounded,
+                            color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                            size: 22,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Explore Meetup Cafes & Venues',
+                                style: AppTypography.titleSmall.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: primaryTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Vetted coffee spots, board game lounges & restaurants in ${userLoc.city}',
+                                style: AppTypography.bodySmall.copyWith(
+                                  fontSize: 11,
+                                  color: mutedTextColor,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        Icon(
+                          Icons.arrow_forward_ios_rounded,
+                          size: 14,
+                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                        ),
+                      ],
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -287,8 +406,9 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
+            // Adequate bottom buffer for floating glassmorphic navbar
             const SliverToBoxAdapter(
-              child: SizedBox(height: AppConstants.spacingXXL),
+              child: SizedBox(height: 100),
             ),
           ],
         ),

@@ -55,16 +55,26 @@ class _InboxScreenState extends State<InboxScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
         title: Text(
           'Inbox',
-          style: AppTypography.titleLarge.copyWith(fontWeight: FontWeight.w700),
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.w700,
+            color: primaryTextColor,
+          ),
         ),
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
+        bottom: false,
         child: _threads.isEmpty
             ? const EmptyStateWidget(
                 icon: Icons.chat_bubble_outline_rounded,
@@ -73,7 +83,12 @@ class _InboxScreenState extends State<InboxScreen> {
                     'Enjoyed meeting someone? Your mutual connections and conversations will appear here.',
               )
             : ListView.separated(
-                padding: const EdgeInsets.all(AppConstants.spacingLG),
+                padding: const EdgeInsets.only(
+                  left: AppConstants.spacingLG,
+                  right: AppConstants.spacingLG,
+                  top: AppConstants.spacingMD,
+                  bottom: 100, // Bottom padding for glassmorphic navbar
+                ),
                 itemCount: _threads.length,
                 separatorBuilder: (context, index) =>
                     const SizedBox(height: AppConstants.spacingMD),
@@ -85,13 +100,16 @@ class _InboxScreenState extends State<InboxScreen> {
                     child: Container(
                       padding: const EdgeInsets.all(AppConstants.spacingMD),
                       decoration: BoxDecoration(
-                        color: AppColors.white,
+                        color: cardBg,
                         borderRadius: BorderRadius.circular(
                           AppConstants.cardRadiusSmall,
                         ),
+                        border: Border.all(color: borderColor, width: 0.8),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.deepPlum.withOpacity(0.04),
+                            color: isDark
+                                ? Colors.black26
+                                : AppColors.deepPlum.withValues(alpha: 0.04),
                             blurRadius: 10,
                             offset: const Offset(0, 2),
                           ),
@@ -115,10 +133,12 @@ class _InboxScreenState extends State<InboxScreen> {
                                     width: 12,
                                     height: 12,
                                     decoration: BoxDecoration(
-                                      color: AppColors.mauve,
+                                      color: isDark
+                                          ? AppColors.luminousMauve
+                                          : AppColors.mauve,
                                       shape: BoxShape.circle,
                                       border: Border.all(
-                                        color: AppColors.white,
+                                        color: cardBg,
                                         width: 2,
                                       ),
                                     ),
@@ -138,6 +158,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                     Text(
                                       thread.participantName,
                                       style: AppTypography.titleSmall.copyWith(
+                                        color: primaryTextColor,
                                         fontWeight: thread.isUnread
                                             ? FontWeight.w800
                                             : FontWeight.w600,
@@ -146,7 +167,7 @@ class _InboxScreenState extends State<InboxScreen> {
                                     Text(
                                       thread.timestamp,
                                       style: AppTypography.bodySmall.copyWith(
-                                        color: AppColors.mutedText,
+                                        color: mutedTextColor,
                                         fontSize: 11,
                                       ),
                                     ),
@@ -159,8 +180,10 @@ class _InboxScreenState extends State<InboxScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: AppTypography.bodySmall.copyWith(
                                     color: thread.isUnread
-                                        ? AppColors.deepPlum
-                                        : AppColors.mutedText,
+                                        ? (isDark
+                                            ? AppColors.darkTextPrimary
+                                            : AppColors.deepPlum)
+                                        : mutedTextColor,
                                     fontWeight: thread.isUnread
                                         ? FontWeight.w600
                                         : FontWeight.w400,

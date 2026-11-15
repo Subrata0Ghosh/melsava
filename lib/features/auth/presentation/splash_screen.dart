@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
-import '../../../shared/widgets/melsava_logo.dart';
+import '../../../shared/widgets/animated_melsava_brand_logo.dart';
 import 'auth_providers.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
@@ -14,60 +13,85 @@ class SplashScreen extends ConsumerStatefulWidget {
   ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends ConsumerState<SplashScreen>
-    with SingleTickerProviderStateMixin {
-  late AnimationController _controller;
-  late Animation<double> _fadeAnimation;
+class _SplashScreenState extends ConsumerState<SplashScreen> {
   Timer? _navigationTimer;
+  bool _sessionChecked = false;
+  bool _animationCompleted = false;
+  bool _hasUser = false;
 
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: AppConstants.animSlow,
-    );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
+    _checkAuthSession();
 
-    _controller.forward();
-
-    // Check auth session before routing
-    _navigationTimer = Timer(const Duration(milliseconds: 1800), () async {
-      if (!mounted) return;
-
-      final authRepo = ref.read(authRepositoryProvider);
-      await authRepo.restoreSession();
-      final user = authRepo.currentUser;
-
-      if (!mounted) return;
-
-      if (user != null) {
-        ref.read(currentUserProvider.notifier).state = user;
-        context.go('/discover');
-      } else {
-        context.go('/welcome');
-      }
+    // 2.6s brand logo sequence
+    _navigationTimer = Timer(const Duration(milliseconds: 2600), () {
+      _animationCompleted = true;
+      _attemptNavigation();
     });
+  }
+
+  Future<void> _checkAuthSession() async {
+    final authRepo = ref.read(authRepositoryProvider);
+    await authRepo.restoreSession();
+    final user = authRepo.currentUser;
+    _hasUser = user != null;
+    if (_hasUser) {
+      ref.read(currentUserProvider.notifier).state = user;
+    }
+    _sessionChecked = true;
+    _attemptNavigation();
+  }
+
+  void _attemptNavigation() {
+    if (!mounted || !_sessionChecked || !_animationCompleted) return;
+
+    if (_hasUser) {
+      context.go('/discover');
+    } else {
+      context.go('/onboarding');
+    }
   }
 
   @override
   void dispose() {
     _navigationTimer?.cancel();
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
-      body: Center(
-        child: FadeTransition(
-          opacity: _fadeAnimation,
-          child: const MelsavaLogo(
-            size: 96,
-            showWordmark: true,
-            showTagline: true,
+      body: Container(
+        width: double.infinity,
+        height: double.infinity,
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: isDark
+                ? [
+                    const Color(0xFF161224),
+                    AppColors.obsidian,
+                  ]
+                : [
+                    const Color(0xFFFAF6F2),
+                    AppColors.warmIvory,
+                  ],
+          ),
+        ),
+        child: Center(
+          child: AnimatedMelsavaBrandLogo(
+            size: 110,
+            isDark: isDark,
+            onAnimationComplete: () {
+              if (mounted) {
+                setState(() => _animationCompleted = true);
+                _attemptNavigation();
+              }
+            },
           ),
         ),
       ),
