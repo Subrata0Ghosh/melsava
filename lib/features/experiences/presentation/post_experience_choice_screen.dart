@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
@@ -21,6 +22,11 @@ class AttendeeChoice {
   });
 }
 
+/// Post-Experience Reconnect Screen (Screen 4 companion flow)
+///
+/// Enables participants to privately select who they enjoyed meeting
+/// and in what context (Friendship, Activity Partner, Dating).
+/// Fully adaptive with Light and Dark themes.
 class PostExperienceChoiceScreen extends StatefulWidget {
   final ExperienceModel experience;
 
@@ -66,8 +72,9 @@ class _PostExperienceChoiceScreenState
   }
 
   void _handleSubmit() async {
+    HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
-    await Future.delayed(const Duration(milliseconds: 800));
+    await Future.delayed(const Duration(milliseconds: 700));
 
     if (!mounted) return;
     setState(() => _isSubmitting = false);
@@ -96,31 +103,26 @@ class _PostExperienceChoiceScreenState
         experienceTitle: widget.experience.title,
       );
     } else {
+      final isDark = Theme.of(context).brightness == Brightness.dark;
       showDialog(
         context: context,
         barrierDismissible: false,
         builder: (context) => AlertDialog(
-          backgroundColor: Theme.of(context).brightness == Brightness.dark
-              ? AppColors.darkSurface
-              : AppColors.white,
+          backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
           ),
           title: Text(
             'Choices Recorded Privately',
             style: AppTypography.headlineSmall.copyWith(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.darkTextPrimary
-                  : AppColors.deepPlum,
-              fontWeight: FontWeight.w700,
+              color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
+              fontWeight: FontWeight.w800,
             ),
           ),
           content: Text(
-            'Your preferences have been securely saved. If any compatible mutual matches occur, a connection will appear in your Connections tab. No one is ever informed of an unreturned choice.',
+            'Your selections are kept 100% confidential. When there is a mutual match, a new connection and conversation thread will automatically appear in your Connections tab.',
             style: AppTypography.bodyMedium.copyWith(
-              color: Theme.of(context).brightness == Brightness.dark
-                  ? AppColors.darkMutedText
-                  : AppColors.mutedText,
+              color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
               height: 1.5,
             ),
           ),
@@ -128,6 +130,7 @@ class _PostExperienceChoiceScreenState
             PrimaryButton(
               label: 'View Connections',
               height: 44,
+              backgroundColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
               onPressed: () {
                 Navigator.of(context).pop();
                 context.go('/connections');
@@ -141,10 +144,23 @@ class _PostExperienceChoiceScreenState
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
-        title: const Text('Post-Experience Reconnect'),
+        title: Text(
+          'Post-Experience Reconnect',
+          style: AppTypography.titleLarge.copyWith(
+            fontWeight: FontWeight.w800,
+            fontSize: 18,
+            color: primaryTextColor,
+          ),
+        ),
         backgroundColor: Colors.transparent,
       ),
       body: SafeArea(
@@ -152,43 +168,46 @@ class _PostExperienceChoiceScreenState
           children: [
             Expanded(
               child: SingleChildScrollView(
+                physics: const BouncingScrollPhysics(),
                 padding: const EdgeInsets.all(AppConstants.spacingLG),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Text(
-                      'Who would you like to meet again?',
+                      'Who would you love to see again?',
                       style: AppTypography.headlineMedium.copyWith(
-                        color: AppColors.deepPlum,
+                        color: primaryTextColor,
                         fontWeight: FontWeight.w800,
+                        fontSize: 22,
+                        height: 1.25,
                       ),
                     ),
-                    const SizedBox(height: AppConstants.spacingSM),
+                    const SizedBox(height: 6),
                     Text(
-                      'From "${widget.experience.title}". All selections are 100% private. A connection and private conversation are created ONLY when choices are mutual.',
+                      'From "${widget.experience.title}". All selections are 100% confidential. Mutual matches unlock contact without social pressure.',
                       style: AppTypography.bodyMedium.copyWith(
-                        color: AppColors.mutedText,
+                        color: mutedTextColor,
+                        fontSize: 13,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: AppConstants.spacingXL),
+                    const SizedBox(height: 20),
 
                     ..._attendees.map((attendee) {
                       return Container(
-                        margin: const EdgeInsets.only(
-                          bottom: AppConstants.spacingLG,
-                        ),
-                        padding: const EdgeInsets.all(AppConstants.spacingMD),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
-                          color: AppColors.white,
-                          borderRadius: BorderRadius.circular(
-                            AppConstants.cardRadiusSmall,
-                          ),
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: borderColor, width: 0.9),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.deepPlum.withOpacity(0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
+                              color: isDark
+                                  ? Colors.black26
+                                  : AppColors.deepPlum.withValues(alpha: 0.04),
+                              blurRadius: 14,
+                              offset: const Offset(0, 4),
                             ),
                           ],
                         ),
@@ -203,24 +222,25 @@ class _PostExperienceChoiceScreenState
                                     attendee.avatarUrl,
                                   ),
                                 ),
-                                const SizedBox(width: AppConstants.spacingMD),
+                                const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         attendee.name,
-                                        style: AppTypography.titleMedium
-                                            .copyWith(
-                                              fontWeight: FontWeight.w700,
-                                            ),
+                                        style: AppTypography.titleMedium.copyWith(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                          color: primaryTextColor,
+                                        ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
                                         attendee.bio,
                                         style: AppTypography.bodySmall.copyWith(
-                                          color: AppColors.mutedText,
+                                          color: mutedTextColor,
+                                          fontSize: 12,
                                         ),
                                       ),
                                     ],
@@ -228,46 +248,51 @@ class _PostExperienceChoiceScreenState
                                 ),
                               ],
                             ),
-                            const SizedBox(height: AppConstants.spacingMD),
-                            const Divider(height: 1),
-                            const SizedBox(height: AppConstants.spacingSM),
+                            const SizedBox(height: 14),
+                            Divider(height: 1, color: borderColor),
+                            const SizedBox(height: 12),
 
                             Text(
-                              'How would you like to reconnect?',
+                              'How would you like to stay in touch?',
                               style: AppTypography.labelSmall.copyWith(
-                                color: AppColors.deepPlum,
-                                fontWeight: FontWeight.w600,
+                                color: isDark ? AppColors.softCoral : AppColors.mauve,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
                               ),
                             ),
-                            const SizedBox(height: AppConstants.spacingSM),
+                            const SizedBox(height: 10),
 
                             Wrap(
-                              spacing: AppConstants.spacingSM,
-                              runSpacing: AppConstants.spacingSM,
+                              spacing: 8,
+                              runSpacing: 8,
                               children: [
                                 _buildChoiceChip(
                                   attendee,
                                   'friendship',
                                   'Friendship',
-                                  Icons.people_outline,
+                                  Icons.people_outline_rounded,
+                                  isDark,
                                 ),
                                 _buildChoiceChip(
                                   attendee,
                                   'activity_partner',
                                   'Activity Partner',
-                                  Icons.sports_tennis_outlined,
+                                  Icons.sports_tennis_rounded,
+                                  isDark,
                                 ),
                                 _buildChoiceChip(
                                   attendee,
                                   'dating',
                                   'Explore Dating',
-                                  Icons.favorite_border,
+                                  Icons.favorite_rounded,
+                                  isDark,
                                 ),
                                 _buildChoiceChip(
                                   attendee,
                                   'none',
                                   'No Connection',
-                                  Icons.close,
+                                  Icons.close_rounded,
+                                  isDark,
                                 ),
                               ],
                             ),
@@ -281,14 +306,15 @@ class _PostExperienceChoiceScreenState
             ),
 
             Container(
-              padding: const EdgeInsets.all(AppConstants.spacingLG),
-              decoration: const BoxDecoration(
-                color: AppColors.white,
-                border: Border(top: BorderSide(color: AppColors.divider)),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+              decoration: BoxDecoration(
+                color: isDark ? AppColors.darkSurface : AppColors.white,
+                border: Border(top: BorderSide(color: borderColor, width: 0.9)),
               ),
               child: PrimaryButton(
                 label: 'Save My Private Choices',
                 isLoading: _isSubmitting,
+                backgroundColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
                 onPressed: _handleSubmit,
               ),
             ),
@@ -303,20 +329,38 @@ class _PostExperienceChoiceScreenState
     String value,
     String label,
     IconData icon,
+    bool isDark,
   ) {
     final isSelected = attendee.selectedOption == value;
+    final activeBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
+    final inactiveBg = isDark ? AppColors.darkElevated : AppColors.creamElevated;
+
     return GestureDetector(
       onTap: () {
+        HapticFeedback.selectionClick();
         setState(() => attendee.selectedOption = value);
       },
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 180),
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
         decoration: BoxDecoration(
-          color: isSelected ? AppColors.deepPlum : AppColors.warmIvory,
-          borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
+          color: isSelected ? activeBg : inactiveBg,
+          borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isSelected ? AppColors.deepPlum : AppColors.divider,
+            color: isSelected
+                ? activeBg
+                : (isDark ? AppColors.darkBorder : AppColors.divider),
+            width: isSelected ? 1.4 : 0.8,
           ),
+          boxShadow: isSelected
+              ? [
+                  BoxShadow(
+                    color: activeBg.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ]
+              : null,
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
@@ -324,14 +368,19 @@ class _PostExperienceChoiceScreenState
             Icon(
               icon,
               size: 14,
-              color: isSelected ? AppColors.white : AppColors.mauve,
+              color: isSelected
+                  ? Colors.white
+                  : (isDark ? AppColors.luminousMauve : AppColors.mauve),
             ),
-            const SizedBox(width: 4),
+            const SizedBox(width: 5),
             Text(
               label,
               style: AppTypography.labelSmall.copyWith(
-                color: isSelected ? AppColors.white : AppColors.deepPlum,
+                color: isSelected
+                    ? Colors.white
+                    : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
                 fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                fontSize: 11.5,
               ),
             ),
           ],

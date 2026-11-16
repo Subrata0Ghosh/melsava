@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/report_dialog.dart';
@@ -58,6 +58,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
     final text = _messageController.text.trim();
     if (text.isEmpty) return;
 
+    HapticFeedback.lightImpact();
     setState(() {
       _messages.add(ChatMessage(text: text, isMe: true, time: 'Just now'));
       _messageController.clear();
@@ -66,31 +67,64 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
+    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
+      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
       appBar: AppBar(
-        backgroundColor: AppColors.white,
+        backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
+        elevation: 0.5,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              widget.participantName,
-              style: AppTypography.titleMedium.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
+            Row(
+              children: [
+                Text(
+                  widget.participantName,
+                  style: AppTypography.titleMedium.copyWith(
+                    fontWeight: FontWeight.w800,
+                    color: primaryTextColor,
+                  ),
+                ),
+                const SizedBox(width: 4),
+                Icon(
+                  Icons.verified_rounded,
+                  size: 15,
+                  color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                ),
+              ],
             ),
-            Text(
-              'Mutual Connection • Online',
-              style: AppTypography.bodySmall.copyWith(
-                color: AppColors.mauve,
-                fontSize: 11,
-              ),
+            Row(
+              children: [
+                Container(
+                  width: 7,
+                  height: 7,
+                  decoration: const BoxDecoration(
+                    color: AppColors.mintAccent,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 5),
+                Text(
+                  'Mutual Connection • Online',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
           ],
         ),
         actions: [
           PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert, color: AppColors.deepPlum),
+            icon: Icon(Icons.more_vert, color: primaryTextColor),
+            color: isDark ? AppColors.darkElevated : AppColors.white,
             onSelected: (value) {
               if (value == 'report') {
                 ReportDialog.show(
@@ -125,17 +159,17 @@ class _ConversationScreenState extends State<ConversationScreen> {
               }
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: 'report',
                 child: Row(
                   children: [
                     Icon(
                       Icons.flag_outlined,
                       size: 18,
-                      color: AppColors.deepPlum,
+                      color: primaryTextColor,
                     ),
-                    SizedBox(width: 8),
-                    Text('Report Conversation'),
+                    const SizedBox(width: 8),
+                    Text('Report Conversation', style: TextStyle(color: primaryTextColor)),
                   ],
                 ),
               ),
@@ -164,25 +198,26 @@ class _ConversationScreenState extends State<ConversationScreen> {
         children: [
           // Safety context banner
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.spacingLG,
-              vertical: 8,
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+            decoration: BoxDecoration(
+              color: (isDark ? AppColors.darkElevated : AppColors.sage)
+                  .withValues(alpha: 0.4),
+              border: Border(bottom: BorderSide(color: borderColor, width: 0.8)),
             ),
-            color: AppColors.sage.withOpacity(0.4),
             child: Row(
               children: [
-                const Icon(
+                Icon(
                   Icons.verified_user_outlined,
                   size: 16,
-                  color: AppColors.mauve,
+                  color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                 ),
-                const SizedBox(width: AppConstants.spacingSM),
+                const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'You both mutually reconnected after your experience. Keep chats respectful.',
+                    'You both mutually reconnected after your meetup. Keep chats respectful and genuine.',
                     style: AppTypography.bodySmall.copyWith(
-                      fontSize: 11,
-                      color: AppColors.deepPlum,
+                      fontSize: 11.5,
+                      color: primaryTextColor,
                     ),
                   ),
                 ),
@@ -193,34 +228,48 @@ class _ConversationScreenState extends State<ConversationScreen> {
           // Messages list
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(AppConstants.spacingMD),
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
+                final bubbleBg = msg.isMe
+                    ? (isDark ? AppColors.luminousMauve : AppColors.deepPlum)
+                    : (isDark ? AppColors.darkSurface : AppColors.white);
+                final msgTextColor = msg.isMe
+                    ? Colors.white
+                    : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum);
+
                 return Align(
                   alignment: msg.isMe
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
                   child: Container(
-                    margin: const EdgeInsets.only(
-                      bottom: AppConstants.spacingSM,
-                    ),
+                    margin: const EdgeInsets.only(bottom: 10),
                     constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.75,
+                      maxWidth: MediaQuery.of(context).size.width * 0.76,
                     ),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: AppConstants.spacingMD,
-                      vertical: AppConstants.spacingSM + 2,
+                      horizontal: 16,
+                      vertical: 11,
                     ),
                     decoration: BoxDecoration(
-                      color: msg.isMe ? AppColors.deepPlum : AppColors.white,
-                      borderRadius: BorderRadius.circular(
-                        AppConstants.buttonRadiusSmall,
+                      color: bubbleBg,
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(18),
+                        topRight: const Radius.circular(18),
+                        bottomLeft: Radius.circular(msg.isMe ? 18 : 4),
+                        bottomRight: Radius.circular(msg.isMe ? 4 : 18),
                       ),
+                      border: msg.isMe
+                          ? null
+                          : Border.all(color: borderColor, width: 0.8),
                       boxShadow: [
                         BoxShadow(
-                          color: AppColors.deepPlum.withOpacity(0.04),
-                          blurRadius: 4,
+                          color: isDark
+                              ? Colors.black26
+                              : AppColors.deepPlum.withValues(alpha: 0.04),
+                          blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
                       ],
@@ -233,19 +282,19 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         Text(
                           msg.text,
                           style: AppTypography.bodyMedium.copyWith(
-                            color: msg.isMe
-                                ? AppColors.white
-                                : AppColors.deepPlum,
+                            color: msgTextColor,
+                            fontSize: 14,
+                            height: 1.4,
                           ),
                         ),
-                        const SizedBox(height: 2),
+                        const SizedBox(height: 3),
                         Text(
                           msg.time,
                           style: AppTypography.bodySmall.copyWith(
                             fontSize: 10,
                             color: msg.isMe
-                                ? AppColors.white.withOpacity(0.7)
-                                : AppColors.mutedText,
+                                ? Colors.white.withValues(alpha: 0.7)
+                                : mutedTextColor,
                           ),
                         ),
                       ],
@@ -258,13 +307,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
 
           // Message input bar
           Container(
-            padding: const EdgeInsets.symmetric(
-              horizontal: AppConstants.spacingMD,
-              vertical: AppConstants.spacingSM,
-            ),
-            decoration: const BoxDecoration(
-              color: AppColors.white,
-              border: Border(top: BorderSide(color: AppColors.divider)),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: cardBg,
+              border: Border(top: BorderSide(color: borderColor, width: 0.9)),
             ),
             child: SafeArea(
               child: Row(
@@ -272,17 +318,21 @@ class _ConversationScreenState extends State<ConversationScreen> {
                   Expanded(
                     child: TextField(
                       controller: _messageController,
-                      style: AppTypography.bodyMedium,
+                      style: AppTypography.bodyMedium.copyWith(
+                        color: primaryTextColor,
+                        fontSize: 14,
+                      ),
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         hintStyle: AppTypography.bodyMedium.copyWith(
-                          color: AppColors.mutedText,
+                          color: mutedTextColor,
+                          fontSize: 14,
                         ),
                         filled: true,
-                        fillColor: AppColors.warmIvory,
+                        fillColor: isDark ? AppColors.darkElevated : AppColors.warmIvory,
                         contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
+                          horizontal: 18,
+                          vertical: 11,
                         ),
                         border: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(24),
@@ -292,17 +342,33 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       onSubmitted: (_) => _sendMessage(),
                     ),
                   ),
-                  const SizedBox(width: AppConstants.spacingSM),
-                  CircleAvatar(
-                    backgroundColor: AppColors.mauve,
-                    radius: 22,
-                    child: IconButton(
-                      icon: const Icon(
+                  const SizedBox(width: 10),
+                  GestureDetector(
+                    onTap: _sendMessage,
+                    child: Container(
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: isDark
+                              ? [AppColors.luminousMauve, AppColors.mauve]
+                              : [AppColors.deepPlum, AppColors.mauve],
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                                .withValues(alpha: 0.35),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: const Icon(
                         Icons.send_rounded,
-                        color: AppColors.white,
+                        color: Colors.white,
                         size: 20,
                       ),
-                      onPressed: _sendMessage,
                     ),
                   ),
                 ],

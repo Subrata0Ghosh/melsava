@@ -1,296 +1,443 @@
+import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
-import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_typography.dart';
 import '../models/experience_model.dart';
 
-class ExperienceCard extends StatelessWidget {
+/// Premium experience card with immersive image, glassmorphic overlays,
+/// and smooth micro-interactions. Inspired by Event Discovery (Dribbble)
+/// and Social Meetup patterns — NOT a swipe card.
+class ExperienceCard extends StatefulWidget {
   final ExperienceModel experience;
   final VoidCallback onTap;
   final VoidCallback? onJoinTap;
+  final bool isCompact;
 
   const ExperienceCard({
     super.key,
     required this.experience,
     required this.onTap,
     this.onJoinTap,
+    this.isCompact = false,
   });
+
+  @override
+  State<ExperienceCard> createState() => _ExperienceCardState();
+}
+
+class _ExperienceCardState extends State<ExperienceCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _pressController;
+  late Animation<double> _scaleAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _pressController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 120),
+      reverseDuration: const Duration(milliseconds: 200),
+    );
+    _scaleAnim = Tween<double>(begin: 1.0, end: 0.975).animate(
+      CurvedAnimation(parent: _pressController, curve: Curves.easeOutCubic),
+    );
+  }
+
+  @override
+  void dispose() {
+    _pressController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final dateFormat = DateFormat('EEE, MMM d • h:mm a');
-    final isFull = experience.currentParticipants >= experience.maxParticipants;
-    final spotsLeft =
-        experience.maxParticipants - experience.currentParticipants;
-
-    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final exp = widget.experience;
+    final dateFormat = DateFormat('EEE, MMM d · h:mm a');
+    final isFull = exp.currentParticipants >= exp.maxParticipants;
+    final spotsLeft = exp.maxParticipants - exp.currentParticipants;
 
     return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: AppConstants.spacingLG),
-        decoration: BoxDecoration(
-          color: cardBg,
-          borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
-          border: Border.all(color: borderColor, width: 0.8),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.25)
-                  : AppColors.deepPlum.withValues(alpha: 0.05),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
-            ),
-          ],
+      onTapDown: (_) => _pressController.forward(),
+      onTapUp: (_) {
+        _pressController.reverse();
+        widget.onTap();
+      },
+      onTapCancel: () => _pressController.reverse(),
+      child: AnimatedBuilder(
+        animation: _scaleAnim,
+        builder: (context, child) => Transform.scale(
+          scale: _scaleAnim.value,
+          child: child,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              // Hero cover image
-              Stack(
+        child: Container(
+          margin: const EdgeInsets.only(bottom: 20),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(24),
+            boxShadow: [
+              BoxShadow(
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.4)
+                    : AppColors.deepPlum.withValues(alpha: 0.08),
+                blurRadius: 28,
+                offset: const Offset(0, 10),
+                spreadRadius: -4,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(24),
+            child: Container(
+              color: isDark ? AppColors.darkSurface : AppColors.white,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AspectRatio(
-                    aspectRatio: 16 / 9,
-                    child: CachedNetworkImage(
-                      imageUrl: experience.coverImageUrl,
-                      fit: BoxFit.cover,
-                      placeholder: (context, url) => Container(
-                        color: isDark
-                            ? AppColors.darkElevated
-                            : AppColors.sage.withValues(alpha: 0.3),
-                        child: const Center(
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            color: AppColors.mauve,
-                          ),
-                        ),
-                      ),
-                      errorWidget: (context, url, error) => Container(
-                        color: isDark
-                            ? AppColors.darkElevated
-                            : AppColors.sage.withValues(alpha: 0.4),
-                        child: const Icon(
-                          Icons.image_outlined,
-                          size: 40,
-                          color: AppColors.mutedText,
-                        ),
-                      ),
-                    ),
-                  ),
+                  // ─── Hero Image with Gradient + Badges ───
+                  _buildHeroImage(isDark, exp, dateFormat, isFull, spotsLeft),
 
-                  // Category chip pill at top left
-                  Positioned(
-                    top: AppConstants.spacingMD,
-                    left: AppConstants.spacingMD,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingMD,
-                        vertical: AppConstants.spacingXS + 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF13101C) : AppColors.deepPlum)
-                            .withValues(alpha: 0.85),
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.buttonRadiusSmall,
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            experience.categoryIcon,
-                            style: const TextStyle(fontSize: 12),
+                  // ─── Content Body ───
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 16, 18, 18),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Title
+                        Text(
+                          exp.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.titleLarge.copyWith(
+                            color: isDark
+                                ? AppColors.darkTextPrimary
+                                : AppColors.deepPlum,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            height: 1.25,
                           ),
-                          const SizedBox(width: AppConstants.spacingXS),
-                          Text(
-                            experience.categoryName,
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.white,
-                              fontWeight: FontWeight.w600,
+                        ),
+                        const SizedBox(height: 12),
+
+                        // Venue + Location row
+                        _buildInfoRow(
+                          Icons.place_rounded,
+                          exp.venueName,
+                          isDark,
+                        ),
+                        const SizedBox(height: 6),
+                        _buildInfoRow(
+                          Icons.schedule_rounded,
+                          dateFormat.format(exp.startsAt),
+                          isDark,
+                        ),
+
+                        const SizedBox(height: 16),
+
+                        // Attendees + Join CTA row
+                        Row(
+                          children: [
+                            // Overlapping avatars
+                            _buildAvatarStack(exp, isDark),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                '${exp.currentParticipants}/${exp.maxParticipants} joined',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: isDark
+                                      ? AppColors.darkMutedText
+                                      : AppColors.mutedText,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  // Spots left badge at top right
-                  Positioned(
-                    top: AppConstants.spacingMD,
-                    right: AppConstants.spacingMD,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacingMD,
-                        vertical: AppConstants.spacingXS + 2,
-                      ),
-                      decoration: BoxDecoration(
-                        color: experience.hasJoined
-                            ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
-                            : (isFull
-                                ? AppColors.mutedText
-                                : (isDark ? AppColors.vividCoral : AppColors.softCoral)),
-                        borderRadius: BorderRadius.circular(
-                          AppConstants.buttonRadiusSmall,
+                            if (widget.onJoinTap != null)
+                              _buildJoinButton(exp, isDark),
+                          ],
                         ),
-                      ),
-                      child: Text(
-                        experience.hasJoined
-                            ? 'Joined ✓'
-                            : (isFull ? 'Full' : '$spotsLeft spots left'),
-                        style: AppTypography.labelSmall.copyWith(
-                          color: AppColors.white,
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
+                      ],
                     ),
                   ),
                 ],
               ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
-              // Content body
-              Padding(
-                padding: const EdgeInsets.all(AppConstants.spacingMD),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      experience.title,
-                      style: AppTypography.titleLarge.copyWith(
-                        color: primaryTextColor,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: AppConstants.spacingSM),
+  Widget _buildHeroImage(
+    bool isDark,
+    ExperienceModel exp,
+    DateFormat dateFormat,
+    bool isFull,
+    int spotsLeft,
+  ) {
+    return SizedBox(
+      height: widget.isCompact ? 150 : 190,
+      child: Stack(
+        fit: StackFit.expand,
+        children: [
+          // Image
+          CachedNetworkImage(
+            imageUrl: exp.coverImageUrl,
+            fit: BoxFit.cover,
+            placeholder: (context, url) => Container(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: isDark
+                      ? [AppColors.darkElevated, AppColors.darkSurface]
+                      : [AppColors.creamElevated, AppColors.warmIvory],
+                ),
+              ),
+              child: const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: AppColors.mauve,
+                ),
+              ),
+            ),
+            errorWidget: (context, url, error) => Container(
+              color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
+              child: Icon(
+                Icons.image_outlined,
+                size: 36,
+                color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+              ),
+            ),
+          ),
 
-                    // Date & Location metadata
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.calendar_today_outlined,
-                          size: 14,
-                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          dateFormat.format(experience.startsAt),
-                          style: AppTypography.bodySmall.copyWith(
-                            color: primaryTextColor,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppConstants.spacingXS),
-                    Row(
-                      children: [
-                        Icon(
-                          Icons.place_outlined,
-                          size: 14,
-                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                        ),
-                        const SizedBox(width: 6),
-                        Expanded(
-                          child: Text(
-                            experience.venueName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: mutedColor,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: AppConstants.spacingMD),
-
-                    // Attendees & Host row
-                    Row(
-                      children: [
-                        // Overlapping Attendee avatars
-                        SizedBox(
-                          height: 28,
-                          width: (experience.attendeeAvatars.length * 18.0) + 12,
-                          child: Stack(
-                            children: [
-                              for (
-                                int i = 0;
-                                i < experience.attendeeAvatars.length;
-                                i++
-                              )
-                                Positioned(
-                                  left: i * 18.0,
-                                  child: CircleAvatar(
-                                    radius: 14,
-                                    backgroundColor: cardBg,
-                                    child: CircleAvatar(
-                                      radius: 12,
-                                      backgroundImage: NetworkImage(
-                                        experience.attendeeAvatars[i],
-                                      ),
-                                    ),
-                                  ),
-                                ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: AppConstants.spacingSM),
-                        Text(
-                          '${experience.currentParticipants}/${experience.maxParticipants} attending',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: mutedColor,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        const Spacer(),
-
-                        // Action button
-                        if (onJoinTap != null)
-                          TextButton(
-                            onPressed: onJoinTap,
-                            style: TextButton.styleFrom(
-                              backgroundColor: experience.hasJoined
-                                  ? (isDark
-                                      ? AppColors.darkElevated
-                                      : AppColors.sage)
-                                  : (isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.deepPlum),
-                              foregroundColor: experience.hasJoined
-                                  ? (isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.deepPlum)
-                                  : AppColors.white,
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: AppConstants.spacingMD,
-                                vertical: AppConstants.spacingSM,
-                              ),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(
-                                  AppConstants.buttonRadiusSmall,
-                                ),
-                              ),
-                            ),
-                            child: Text(
-                              experience.hasJoined ? 'Leave' : 'Join',
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                      ],
-                    ),
+          // Bottom gradient fade
+          Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            height: 80,
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Colors.transparent,
+                    (isDark ? AppColors.darkSurface : AppColors.white)
+                        .withValues(alpha: 0.85),
                   ],
                 ),
               ),
-            ],
+            ),
+          ),
+
+          // Category chip — top left
+          Positioned(
+            top: 14,
+            left: 14,
+            child: ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                child: Container(
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: (isDark ? const Color(0xFF0E0C14) : Colors.white)
+                        .withValues(alpha: 0.7),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.15),
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(exp.categoryIcon,
+                          style: const TextStyle(fontSize: 13)),
+                      const SizedBox(width: 5),
+                      Text(
+                        exp.categoryName,
+                        style: AppTypography.labelSmall.copyWith(
+                          color: isDark
+                              ? AppColors.darkTextPrimary
+                              : AppColors.deepPlum,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 11,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Status badge — top right
+          Positioned(
+            top: 14,
+            right: 14,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+              decoration: BoxDecoration(
+                color: exp.hasJoined
+                    ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                    : (isFull
+                        ? AppColors.mutedText
+                        : (isDark
+                            ? AppColors.vividCoral
+                            : AppColors.softCoral)),
+                borderRadius: BorderRadius.circular(10),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.2),
+                    blurRadius: 8,
+                  ),
+                ],
+              ),
+              child: Text(
+                exp.hasJoined
+                    ? '✓ Joined'
+                    : (isFull ? 'Full' : '$spotsLeft spots left'),
+                style: AppTypography.labelSmall.copyWith(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                  fontSize: 11,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String text, bool isDark) {
+    return Row(
+      children: [
+        Container(
+          width: 28,
+          height: 28,
+          decoration: BoxDecoration(
+            color: isDark
+                ? AppColors.luminousMauve.withValues(alpha: 0.12)
+                : AppColors.mauve.withValues(alpha: 0.08),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Icon(
+            icon,
+            size: 15,
+            color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+          ),
+        ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            text,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodySmall.copyWith(
+              color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+              fontWeight: FontWeight.w500,
+              fontSize: 13,
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildAvatarStack(ExperienceModel exp, bool isDark) {
+    final avatars = exp.attendeeAvatars;
+    final count = avatars.length.clamp(0, 3);
+
+    return SizedBox(
+      height: 30,
+      width: (count * 20.0) + 10,
+      child: Stack(
+        children: List.generate(count, (i) {
+          return Positioned(
+            left: i * 20.0,
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? AppColors.darkSurface : AppColors.white,
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 4,
+                  ),
+                ],
+              ),
+              child: ClipOval(
+                child: CachedNetworkImage(
+                  imageUrl: avatars[i],
+                  fit: BoxFit.cover,
+                  placeholder: (context, url) => Container(
+                    color: isDark ? AppColors.darkElevated : AppColors.sage,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildJoinButton(ExperienceModel exp, bool isDark) {
+    final isJoined = exp.hasJoined;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: widget.onJoinTap,
+        child: AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          decoration: BoxDecoration(
+            gradient: isJoined
+                ? null
+                : LinearGradient(
+                    colors: isDark
+                        ? [AppColors.luminousMauve, AppColors.mauve]
+                        : [AppColors.deepPlum, AppColors.mauve],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+            color: isJoined
+                ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
+                : null,
+            borderRadius: BorderRadius.circular(14),
+            border: isJoined
+                ? Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.divider,
+                  )
+                : null,
+            boxShadow: isJoined
+                ? null
+                : [
+                    BoxShadow(
+                      color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                          .withValues(alpha: 0.3),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+          ),
+          child: Text(
+            isJoined ? 'Leave' : 'Join',
+            style: AppTypography.labelSmall.copyWith(
+              color: isJoined
+                  ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                  : Colors.white,
+              fontWeight: FontWeight.w700,
+              fontSize: 13,
+            ),
           ),
         ),
       ),

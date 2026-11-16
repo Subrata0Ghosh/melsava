@@ -10,6 +10,7 @@ import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/experiences_repository.dart';
 import 'experience_detail_sheet.dart';
+import 'experience_hub_sheet.dart';
 import 'post_experience_choice_screen.dart';
 
 class ExperiencesScreen extends ConsumerStatefulWidget {
@@ -233,6 +234,88 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                             },
                           ),
                         ),
+                        if (!exp.isCompleted && exp.hasJoined) ...[
+                          Container(
+                            margin: const EdgeInsets.only(
+                              bottom: AppConstants.spacingLG,
+                            ),
+                            padding: const EdgeInsets.all(
+                              AppConstants.spacingMD,
+                            ),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkSurface : AppColors.white,
+                              borderRadius: BorderRadius.circular(
+                                AppConstants.cardRadiusSmall,
+                              ),
+                              border: Border.all(
+                                color: isDark ? AppColors.darkBorder : AppColors.divider,
+                              ),
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  width: 38,
+                                  height: 38,
+                                  decoration: BoxDecoration(
+                                    color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                                        .withValues(alpha: 0.15),
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: Icon(
+                                    Icons.hub_rounded,
+                                    size: 18,
+                                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                  ),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        'Experience Hub',
+                                        style: AppTypography.titleSmall.copyWith(
+                                          color: primaryTextColor,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      Text(
+                                        'View participants, venue & icebreakers',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: mutedTextColor,
+                                          fontSize: 11.5,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                OutlinedButton(
+                                  style: OutlinedButton.styleFrom(
+                                    side: BorderSide(
+                                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                    ),
+                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () => ExperienceHubSheet.show(
+                                    context,
+                                    experience: exp,
+                                  ),
+                                  child: Text(
+                                    'Open Hub',
+                                    style: TextStyle(
+                                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                         if (exp.isCompleted) ...[
                           Container(
                             margin: const EdgeInsets.only(
