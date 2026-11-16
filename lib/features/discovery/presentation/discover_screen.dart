@@ -1,18 +1,16 @@
-import 'dart:ui';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../app/theme_provider.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/activity_radar_map_card.dart';
 import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
-import '../../../shared/widgets/melsava_logo.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
@@ -20,13 +18,13 @@ import '../../experiences/presentation/join_experience_sheet.dart';
 
 /// Screen 1: Discover Screen
 ///
-/// High-fidelity event discovery layout inspired by Dribbble Event Discovery
-/// (shots/27040094), featuring:
-/// - Editorial header with worldwide location picker & theme toggle
-/// - Interactive search & vibe filter
-/// - Featured Hero experience carousel with rich glassmorphism
-/// - Segmented mode selector (Curated For You, Live Radar, All Vibes)
-/// - Vetted micro-group experience listings with micro-interactions
+/// High-fidelity experience discovery matching the approved MELSAVA design system:
+/// - Friendly user greeting & unread notification counter
+/// - Worldwide location pill & live search
+/// - Featured Experience Hero Carousel with slide indicator (1/3) & Join Now CTA
+/// - Explore by Intent pastel cards (Friendship, Activity Partner, Dating, Serious Relationship)
+/// - Popular Experiences with Trending badges & direct Join actions
+/// - Interactive Live Area Radar mode
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
 
@@ -35,24 +33,54 @@ class DiscoverScreen extends ConsumerStatefulWidget {
 }
 
 class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
-  int _selectedSegment = 0; // 0: Curated, 1: Live Radar, 2: All Vibes
-  String _selectedCategory = 'All';
+  final PageController _pageController = PageController();
   final TextEditingController _searchController = TextEditingController();
-  String _searchQuery = '';
 
-  final List<Map<String, dynamic>> _categories = [
-    {'name': 'All', 'icon': Icons.auto_awesome_rounded},
-    {'name': 'Coffee & Conversation', 'icon': Icons.coffee_rounded},
-    {'name': 'Board Games', 'icon': Icons.casino_rounded},
-    {'name': 'Photography', 'icon': Icons.camera_alt_rounded},
-    {'name': 'Nature Walks', 'icon': Icons.park_rounded},
-    {'name': 'Sports & Fitness', 'icon': Icons.fitness_center_rounded},
-    {'name': 'Reading & Books', 'icon': Icons.menu_book_rounded},
-    {'name': 'Creative Workshops', 'icon': Icons.palette_rounded},
+  String _searchQuery = '';
+  String? _selectedIntent; // 'Friendship', 'Activity Partner', 'Dating', 'Serious Relationship'
+  String _selectedCategory = 'All';
+  int _viewMode = 0; // 0: Curated Feed, 1: Live Radar
+
+  final List<Map<String, dynamic>> _intents = [
+    {
+      'name': 'Friendship',
+      'icon': Icons.people_alt_rounded,
+      'bg': AppColors.intentFriendshipBg,
+      'color': AppColors.intentFriendshipText,
+    },
+    {
+      'name': 'Activity Partner',
+      'icon': Icons.extension_rounded,
+      'bg': AppColors.intentActivityBg,
+      'color': AppColors.intentActivityText,
+    },
+    {
+      'name': 'Dating',
+      'icon': Icons.bolt_rounded,
+      'bg': AppColors.intentDatingBg,
+      'color': AppColors.intentDatingText,
+    },
+    {
+      'name': 'Serious Relationship',
+      'icon': Icons.workspace_premium_rounded,
+      'bg': AppColors.intentRelationshipBg,
+      'color': AppColors.intentRelationshipText,
+    },
+  ];
+
+  final List<String> _categories = [
+    'All',
+    'Outdoors',
+    'Social',
+    'Food & Drink',
+    'Sports',
+    'Wellness',
+    'Arts & Culture',
   ];
 
   @override
   void dispose() {
+    _pageController.dispose();
     _searchController.dispose();
     super.dispose();
   }
@@ -75,20 +103,30 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final userLoc = ref.watch(userLocationProvider);
     final allExperiences = ref.watch(experiencesListProvider);
 
-    // Filter by query and category
+    // Filter experiences
     final filteredExperiences = allExperiences.where((e) {
-      final matchesCategory = _selectedCategory == 'All' ||
-          e.categoryName.toLowerCase().contains(_selectedCategory.toLowerCase());
       final matchesQuery = _searchQuery.isEmpty ||
           e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.venueName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          e.categoryName.toLowerCase().contains(_searchQuery.toLowerCase());
-      return matchesCategory && matchesQuery;
+          e.city.toLowerCase().contains(_searchQuery.toLowerCase());
+
+      final matchesCategory = _selectedCategory == 'All' ||
+          e.categoryName.toLowerCase().contains(_selectedCategory.toLowerCase());
+
+      final matchesIntent = _selectedIntent == null ||
+          (_selectedIntent == 'Friendship' && (e.categoryName == 'Social' || e.categoryName == 'Outdoors')) ||
+          (_selectedIntent == 'Activity Partner' && (e.categoryName == 'Sports' || e.categoryName == 'Outdoors' || e.categoryName == 'Arts & Culture')) ||
+          (_selectedIntent == 'Dating' && (e.categoryName == 'Social' || e.categoryName == 'Food & Drink')) ||
+          (_selectedIntent == 'Serious Relationship' && (e.categoryName == 'Social' || e.categoryName == 'Wellness'));
+
+      return matchesQuery && matchesCategory && matchesIntent;
     }).toList();
 
-    final featuredExperience = allExperiences.first;
+    final heroExperiences = allExperiences.take(3).toList();
     final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
     final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+
+    final displayName = user?.displayName?.split(' ').first ?? 'Sneha';
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
@@ -97,117 +135,142 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         child: CustomScrollView(
           physics: const BouncingScrollPhysics(),
           slivers: [
-            // ── Top Bar: Brand, Worldwide Location Pill & Quick Theme Toggle ──
+            // ── Top Header: User Greeting, Notifications & Location ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 10),
+                padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
                   children: [
-                    const MelsavaLogo(size: 34),
-                    const SizedBox(width: 10),
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          AppConstants.appName,
-                          style: AppTypography.titleLarge.copyWith(
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2.5,
-                            fontSize: 18,
-                            color: primaryTextColor,
+                    // Greeting text
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Text(
+                                'Hello, $displayName',
+                                style: AppTypography.titleLarge.copyWith(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 20,
+                                  color: primaryTextColor,
+                                ),
+                              ),
+                              const SizedBox(width: 6),
+                              const Text('👋', style: TextStyle(fontSize: 18)),
+                            ],
                           ),
-                        ),
-                        Text(
-                          'MEET THROUGH MOMENTS',
-                          style: AppTypography.labelSmall.copyWith(
-                            letterSpacing: 1.4,
-                            fontSize: 8.5,
-                            fontWeight: FontWeight.w700,
-                            color: isDark ? AppColors.softCoral : AppColors.mauve,
+                          const SizedBox(height: 2),
+                          Text(
+                            'Let\'s explore experiences!',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: mutedTextColor,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                    const Spacer(),
 
                     // Worldwide Location Pill
                     GestureDetector(
                       onTap: () => LocationVenuePickerSheet.show(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 11,
-                          vertical: 7,
-                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkElevated : AppColors.white,
-                          borderRadius: BorderRadius.circular(22),
+                          borderRadius: BorderRadius.circular(20),
                           border: Border.all(
                             color: isDark ? AppColors.darkBorder : AppColors.divider,
-                            width: 0.9,
+                            width: 0.8,
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: isDark
-                                  ? Colors.black26
-                                  : AppColors.deepPlum.withValues(alpha: 0.04),
-                              blurRadius: 10,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
                               Icons.location_on_rounded,
-                              size: 15,
+                              size: 14,
                               color: isDark ? AppColors.luminousMauve : AppColors.mauve,
                             ),
                             const SizedBox(width: 4),
-                            ConstrainedBox(
-                              constraints: const BoxConstraints(maxWidth: 96),
-                              child: Text(
-                                userLoc.city,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: primaryTextColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 12,
-                                ),
+                            Text(
+                              userLoc.city,
+                              style: AppTypography.labelSmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11.5,
+                                color: primaryTextColor,
                               ),
-                            ),
-                            const SizedBox(width: 2),
-                            Icon(
-                              Icons.keyboard_arrow_down_rounded,
-                              size: 16,
-                              color: mutedTextColor,
                             ),
                           ],
                         ),
                       ),
                     ),
-
                     const SizedBox(width: 8),
 
-                    // Theme Toggle Button
+                    // Notification Bell with Unread Dot (routes to Inbox)
                     GestureDetector(
-                      onTap: () => ref.read(themeModeProvider.notifier).toggleTheme(isDark),
+                      onTap: () => context.push('/inbox'),
+                      child: Stack(
+                        clipBehavior: Clip.none,
+                        children: [
+                          Container(
+                            width: 38,
+                            height: 38,
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkElevated : AppColors.white,
+                              shape: BoxShape.circle,
+                              border: Border.all(
+                                color: isDark ? AppColors.darkBorder : AppColors.divider,
+                                width: 0.8,
+                              ),
+                            ),
+                            child: Icon(
+                              Icons.notifications_none_rounded,
+                              size: 20,
+                              color: primaryTextColor,
+                            ),
+                          ),
+                          Positioned(
+                            top: 2,
+                            right: 2,
+                            child: Container(
+                              width: 9,
+                              height: 9,
+                              decoration: const BoxDecoration(
+                                color: AppColors.error,
+                                shape: BoxShape.circle,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+
+                    // User Avatar with Online Dot
+                    GestureDetector(
+                      onTap: () => context.go('/profile'),
                       child: Container(
                         width: 38,
                         height: 38,
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : AppColors.white,
                           shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.divider,
-                            width: 0.9,
+                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            width: 1.8,
                           ),
                         ),
-                        child: Icon(
-                          isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-                          size: 18,
-                          color: isDark ? AppColors.softCoral : AppColors.mauve,
+                        child: ClipOval(
+                          child: CachedNetworkImage(
+                            imageUrl: user?.avatarUrl ??
+                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+                            fit: BoxFit.cover,
+                            placeholder: (context, url) => Container(color: AppColors.mauve),
+                            errorWidget: (context, url, error) => const Icon(Icons.person, size: 20),
+                          ),
                         ),
                       ),
                     ),
@@ -216,14 +279,14 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
-            // ── Search & Filter Input Bar ──
+            // ── Search Bar ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
                 child: Container(
                   height: 48,
                   decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkSurface : AppColors.white,
+                    color: isDark ? AppColors.darkElevated : AppColors.white,
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: isDark ? AppColors.darkBorder : AppColors.divider,
@@ -231,96 +294,97 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: isDark
-                            ? Colors.black26
-                            : AppColors.deepPlum.withValues(alpha: 0.04),
-                        blurRadius: 14,
+                        color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
+                        blurRadius: 10,
                         offset: const Offset(0, 3),
                       ),
                     ],
                   ),
-                  child: Row(
-                    children: [
-                      const SizedBox(width: 14),
-                      Icon(
+                  child: TextField(
+                    controller: _searchController,
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    style: AppTypography.bodyMedium.copyWith(color: primaryTextColor),
+                    decoration: InputDecoration(
+                      hintText: 'Search activities...',
+                      hintStyle: AppTypography.bodyMedium.copyWith(color: mutedTextColor, fontSize: 13.5),
+                      prefixIcon: Icon(
                         Icons.search_rounded,
-                        size: 20,
-                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                        color: mutedTextColor,
+                        size: 21,
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: TextField(
-                          controller: _searchController,
-                          onChanged: (val) => setState(() => _searchQuery = val),
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: primaryTextColor,
-                            fontSize: 14,
-                          ),
-                          decoration: InputDecoration(
-                            hintText: 'Search experiences, cafes, boards...',
-                            hintStyle: AppTypography.bodySmall.copyWith(
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear_rounded, size: 18),
                               color: mutedTextColor,
-                              fontSize: 13,
-                            ),
-                            border: InputBorder.none,
-                            isDense: true,
-                            contentPadding: EdgeInsets.zero,
-                          ),
-                        ),
-                      ),
-                      if (_searchQuery.isNotEmpty)
-                        GestureDetector(
-                          onTap: () {
-                            _searchController.clear();
-                            setState(() => _searchQuery = '');
-                          },
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 10),
-                            child: Icon(
-                              Icons.close_rounded,
-                              size: 18,
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() => _searchQuery = '');
+                              },
+                            )
+                          : Icon(
+                              Icons.tune_rounded,
                               color: mutedTextColor,
+                              size: 19,
                             ),
-                          ),
-                        )
-                      else
-                        Padding(
-                          padding: const EdgeInsets.only(right: 12),
-                          child: Icon(
-                            Icons.tune_rounded,
-                            size: 18,
-                            color: mutedTextColor,
-                          ),
-                        ),
-                    ],
+                      border: InputBorder.none,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                    ),
                   ),
                 ),
               ),
             ),
 
-            // ── Editorial Headline ──
+            // ── Featured Experience Carousel (1/3 indicator, Join Now ->) ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 6),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.only(bottom: 18),
+                child: SizedBox(
+                  height: 200,
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: heroExperiences.length,
+                    itemBuilder: (context, index) {
+                      final exp = heroExperiences[index];
+                      return _buildFeaturedHeroCard(
+                        context,
+                        exp,
+                        index + 1,
+                        heroExperiences.length,
+                        isDark,
+                        primaryTextColor,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+
+            // ── Section: Explore by Intent ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Hello, ${user?.displayName ?? 'Explorer'} 👋',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isDark ? AppColors.softCoral : AppColors.mauve,
-                        fontWeight: FontWeight.w700,
-                        letterSpacing: 0.2,
+                      'Explore by Intent',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16.5,
+                        color: primaryTextColor,
                       ),
                     ),
-                    const SizedBox(height: 2),
-                    Text(
-                      'What would you love to\nexperience this week?',
-                      style: AppTypography.displaySmall.copyWith(
-                        color: primaryTextColor,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 22,
-                        height: 1.22,
+                    GestureDetector(
+                      onTap: () {
+                        setState(() => _selectedIntent = null);
+                      },
+                      child: Text(
+                        _selectedIntent != null ? 'Clear filter' : 'See all →',
+                        style: AppTypography.labelSmall.copyWith(
+                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
                       ),
                     ),
                   ],
@@ -328,185 +392,211 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
-            // ── Segmented Mode Selector ──
+            // Intent Cards Grid
             SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                child: _buildSegmentControl(isDark),
+              child: SizedBox(
+                height: 94,
+                child: ListView.separated(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
+                  itemCount: _intents.length,
+                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  itemBuilder: (context, index) {
+                    final item = _intents[index];
+                    final name = item['name'] as String;
+                    final isSelected = _selectedIntent == name;
+
+                    return GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() {
+                          _selectedIntent = isSelected ? null : name;
+                        });
+                      },
+                      child: AnimatedContainer(
+                        duration: const Duration(milliseconds: 200),
+                        width: 82,
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkElevated : item['bg'] as Color,
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(
+                            color: isSelected
+                                ? (item['color'] as Color)
+                                : (isDark ? AppColors.darkBorder : Colors.transparent),
+                            width: isSelected ? 2.0 : 1.0,
+                          ),
+                          boxShadow: isSelected
+                              ? [
+                                  BoxShadow(
+                                    color: (item['color'] as Color).withValues(alpha: 0.3),
+                                    blurRadius: 10,
+                                    offset: const Offset(0, 3),
+                                  ),
+                                ]
+                              : null,
+                        ),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              item['icon'] as IconData,
+                              size: 26,
+                              color: item['color'] as Color,
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              name,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: TextStyle(
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w700,
+                                color: isDark ? Colors.white : (item['color'] as Color),
+                                height: 1.15,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
 
-            // ═════════════════════════════════════════════════════════════════
-            // MODE 0: CURATED FOR YOU
-            // ═════════════════════════════════════════════════════════════════
-            if (_selectedSegment == 0) ...[
-              // Featured Hero Card (Dribbble Event Discovery layout)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
-                  child: _buildFeaturedHeroCard(
-                    context,
-                    featuredExperience,
-                    isDark,
-                    primaryTextColor,
-                    mutedTextColor,
-                  ),
-                ),
-              ),
-
-              // Category Pills Rail
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 14),
-                  child: SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = _selectedCategory == cat['name'];
-                        return _buildCategoryPill(
-                          cat['name'],
-                          cat['icon'],
-                          isSelected,
-                          isDark,
-                        );
-                      },
+            // ── Section: Popular Experiences ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'Popular Experiences',
+                      style: AppTypography.titleMedium.copyWith(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 16.5,
+                        color: primaryTextColor,
+                      ),
                     ),
-                  ),
-                ),
-              ),
-
-              // Section Header: Upcoming in [City]
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 6, 20, 12),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Upcoming in ${userLoc.city}',
-                            style: AppTypography.titleLarge.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                              color: primaryTextColor,
+                    // Quick Toggle: Feed vs Live Area Radar
+                    GestureDetector(
+                      onTap: () {
+                        HapticFeedback.selectionClick();
+                        setState(() => _viewMode = _viewMode == 0 ? 1 : 0);
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: _viewMode == 1
+                              ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                              : (isDark ? AppColors.darkElevated : AppColors.creamElevated),
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                        child: Row(
+                          children: [
+                            Icon(
+                              _viewMode == 1 ? Icons.map_rounded : Icons.radar_rounded,
+                              size: 13,
+                              color: _viewMode == 1 ? Colors.white : mutedTextColor,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Vetted public spots · Small groups of 3–5',
-                            style: AppTypography.bodySmall.copyWith(
-                              color: mutedTextColor,
-                              fontSize: 12,
+                            const SizedBox(width: 4),
+                            Text(
+                              _viewMode == 1 ? 'Show Cards' : 'Live Radar',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: _viewMode == 1 ? Colors.white : mutedTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
                             ),
-                          ),
-                        ],
-                      ),
-                      TextButton(
-                        onPressed: () => context.go('/experiences'),
-                        child: Text(
-                          'See All',
-                          style: AppTypography.labelMedium.copyWith(
-                            color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                            fontWeight: FontWeight.w700,
-                          ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
+            ),
 
-              // Experiences List
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final exp = filteredExperiences[index];
-                      return ExperienceCard(
-                        experience: exp,
-                        onTap: () => ExperienceDetailSheet.show(
-                          context,
-                          experience: exp,
-                          onToggleJoin: () => _openJoinFlow(exp),
-                        ),
-                        onJoinTap: () => _openJoinFlow(exp),
-                      );
-                    },
-                    childCount: filteredExperiences.length,
-                  ),
-                ),
-              ),
-            ],
-
-            // ═════════════════════════════════════════════════════════════════
-            // MODE 1: LIVE ACTIVITY RADAR
-            // ═════════════════════════════════════════════════════════════════
-            if (_selectedSegment == 1) ...[
+            // Category Chips (Horizontal Scroll)
+            if (_viewMode == 0)
               SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Live Area Radar in ${userLoc.city}',
-                        style: AppTypography.titleLarge.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                          color: primaryTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Text(
-                        'Explore verified artisan cafes, board game lounges, and park pavilions with scheduled meetups.',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: mutedTextColor,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      ActivityRadarMapCard(
-                        location: userLoc,
-                        onVenueSelected: (venue) {
-                          final match = allExperiences.firstWhere(
-                            (e) => e.venueName.toLowerCase().contains(venue.name.toLowerCase()),
-                            orElse: () => allExperiences.first,
-                          );
-                          ExperienceDetailSheet.show(
-                            context,
-                            experience: match,
-                            onToggleJoin: () => _openJoinFlow(match),
-                          );
+                child: SizedBox(
+                  height: 38,
+                  child: ListView.separated(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    itemCount: _categories.length,
+                    separatorBuilder: (context, index) => const SizedBox(width: 8),
+                    itemBuilder: (context, index) {
+                      final cat = _categories[index];
+                      final isSelected = _selectedCategory == cat;
+
+                      return GestureDetector(
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          setState(() => _selectedCategory = cat);
                         },
-                      ),
-                    ],
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 180),
+                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          decoration: BoxDecoration(
+                            gradient: isSelected ? AppColors.purpleGradient : null,
+                            color: isSelected
+                                ? null
+                                : (isDark ? AppColors.darkElevated : AppColors.white),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: isSelected
+                                  ? Colors.transparent
+                                  : (isDark ? AppColors.darkBorder : AppColors.divider),
+                              width: 0.9,
+                            ),
+                          ),
+                          child: Text(
+                            cat,
+                            style: AppTypography.labelSmall.copyWith(
+                              color: isSelected
+                                  ? Colors.white
+                                  : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
+                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
 
+            // ── Experiences List or Live Radar ──
+            if (_viewMode == 1)
               SliverToBoxAdapter(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
-                  child: Text(
-                    'Active Venues with Meetups',
-                    style: AppTypography.titleMedium.copyWith(
-                      fontWeight: FontWeight.w800,
-                      color: primaryTextColor,
-                    ),
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                  child: ActivityRadarMapCard(
+                    location: userLoc,
+                    onVenueSelected: (venue) {
+                      final match = allExperiences.firstWhere(
+                        (e) => e.venueName.toLowerCase().contains(venue.name.toLowerCase()),
+                        orElse: () => allExperiences.first,
+                      );
+                      ExperienceDetailSheet.show(
+                        context,
+                        experience: match,
+                        onToggleJoin: () => _openJoinFlow(match),
+                      );
+                    },
                   ),
                 ),
-              ),
-
+              )
+            else
               SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
                 sliver: SliverList(
                   delegate: SliverChildBuilderDelegate(
                     (context, index) {
@@ -525,61 +615,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   ),
                 ),
               ),
-            ],
 
-            // ═════════════════════════════════════════════════════════════════
-            // MODE 2: ALL VIBES
-            // ═════════════════════════════════════════════════════════════════
-            if (_selectedSegment == 2) ...[
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: SizedBox(
-                    height: 40,
-                    child: ListView.separated(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
-                      itemCount: _categories.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final cat = _categories[index];
-                        final isSelected = _selectedCategory == cat['name'];
-                        return _buildCategoryPill(
-                          cat['name'],
-                          cat['icon'],
-                          isSelected,
-                          isDark,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-              ),
-
-              SliverPadding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final exp = filteredExperiences[index];
-                      return ExperienceCard(
-                        experience: exp,
-                        onTap: () => ExperienceDetailSheet.show(
-                          context,
-                          experience: exp,
-                          onToggleJoin: () => _openJoinFlow(exp),
-                        ),
-                        onJoinTap: () => _openJoinFlow(exp),
-                      );
-                    },
-                    childCount: filteredExperiences.length,
-                  ),
-                ),
-              ),
-            ],
-
-            // Adequate bottom buffer for floating glassmorphic navbar
+            // ── CRITICAL: 120dp bottom clearance so no button is ever overlapped by bottom nav ──
             const SliverToBoxAdapter(
               child: SizedBox(height: 120),
             ),
@@ -589,14 +626,17 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     );
   }
 
-  // ── Featured Hero Card (Inspired by Event Discovery) ──
+  // ── Featured Hero Card (1/3 indicator, Join Now ->) ──
   Widget _buildFeaturedHeroCard(
     BuildContext context,
     ExperienceModel exp,
+    int pageNum,
+    int totalPages,
     bool isDark,
     Color primaryTextColor,
-    Color mutedTextColor,
   ) {
+    final dateFormat = DateFormat('EEE, MMM d · h:mm a');
+
     return GestureDetector(
       onTap: () => ExperienceDetailSheet.show(
         context,
@@ -604,25 +644,23 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         onToggleJoin: () => _openJoinFlow(exp),
       ),
       child: Container(
-        height: 250,
+        margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(24),
           boxShadow: [
             BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.5)
-                  : AppColors.deepPlum.withValues(alpha: 0.12),
-              blurRadius: 28,
-              offset: const Offset(0, 12),
+              color: isDark ? Colors.black45 : Colors.black.withValues(alpha: 0.12),
+              blurRadius: 20,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(26),
+          borderRadius: BorderRadius.circular(24),
           child: Stack(
             fit: StackFit.expand,
             children: [
-              // Cover Image
+              // Hero Image
               CachedNetworkImage(
                 imageUrl: exp.coverImageUrl,
                 fit: BoxFit.cover,
@@ -638,8 +676,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
                     colors: [
-                      Colors.black.withValues(alpha: 0.1),
-                      Colors.black.withValues(alpha: 0.35),
+                      Colors.black.withValues(alpha: 0.25),
+                      Colors.black.withValues(alpha: 0.45),
                       Colors.black.withValues(alpha: 0.88),
                     ],
                     stops: const [0.0, 0.45, 1.0],
@@ -647,57 +685,47 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ),
 
-              // Top row: Featured Tag & Spots Left
+              // Top row: Category tag & 1/3 indicator
               Positioned(
-                top: 16,
-                left: 16,
-                right: 16,
+                top: 14,
+                left: 14,
+                right: 14,
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: BackdropFilter(
-                        filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withValues(alpha: 0.22),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: Colors.white.withValues(alpha: 0.3),
-                            ),
-                          ),
-                          child: Row(
-                            children: [
-                              const Icon(
-                                Icons.star_rounded,
-                                size: 14,
-                                color: Colors.amberAccent,
-                              ),
-                              const SizedBox(width: 4),
-                              Text(
-                                'FEATURED THIS WEEK',
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0.8,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ),
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
                       decoration: BoxDecoration(
-                        color: AppColors.vividCoral,
-                        borderRadius: BorderRadius.circular(10),
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24, width: 0.8),
+                      ),
+                      child: Row(
+                        children: [
+                          const Text('🔥', style: TextStyle(fontSize: 12)),
+                          const SizedBox(width: 4),
+                          Text(
+                            'Trending',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // 1/3 indicator pill
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: Colors.black.withValues(alpha: 0.45),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white24, width: 0.8),
                       ),
                       child: Text(
-                        '${exp.maxParticipants - exp.currentParticipants} spots left',
+                        '$pageNum/$totalPages',
                         style: AppTypography.labelSmall.copyWith(
                           color: Colors.white,
                           fontWeight: FontWeight.w700,
@@ -709,224 +737,97 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 ),
               ),
 
-              // Bottom details
+              // Bottom Info: Title, Date, Venue, Join Now ->
               Positioned(
-                left: 18,
-                right: 18,
-                bottom: 18,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                bottom: 14,
+                left: 14,
+                right: 14,
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Row(
-                      children: [
-                        Text(
-                          exp.categoryIcon,
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          exp.categoryName.toUpperCase(),
-                          style: AppTypography.labelSmall.copyWith(
-                            color: AppColors.softCoral,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      exp.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: AppTypography.titleLarge.copyWith(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    Row(
-                      children: [
-                        const Icon(
-                          Icons.place_rounded,
-                          size: 14,
-                          color: Colors.white70,
-                        ),
-                        const SizedBox(width: 4),
-                        Expanded(
-                          child: Text(
-                            exp.venueName,
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            exp.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: Colors.white.withValues(alpha: 0.85),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Text(
-                            exp.hasJoined ? 'Joined ✓' : 'Explore',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: AppColors.deepPlum,
+                            style: AppTypography.titleLarge.copyWith(
+                              color: Colors.white,
                               fontWeight: FontWeight.w800,
-                              fontSize: 11.5,
+                              fontSize: 18,
                             ),
                           ),
+                          const SizedBox(height: 4),
+                          Row(
+                            children: [
+                              const Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Text(
+                                dateFormat.format(exp.startsAt),
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: Colors.white70,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 2),
+                          Row(
+                            children: [
+                              const Icon(Icons.location_on_rounded, size: 12, color: Colors.white70),
+                              const SizedBox(width: 4),
+                              Expanded(
+                                child: Text(
+                                  exp.venueName,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: Colors.white70,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+
+                    // Join Now -> pill button
+                    GestureDetector(
+                      onTap: () => _openJoinFlow(exp),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.purpleGradient,
+                          borderRadius: BorderRadius.circular(20),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryPurple.withValues(alpha: 0.4),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
-                      ],
+                        child: Text(
+                          exp.hasJoined ? 'Joined ✓' : 'Join Now →',
+                          style: AppTypography.labelSmall.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ],
                 ),
               ),
             ],
           ),
-        ),
-      ),
-    );
-  }
-
-  // ── Segment Control ──
-  Widget _buildSegmentControl(bool isDark) {
-    final activeBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-    final inactiveText = isDark ? AppColors.darkMutedText : AppColors.mutedText;
-
-    return Container(
-      height: 44,
-      padding: const EdgeInsets.all(4),
-      decoration: BoxDecoration(
-        color: isDark ? AppColors.darkSurface : AppColors.creamElevated,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(
-          color: isDark ? AppColors.darkBorder : AppColors.divider,
-          width: 0.8,
-        ),
-      ),
-      child: Row(
-        children: [
-          _buildSegmentItem(0, 'Curated', Icons.auto_awesome_rounded, activeBg, inactiveText),
-          _buildSegmentItem(1, 'Live Radar', Icons.radar_rounded, activeBg, inactiveText),
-          _buildSegmentItem(2, 'All Vibes', Icons.grid_view_rounded, activeBg, inactiveText),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSegmentItem(
-    int index,
-    String label,
-    IconData icon,
-    Color activeBg,
-    Color inactiveText,
-  ) {
-    final isSelected = _selectedSegment == index;
-
-    return Expanded(
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () => setState(() => _selectedSegment = index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          decoration: BoxDecoration(
-            color: isSelected ? activeBg : Colors.transparent,
-            borderRadius: BorderRadius.circular(18),
-            boxShadow: isSelected
-                ? [
-                    BoxShadow(
-                      color: activeBg.withValues(alpha: 0.35),
-                      blurRadius: 8,
-                      offset: const Offset(0, 2),
-                    ),
-                  ]
-                : null,
-          ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                icon,
-                size: 14,
-                color: isSelected ? Colors.white : inactiveText,
-              ),
-              const SizedBox(width: 5),
-              Text(
-                label,
-                style: AppTypography.labelSmall.copyWith(
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  fontSize: 11.5,
-                  color: isSelected ? Colors.white : inactiveText,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ── Category Pill ──
-  Widget _buildCategoryPill(
-    String label,
-    IconData icon,
-    bool isSelected,
-    bool isDark,
-  ) {
-    final selectedBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-    final unselectedBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final borderColor = isSelected
-        ? selectedBg
-        : (isDark ? AppColors.darkBorder : AppColors.divider);
-
-    return GestureDetector(
-      onTap: () => setState(() => _selectedCategory = label),
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? selectedBg : unselectedBg,
-          borderRadius: BorderRadius.circular(18),
-          border: Border.all(color: borderColor, width: 1.0),
-          boxShadow: isSelected
-              ? [
-                  BoxShadow(
-                    color: selectedBg.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ]
-              : null,
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              size: 15,
-              color: isSelected
-                  ? Colors.white
-                  : (isDark ? AppColors.luminousMauve : AppColors.mauve),
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: AppTypography.labelSmall.copyWith(
-                color: isSelected
-                    ? Colors.white
-                    : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                fontSize: 12,
-              ),
-            ),
-          ],
         ),
       ),
     );

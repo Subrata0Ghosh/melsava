@@ -233,41 +233,70 @@ class _ExperienceCardState extends State<ExperienceCard>
           Positioned(
             top: 14,
             left: 14,
-            child: ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
-                child: Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                  decoration: BoxDecoration(
-                    color: (isDark ? const Color(0xFF0E0C14) : Colors.white)
-                        .withValues(alpha: 0.7),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.15),
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(exp.categoryIcon,
-                          style: const TextStyle(fontSize: 13)),
-                      const SizedBox(width: 5),
-                      Text(
-                        exp.categoryName,
-                        style: AppTypography.labelSmall.copyWith(
-                          color: isDark
-                              ? AppColors.darkTextPrimary
-                              : AppColors.deepPlum,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: BackdropFilter(
+                    filter: ImageFilter.blur(sigmaX: 14, sigmaY: 14),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                      decoration: BoxDecoration(
+                        color: (isDark ? const Color(0xFF0E0C14) : Colors.white)
+                            .withValues(alpha: 0.75),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.2),
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(exp.categoryIcon, style: const TextStyle(fontSize: 12)),
+                          const SizedBox(width: 5),
+                          Text(
+                            exp.categoryName,
+                            style: AppTypography.labelSmall.copyWith(
+                              color: isDark
+                                  ? AppColors.darkTextPrimary
+                                  : AppColors.deepPlum,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ),
-              ),
+                if (exp.currentParticipants >= 8) ...[
+                  const SizedBox(width: 6),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.65),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.white24, width: 0.8),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('🔥', style: TextStyle(fontSize: 11)),
+                        SizedBox(width: 3),
+                        Text(
+                          'Trending',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
 
@@ -394,25 +423,17 @@ class _ExperienceCardState extends State<ExperienceCard>
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        borderRadius: BorderRadius.circular(14),
+        borderRadius: BorderRadius.circular(16),
         onTap: widget.onJoinTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 8),
           decoration: BoxDecoration(
-            gradient: isJoined
-                ? null
-                : LinearGradient(
-                    colors: isDark
-                        ? [AppColors.luminousMauve, AppColors.mauve]
-                        : [AppColors.deepPlum, AppColors.mauve],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+            gradient: isJoined ? null : AppColors.purpleGradient,
             color: isJoined
                 ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
                 : null,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: BorderRadius.circular(16),
             border: isJoined
                 ? Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.divider,
@@ -422,21 +443,20 @@ class _ExperienceCardState extends State<ExperienceCard>
                 ? null
                 : [
                     BoxShadow(
-                      color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
-                          .withValues(alpha: 0.3),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
                   ],
           ),
           child: Text(
-            isJoined ? 'Leave' : 'Join',
+            isJoined ? 'Joined ✓' : 'Join',
             style: AppTypography.labelSmall.copyWith(
               color: isJoined
-                  ? (isDark ? AppColors.luminousMauve : AppColors.mauve)
+                  ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
                   : Colors.white,
-              fontWeight: FontWeight.w700,
-              fontSize: 13,
+              fontWeight: FontWeight.w800,
+              fontSize: 12.5,
             ),
           ),
         ),

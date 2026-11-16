@@ -6,7 +6,6 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
-import '../../../shared/widgets/primary_button.dart';
 import 'join_experience_sheet.dart';
 
 /// Screen 2: Experience Details Screen
@@ -154,39 +153,32 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Category badge
-                              ClipRRect(
-                                borderRadius: BorderRadius.circular(14),
-                                child: BackdropFilter(
-                                  filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                                  child: Container(
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 6,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: Colors.black.withValues(alpha: 0.45),
-                                      borderRadius: BorderRadius.circular(14),
-                                      border: Border.all(
-                                        color: Colors.white.withValues(alpha: 0.2),
+                              // Trending pill badge
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.black.withValues(alpha: 0.65),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.25),
+                                  ),
+                                ),
+                                child: const Row(
+                                  children: [
+                                    Text('🔥', style: TextStyle(fontSize: 12)),
+                                    SizedBox(width: 5),
+                                    Text(
+                                      'Trending',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12,
                                       ),
                                     ),
-                                    child: Row(
-                                      children: [
-                                        Text(exp.categoryIcon,
-                                            style: const TextStyle(fontSize: 12)),
-                                        const SizedBox(width: 6),
-                                        Text(
-                                          exp.categoryName,
-                                          style: AppTypography.labelSmall.copyWith(
-                                            color: Colors.white,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 11.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+                                  ],
                                 ),
                               ),
 
@@ -346,6 +338,19 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                             height: 1.6,
                           ),
                         ),
+                        const SizedBox(height: 12),
+
+                        // Tags row
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: [
+                            _buildTagChip('Outdoor', isDark),
+                            _buildTagChip('Adventure', isDark),
+                            _buildTagChip('Fitness', isDark),
+                            _buildTagChip(exp.categoryName, isDark),
+                          ],
+                        ),
 
                         const SizedBox(height: 24),
 
@@ -417,7 +422,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
 
                         // ── Host Bio Card ──
                         Text(
-                          'CURATED HOST',
+                          'HOSTED BY',
                           style: AppTypography.labelSmall.copyWith(
                             letterSpacing: 1.2,
                             fontWeight: FontWeight.w800,
@@ -441,7 +446,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
                                   border: Border.all(
-                                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                    color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
                                     width: 1.8,
                                   ),
                                 ),
@@ -472,20 +477,43 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                           Icons.verified_rounded,
                                           size: 16,
                                           color: isDark
-                                              ? AppColors.luminousMauve
-                                              : AppColors.mauve,
+                                              ? AppColors.brightViolet
+                                              : AppColors.primaryPurple,
                                         ),
                                       ],
                                     ),
-                                    const SizedBox(height: 2),
-                                    Text(
-                                      'Verified MELSAVA Experience Organizer',
-                                      style: AppTypography.bodySmall.copyWith(
-                                        color: mutedTextColor,
-                                        fontSize: 12,
-                                      ),
+                                    const SizedBox(height: 3),
+                                    Row(
+                                      children: [
+                                        const Icon(Icons.star_rounded, size: 14, color: AppColors.warning),
+                                        const SizedBox(width: 3),
+                                        Text(
+                                          '4.8 (124 reviews)',
+                                          style: AppTypography.bodySmall.copyWith(
+                                            color: mutedTextColor,
+                                            fontSize: 11.5,
+                                            fontWeight: FontWeight.w600,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
+                                ),
+                              ),
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(color: borderColor),
+                                ),
+                                child: Text(
+                                  'Follow',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 11.5,
+                                  ),
                                 ),
                               ),
                             ],
@@ -594,15 +622,38 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                   ),
                   const SizedBox(width: 24),
                   Expanded(
-                    child: PrimaryButton(
-                      label: exp.hasJoined ? 'Manage RSVP' : 'Join Experience',
-                      backgroundColor: exp.hasJoined
-                          ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
-                          : (isDark ? AppColors.luminousMauve : AppColors.deepPlum),
-                      foregroundColor: exp.hasJoined
-                          ? (isDark ? AppColors.luminousMauve : AppColors.deepPlum)
-                          : Colors.white,
-                      onPressed: _openJoinFlow,
+                    child: GestureDetector(
+                      onTap: _openJoinFlow,
+                      child: Container(
+                        height: 50,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: exp.hasJoined ? null : AppColors.purpleGradient,
+                          color: exp.hasJoined
+                              ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
+                              : null,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: exp.hasJoined
+                              ? null
+                              : [
+                                  BoxShadow(
+                                    color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                                    blurRadius: 12,
+                                    offset: const Offset(0, 4),
+                                  ),
+                                ],
+                        ),
+                        child: Text(
+                          exp.hasJoined ? 'Manage RSVP ✓' : 'Join Experience →',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: exp.hasJoined
+                                ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                                : Colors.white,
+                            fontWeight: FontWeight.w800,
+                            fontSize: 14.5,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ],
@@ -690,6 +741,27 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildTagChip(String label, bool isDark) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+      decoration: BoxDecoration(
+        color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: isDark ? AppColors.darkBorder : AppColors.divider,
+        ),
+      ),
+      child: Text(
+        label,
+        style: AppTypography.labelSmall.copyWith(
+          color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
+          fontWeight: FontWeight.w700,
+          fontSize: 11.5,
+        ),
       ),
     );
   }

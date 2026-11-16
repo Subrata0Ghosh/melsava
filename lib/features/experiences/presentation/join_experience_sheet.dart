@@ -5,16 +5,15 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
-import '../../../shared/widgets/primary_button.dart';
 
-/// Screen 3: Join Experience Flow
+/// Screen 7 (from Image 9): Join Experience Flow
 ///
-/// Inspired by Dribbble Social Meetup Event Planner (shots/27290057),
-/// providing a guided, transparent RSVP experience:
-/// 1. Experience & Venue Confirmation summary
-/// 2. Meetup Intention / Vibe preference ("Great conversation", "Creative ideas", "Activity companion", "Exploring dating")
-/// 3. Community Safety & Respect Pledge
-/// 4. Tactile Confirmation with Confetti/Tick micro-animation
+/// Clean, transparent RSVP modal:
+/// - Mini event preview card
+/// - "Your Intent - Select one or more (Primary first)"
+/// - Chips: Friendship, Activity Partner, Dating, Serious Relationship, Marriage Minded, Just Exploring
+/// - Community Safety Guarantee
+/// - Gradient [ Confirm Join → ] button
 class JoinExperienceSheet extends StatefulWidget {
   final ExperienceModel experience;
   final VoidCallback onConfirmed;
@@ -47,32 +46,18 @@ class JoinExperienceSheet extends StatefulWidget {
 }
 
 class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
-  int _selectedVibeIndex = 0;
+  final Set<String> _selectedIntents = {'Dating'};
   bool _agreedToPledge = true;
   bool _isSubmitting = false;
   bool _isSuccess = false;
 
-  final List<Map<String, dynamic>> _vibeOptions = [
-    {
-      'title': 'Great Conversations',
-      'subtitle': 'Engaging stories, intellectual thoughts & relaxed banter',
-      'icon': Icons.chat_bubble_outline_rounded,
-    },
-    {
-      'title': 'Activity & Shared Passions',
-      'subtitle': 'Enjoying the event focus and discovering shared hobbies',
-      'icon': Icons.interests_outlined,
-    },
-    {
-      'title': 'Open to New Friendships',
-      'subtitle': 'Expanding my personal circle with like-minded locals',
-      'icon': Icons.people_outline_rounded,
-    },
-    {
-      'title': 'Exploring Dating Chemistry',
-      'subtitle': 'Open to meeting a romantic match organically through activities',
-      'icon': Icons.favorite_border_rounded,
-    },
+  final List<Map<String, dynamic>> _intentOptions = [
+    {'name': 'Friendship', 'icon': Icons.people_alt_rounded},
+    {'name': 'Activity Partner', 'icon': Icons.extension_rounded},
+    {'name': 'Dating', 'icon': Icons.favorite_rounded},
+    {'name': 'Serious Relationship', 'icon': Icons.auto_awesome_rounded},
+    {'name': 'Marriage Minded', 'icon': Icons.diamond_rounded},
+    {'name': 'Just Exploring', 'icon': Icons.explore_rounded},
   ];
 
   void _handleConfirm() async {
@@ -88,7 +73,7 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
     HapticFeedback.mediumImpact();
     setState(() => _isSubmitting = true);
 
-    await Future.delayed(const Duration(milliseconds: 700));
+    await Future.delayed(const Duration(milliseconds: 600));
     if (!mounted) return;
 
     widget.onConfirmed();
@@ -97,7 +82,7 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
       _isSuccess = true;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1200));
+    await Future.delayed(const Duration(milliseconds: 1000));
     if (!mounted) return;
     Navigator.of(context).pop();
   }
@@ -106,9 +91,9 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final exp = widget.experience;
-    final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
+    final dateFormat = DateFormat('EEE, MMM d · h:mm a');
 
-    final sheetBg = isDark ? const Color(0xFF14101F) : AppColors.white;
+    final sheetBg = isDark ? const Color(0xFF130F1E) : AppColors.white;
     final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
     final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.warmIvory;
@@ -149,53 +134,20 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        // Header
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
-                                    .withValues(alpha: 0.15),
-                                shape: BoxShape.circle,
-                              ),
-                              child: Icon(
-                                Icons.event_available_rounded,
-                                size: 22,
-                                color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Join Micro-Group Meetup',
-                                    style: AppTypography.titleLarge.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 19,
-                                      color: primaryTextColor,
-                                    ),
-                                  ),
-                                  Text(
-                                    'Capped at ${exp.maxParticipants} participants · Vetted public venue',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: mutedTextColor,
-                                      fontSize: 12,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
+                        // Title Header
+                        Text(
+                          'Join Experience',
+                          style: AppTypography.titleLarge.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 20,
+                            color: primaryTextColor,
+                          ),
                         ),
-
-                        const SizedBox(height: 18),
+                        const SizedBox(height: 16),
 
                         // Mini summary card
                         Container(
-                          padding: const EdgeInsets.all(14),
+                          padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: cardBg,
                             borderRadius: BorderRadius.circular(18),
@@ -206,8 +158,8 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                               ClipRRect(
                                 borderRadius: BorderRadius.circular(12),
                                 child: SizedBox(
-                                  width: 60,
-                                  height: 60,
+                                  width: 64,
+                                  height: 64,
                                   child: CachedNetworkImage(
                                     imageUrl: exp.coverImageUrl,
                                     fit: BoxFit.cover,
@@ -229,48 +181,22 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.schedule_rounded,
-                                          size: 13,
-                                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            dateFormat.format(exp.startsAt),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: AppTypography.bodySmall.copyWith(
-                                              color: mutedTextColor,
-                                              fontSize: 11.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      dateFormat.format(exp.startsAt),
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: mutedTextColor,
+                                        fontSize: 11.5,
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
-                                    Row(
-                                      children: [
-                                        Icon(
-                                          Icons.place_rounded,
-                                          size: 13,
-                                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            exp.venueName,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: AppTypography.bodySmall.copyWith(
-                                              color: mutedTextColor,
-                                              fontSize: 11.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      exp.venueName,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: mutedTextColor,
+                                        fontSize: 11.5,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -281,215 +207,184 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
 
                         const SizedBox(height: 22),
 
-                        // Section 1: Meetup Intention / Vibe
+                        // Section: Your Intent
                         Text(
-                          'WHAT IS YOUR INTENTION FOR THIS MEETUP?',
-                          style: AppTypography.labelSmall.copyWith(
-                            letterSpacing: 1.2,
+                          'Your Intent',
+                          style: AppTypography.titleSmall.copyWith(
                             fontWeight: FontWeight.w800,
-                            fontSize: 11,
-                            color: isDark ? AppColors.softCoral : AppColors.mauve,
+                            fontSize: 15,
+                            color: primaryTextColor,
                           ),
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          'This guides your post-event mutual matching compatibility.',
+                          'Select one or more (Primary first)',
                           style: AppTypography.bodySmall.copyWith(
                             color: mutedTextColor,
                             fontSize: 12,
                           ),
                         ),
-                        const SizedBox(height: 12),
+                        const SizedBox(height: 14),
 
-                        // Vibe options list
-                        ...List.generate(_vibeOptions.length, (index) {
-                          final vibe = _vibeOptions[index];
-                          final isSelected = _selectedVibeIndex == index;
-                          final activeColor = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-
-                          return GestureDetector(
-                            onTap: () {
-                              HapticFeedback.selectionClick();
-                              setState(() => _selectedVibeIndex = index);
-                            },
-                            child: AnimatedContainer(
-                              duration: const Duration(milliseconds: 180),
-                              margin: const EdgeInsets.only(bottom: 10),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: isSelected
-                                    ? (isDark
-                                        ? AppColors.luminousMauve.withValues(alpha: 0.16)
-                                        : AppColors.mauve.withValues(alpha: 0.08))
-                                    : (isDark ? AppColors.darkSurface : AppColors.white),
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(
-                                  color: isSelected
-                                      ? activeColor
-                                      : (isDark ? AppColors.darkBorder : AppColors.divider),
-                                  width: isSelected ? 1.6 : 0.9,
-                                ),
-                              ),
-                              child: Row(
-                                children: [
-                                  Container(
-                                    width: 36,
-                                    height: 36,
-                                    decoration: BoxDecoration(
-                                      color: isSelected
-                                          ? activeColor
-                                          : (isDark
-                                              ? AppColors.darkElevated
-                                              : AppColors.warmIvory),
-                                      shape: BoxShape.circle,
-                                    ),
-                                    child: Icon(
-                                      vibe['icon'] as IconData,
-                                      size: 18,
-                                      color: isSelected ? Colors.white : mutedTextColor,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          vibe['title'] as String,
-                                          style: AppTypography.titleSmall.copyWith(
-                                            color: primaryTextColor,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 13.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 2),
-                                        Text(
-                                          vibe['subtitle'] as String,
-                                          style: AppTypography.bodySmall.copyWith(
-                                            color: mutedTextColor,
-                                            fontSize: 11.5,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                  if (isSelected)
-                                    Icon(
-                                      Icons.check_circle_rounded,
-                                      size: 20,
-                                      color: activeColor,
-                                    ),
-                                ],
-                              ),
-                            ),
-                          );
-                        }),
-
-                        const SizedBox(height: 18),
-
-                        // Section 2: Safety & Respect Pledge
-                        Container(
-                          padding: const EdgeInsets.all(14),
-                          decoration: BoxDecoration(
-                            color: (isDark ? AppColors.darkSurface : AppColors.sage)
-                                .withValues(alpha: 0.35),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isDark ? AppColors.darkBorder : AppColors.divider,
-                            ),
+                        // Intent Grid Chips (Image 9 Screen 7)
+                        GridView.builder(
+                          shrinkWrap: true,
+                          physics: const NeverScrollableScrollPhysics(),
+                          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                            crossAxisCount: 2,
+                            childAspectRatio: 2.8,
+                            crossAxisSpacing: 10,
+                            mainAxisSpacing: 10,
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.shield_outlined,
-                                    size: 18,
-                                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                          itemCount: _intentOptions.length,
+                          itemBuilder: (context, index) {
+                            final opt = _intentOptions[index];
+                            final name = opt['name'] as String;
+                            final isSelected = _selectedIntents.contains(name);
+
+                            return GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() {
+                                  if (isSelected) {
+                                    if (_selectedIntents.length > 1) {
+                                      _selectedIntents.remove(name);
+                                    }
+                                  } else {
+                                    _selectedIntents.add(name);
+                                  }
+                                });
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: isSelected
+                                      ? (isDark
+                                          ? AppColors.brightViolet.withValues(alpha: 0.2)
+                                          : const Color(0xFFF3E8FF))
+                                      : (isDark ? AppColors.darkElevated : AppColors.white),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                                        : borderColor,
+                                    width: isSelected ? 1.8 : 0.9,
                                   ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    'MELSAVA Community Safe Pledge',
-                                    style: AppTypography.labelMedium.copyWith(
-                                      color: primaryTextColor,
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 12.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                '• Public vetted venue only — never in private residences.\n'
-                                '• No contact information shared beforehand.\n'
-                                '• Reconnections after the meetup are 100% mutual and private.',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: primaryTextColor,
-                                  fontSize: 11.5,
-                                  height: 1.5,
                                 ),
-                              ),
-                              const SizedBox(height: 10),
-                              GestureDetector(
-                                onTap: () => setState(() => _agreedToPledge = !_agreedToPledge),
                                 child: Row(
                                   children: [
-                                    SizedBox(
-                                      width: 22,
-                                      height: 22,
-                                      child: Checkbox(
-                                        value: _agreedToPledge,
-                                        activeColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
-                                        shape: RoundedRectangleBorder(
-                                          borderRadius: BorderRadius.circular(5),
-                                        ),
-                                        onChanged: (val) =>
-                                            setState(() => _agreedToPledge = val ?? true),
-                                      ),
+                                    Icon(
+                                      opt['icon'] as IconData,
+                                      size: 18,
+                                      color: isSelected
+                                          ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                                          : mutedTextColor,
                                     ),
                                     const SizedBox(width: 8),
                                     Expanded(
                                       child: Text(
-                                        'I agree to be respectful and adhere to safety standards.',
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: primaryTextColor,
-                                          fontSize: 11.5,
-                                          fontWeight: FontWeight.w600,
+                                        name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                          color: isSelected
+                                              ? (isDark ? Colors.white : AppColors.primaryPurple)
+                                              : primaryTextColor,
                                         ),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
+                            );
+                          },
+                        ),
+
+                        const SizedBox(height: 22),
+
+                        // Community Safety Pledge
+                        Container(
+                          padding: const EdgeInsets.all(14),
+                          decoration: BoxDecoration(
+                            color: cardBg,
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(color: borderColor, width: 0.9),
+                          ),
+                          child: Row(
+                            children: [
+                              Checkbox(
+                                value: _agreedToPledge,
+                                activeColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                onChanged: (val) => setState(() => _agreedToPledge = val ?? true),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  'I agree to respectful participation in vetted public venues.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: primaryTextColor,
+                                    fontSize: 12,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
                         ),
-                        const SizedBox(height: 20),
-                      ],
-                    ),
-                  ),
-                ),
 
-                // Sticky Bottom Action Bar
-                SafeArea(
-                  top: false,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: sheetBg,
-                      border: Border(top: BorderSide(color: borderColor, width: 0.9)),
-                    ),
-                    child: PrimaryButton(
-                      label: exp.hasJoined ? 'Confirm Cancel RSVP' : 'Confirm RSVP & Join Group',
-                      isLoading: _isSubmitting,
-                      backgroundColor: exp.hasJoined
-                          ? AppColors.error
-                          : (isDark ? AppColors.luminousMauve : AppColors.deepPlum),
-                      onPressed: _handleConfirm,
+                        const SizedBox(height: 24),
+
+                        // Confirm Join Button
+                        GestureDetector(
+                          onTap: _isSubmitting ? null : _handleConfirm,
+                          child: Container(
+                            height: 52,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.purpleGradient,
+                              borderRadius: BorderRadius.circular(18),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: AppColors.primaryPurple.withValues(alpha: 0.4),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Confirm Join →',
+                                    style: AppTypography.labelLarge.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
+                        ),
+
+                        const SizedBox(height: 12),
+                        Center(
+                          child: Text(
+                            'You can change your choice later',
+                            style: AppTypography.bodySmall.copyWith(
+                              color: mutedTextColor,
+                              fontSize: 11.5,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -498,7 +393,6 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
     );
   }
 
-  // Success view with celebration
   Widget _buildSuccessView(
     bool isDark,
     ExperienceModel exp,
@@ -507,53 +401,41 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
   ) {
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.symmetric(horizontal: 32),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 84,
-              height: 84,
+              width: 80,
+              height: 80,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  colors: [
-                    isDark ? AppColors.luminousMauve : AppColors.mauve,
-                    AppColors.mintAccent,
-                  ],
-                ),
+                gradient: AppColors.purpleGradient,
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.mintAccent.withValues(alpha: 0.4),
+                    color: AppColors.primaryPurple.withValues(alpha: 0.4),
                     blurRadius: 24,
                     offset: const Offset(0, 8),
                   ),
                 ],
               ),
-              child: const Icon(
-                Icons.check_rounded,
-                size: 48,
-                color: Colors.white,
-              ),
+              child: const Icon(Icons.check_rounded, color: Colors.white, size: 44),
             ),
             const SizedBox(height: 24),
             Text(
-              exp.hasJoined ? 'RSVP Updated' : 'You\'re on the Guestlist! 🎉',
-              textAlign: TextAlign.center,
+              'You\'re In!',
               style: AppTypography.headlineMedium.copyWith(
-                fontWeight: FontWeight.w800,
                 color: primaryTextColor,
+                fontWeight: FontWeight.w800,
               ),
             ),
             const SizedBox(height: 8),
             Text(
-              exp.hasJoined
-                  ? 'Your reservation has been cancelled.'
-                  : 'You\'ve secured your spot for ${exp.title}. We look forward to seeing you at ${exp.venueName}!',
+              'Your RSVP for "${exp.title}" is confirmed. Enjoy the meetup!',
               textAlign: TextAlign.center,
               style: AppTypography.bodyMedium.copyWith(
                 color: mutedTextColor,
-                height: 1.5,
+                fontSize: 13.5,
               ),
             ),
           ],

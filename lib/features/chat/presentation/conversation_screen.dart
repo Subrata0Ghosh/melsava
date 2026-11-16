@@ -233,9 +233,6 @@ class _ConversationScreenState extends State<ConversationScreen> {
               itemCount: _messages.length,
               itemBuilder: (context, index) {
                 final msg = _messages[index];
-                final bubbleBg = msg.isMe
-                    ? (isDark ? AppColors.luminousMauve : AppColors.deepPlum)
-                    : (isDark ? AppColors.darkSurface : AppColors.white);
                 final msgTextColor = msg.isMe
                     ? Colors.white
                     : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum);
@@ -254,7 +251,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       vertical: 11,
                     ),
                     decoration: BoxDecoration(
-                      color: bubbleBg,
+                      gradient: msg.isMe ? AppColors.purpleGradient : null,
+                      color: msg.isMe
+                          ? null
+                          : (isDark ? AppColors.darkSurface : AppColors.white),
                       borderRadius: BorderRadius.only(
                         topLeft: const Radius.circular(18),
                         topRight: const Radius.circular(18),
@@ -266,9 +266,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           : Border.all(color: borderColor, width: 0.8),
                       boxShadow: [
                         BoxShadow(
-                          color: isDark
-                              ? Colors.black26
-                              : AppColors.deepPlum.withValues(alpha: 0.04),
+                          color: msg.isMe
+                              ? AppColors.primaryPurple.withValues(alpha: 0.25)
+                              : (isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.04)),
                           blurRadius: 8,
                           offset: const Offset(0, 2),
                         ),
@@ -288,14 +288,27 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           ),
                         ),
                         const SizedBox(height: 3),
-                        Text(
-                          msg.time,
-                          style: AppTypography.bodySmall.copyWith(
-                            fontSize: 10,
-                            color: msg.isMe
-                                ? Colors.white.withValues(alpha: 0.7)
-                                : mutedTextColor,
-                          ),
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              msg.time,
+                              style: AppTypography.bodySmall.copyWith(
+                                fontSize: 10,
+                                color: msg.isMe
+                                    ? Colors.white.withValues(alpha: 0.75)
+                                    : mutedTextColor,
+                              ),
+                            ),
+                            if (msg.isMe) ...[
+                              const SizedBox(width: 4),
+                              const Icon(
+                                Icons.done_all_rounded,
+                                size: 13,
+                                color: Colors.white,
+                              ),
+                            ],
+                          ],
                         ),
                       ],
                     ),
@@ -349,16 +362,11 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       width: 44,
                       height: 44,
                       decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: isDark
-                              ? [AppColors.luminousMauve, AppColors.mauve]
-                              : [AppColors.deepPlum, AppColors.mauve],
-                        ),
+                        gradient: AppColors.purpleGradient,
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
-                                .withValues(alpha: 0.35),
+                            color: AppColors.primaryPurple.withValues(alpha: 0.35),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),

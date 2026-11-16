@@ -99,4 +99,45 @@ class AppColors {
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
   );
+
+  // ── High-Fidelity Prototype Accents & Gradients ───────────────────────
+  static const Color primaryPurple = Color(0xFF6C38CC);
+  static const Color vividPurple = Color(0xFF7A3BB8);
+  static const Color brightViolet = Color(0xFF9D4EDD);
+  static const Color accentSunset = Color(0xFFFF5A78);
+
+  static const LinearGradient purpleGradient = LinearGradient(
+    colors: [Color(0xFF6C38CC), Color(0xFF9D4EDD)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  static const LinearGradient sunsetCtaGradient = LinearGradient(
+    colors: [Color(0xFFFF5A78), Color(0xFF8A3BF4)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
+  static const LinearGradient goldenGradient = LinearGradient(
+    colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
+    begin: Alignment.topLeft,
+    end: Alignment.bottomRight,
+  );
+
+  // ── Explore by Intent Pastel Palette ──────────────────────────────────
+  static const Color intentFriendshipBg = Color(0xFFEEF4FF);
+  static const Color intentFriendshipText = Color(0xFF2563EB);
+  static const Color intentFriendshipIcon = Color(0xFF3B82F6);
+
+  static const Color intentActivityBg = Color(0xFFFFF0F3);
+  static const Color intentActivityText = Color(0xFFE11D48);
+  static const Color intentActivityIcon = Color(0xFFF43F5E);
+
+  static const Color intentDatingBg = Color(0xFFEEFBF3);
+  static const Color intentDatingText = Color(0xFF059669);
+  static const Color intentDatingIcon = Color(0xFF10B981);
+
+  static const Color intentRelationshipBg = Color(0xFFFFF9E6);
+  static const Color intentRelationshipText = Color(0xFFD97706);
+  static const Color intentRelationshipIcon = Color(0xFFF59E0B);
 }

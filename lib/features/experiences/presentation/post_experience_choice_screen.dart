@@ -173,8 +173,34 @@ class _PostExperienceChoiceScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Glowing Checkmark Circle (Image 8 Screen 6)
+                    Center(
+                      child: Container(
+                        width: 72,
+                        height: 72,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: AppColors.mintAccent.withValues(alpha: 0.15),
+                          border: Border.all(color: AppColors.mintAccent, width: 2.5),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.mintAccent.withValues(alpha: 0.35),
+                              blurRadius: 20,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.check_rounded,
+                          color: AppColors.mintAccent,
+                          size: 40,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Text(
-                      'Who would you love to see again?',
+                      'You\'ve met some great people!',
+                      textAlign: TextAlign.center,
                       style: AppTypography.headlineMedium.copyWith(
                         color: primaryTextColor,
                         fontWeight: FontWeight.w800,
@@ -184,14 +210,15 @@ class _PostExperienceChoiceScreenState
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'From "${widget.experience.title}". All selections are 100% confidential. Mutual matches unlock contact without social pressure.',
+                      'Now choose who you\'d like to connect with. All choices are 100% mutual and private.',
+                      textAlign: TextAlign.center,
                       style: AppTypography.bodyMedium.copyWith(
                         color: mutedTextColor,
                         fontSize: 13,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 24),
 
                     ..._attendees.map((attendee) {
                       return Container(
@@ -311,11 +338,57 @@ class _PostExperienceChoiceScreenState
                 color: isDark ? AppColors.darkSurface : AppColors.white,
                 border: Border(top: BorderSide(color: borderColor, width: 0.9)),
               ),
-              child: PrimaryButton(
-                label: 'Save My Private Choices',
-                isLoading: _isSubmitting,
-                backgroundColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
-                onPressed: _handleSubmit,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  GestureDetector(
+                    onTap: _isSubmitting ? null : _handleSubmit,
+                    child: Container(
+                      height: 52,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.purpleGradient,
+                        borderRadius: BorderRadius.circular(18),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryPurple.withValues(alpha: 0.4),
+                            blurRadius: 14,
+                            offset: const Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: _isSubmitting
+                          ? const SizedBox(
+                              width: 22,
+                              height: 22,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.5,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Make My Choices',
+                              style: AppTypography.labelLarge.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 15,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(
+                      'Skip for now',
+                      style: TextStyle(
+                        color: mutedTextColor,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
               ),
             ),
           ],

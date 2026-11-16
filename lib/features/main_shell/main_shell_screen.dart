@@ -4,192 +4,229 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import '../experiences/presentation/experience_hub_sheet.dart';
+import '../experiences/data/experiences_repository.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-class MainShellScreen extends StatelessWidget {
+class MainShellScreen extends ConsumerWidget {
   final StatefulNavigationShell navigationShell;
 
   const MainShellScreen({super.key, required this.navigationShell});
 
-  void _onTap(int index) {
-    if (index != navigationShell.currentIndex) {
+  void _onBranchTap(int branchIndex) {
+    if (branchIndex != navigationShell.currentIndex) {
       HapticFeedback.lightImpact();
       navigationShell.goBranch(
-        index,
-        initialLocation: index == navigationShell.currentIndex,
+        branchIndex,
+        initialLocation: branchIndex == navigationShell.currentIndex,
       );
     }
   }
 
+  void _openQuickAction(BuildContext context, WidgetRef ref) {
+    HapticFeedback.mediumImpact();
+    final allExp = ref.read(experiencesRepositoryProvider).getExperiences();
+    final activeExp = allExp.firstWhere(
+      (e) => e.hasJoined || e.isCompleted,
+      orElse: () => allExp.first,
+    );
+
+    ExperienceHubSheet.show(
+      context,
+      experience: activeExp,
+    );
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final currentIndex = navigationShell.currentIndex;
 
     return Scaffold(
-      extendBody: true, // Allows background content to scroll under frosted glass
+      extendBody: true, // Content flows behind floating glass navbar
       body: navigationShell,
-      bottomNavigationBar: _buildGlassmorphicNavBar(context, isDark, currentIndex),
+      bottomNavigationBar: _buildGlassmorphicNavBar(
+        context,
+        ref,
+        isDark,
+        currentIndex,
+      ),
     );
   }
 
   Widget _buildGlassmorphicNavBar(
     BuildContext context,
+    WidgetRef ref,
     bool isDark,
     int currentIndex,
   ) {
     final bottomInset = MediaQuery.of(context).padding.bottom;
 
-    return Padding(
-      padding: EdgeInsets.only(
-        left: 18,
-        right: 18,
-        bottom: bottomInset > 0 ? bottomInset + 4 : 16,
-      ),
-      child: Container(
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(36),
-          boxShadow: [
-            BoxShadow(
-              color: isDark
-                  ? Colors.black.withValues(alpha: 0.45)
-                  : AppColors.deepPlum.withValues(alpha: 0.08),
-              blurRadius: 24,
-              offset: const Offset(0, 8),
-              spreadRadius: 0,
-            ),
-          ],
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: EdgeInsets.only(
+          left: 16,
+          right: 16,
+          bottom: bottomInset > 0 ? 4 : 14,
         ),
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(36),
-          child: BackdropFilter(
-            filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
-            child: Container(
-              height: 64,
-              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 5),
-              decoration: BoxDecoration(
-                color: isDark
-                    ? const Color(0xFF14101F).withValues(alpha: 0.82)
-                    : Colors.white.withValues(alpha: 0.88),
-                borderRadius: BorderRadius.circular(36),
-                border: Border.all(
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(34),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                blurRadius: 20,
+                offset: const Offset(0, 6),
+                spreadRadius: 0,
+              ),
+            ],
+          ),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(34),
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
+              child: Container(
+                height: 64,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                decoration: BoxDecoration(
                   color: isDark
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : Colors.white.withValues(alpha: 0.90),
-                  width: 1.0,
+                      ? const Color(0xFF161224).withValues(alpha: 0.90)
+                      : Colors.white.withValues(alpha: 0.92),
+                  borderRadius: BorderRadius.circular(34),
+                  border: Border.all(
+                    color: isDark
+                        ? Colors.white.withValues(alpha: 0.12)
+                        : Colors.white.withValues(alpha: 0.85),
+                    width: 1.0,
+                  ),
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
+                  children: [
+                    // Tab 0: Home / Discover
+                    _buildNavItem(
+                      branchIndex: 0,
+                      currentIndex: currentIndex,
+                      label: 'Home',
+                      icon: Icons.home_outlined,
+                      activeIcon: Icons.home_rounded,
+                      isDark: isDark,
+                    ),
+
+                    // Tab 1: Discover / Experiences
+                    _buildNavItem(
+                      branchIndex: 1,
+                      currentIndex: currentIndex,
+                      label: 'Discover',
+                      icon: Icons.explore_outlined,
+                      activeIcon: Icons.explore_rounded,
+                      isDark: isDark,
+                    ),
+
+                    // Center (+) Elevated Action Button
+                    GestureDetector(
+                      onTap: () => _openQuickAction(context, ref),
+                      child: Container(
+                        width: 44,
+                        height: 44,
+                        margin: const EdgeInsets.symmetric(horizontal: 4),
+                        decoration: BoxDecoration(
+                          gradient: AppColors.purpleGradient,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryPurple.withValues(alpha: 0.45),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: const Icon(
+                          Icons.add_rounded,
+                          color: Colors.white,
+                          size: 26,
+                        ),
+                      ),
+                    ),
+
+                    // Tab 2: Connections
+                    _buildNavItem(
+                      branchIndex: 2,
+                      currentIndex: currentIndex,
+                      label: 'Connections',
+                      icon: Icons.people_outline_rounded,
+                      activeIcon: Icons.people_rounded,
+                      isDark: isDark,
+                    ),
+
+                    // Tab 4: Profile
+                    _buildNavItem(
+                      branchIndex: 4,
+                      currentIndex: currentIndex,
+                      label: 'Profile',
+                      icon: Icons.person_outline_rounded,
+                      activeIcon: Icons.person_rounded,
+                      isDark: isDark,
+                    ),
+                  ],
                 ),
               ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                _buildNavItem(
-                  index: 0,
-                  currentIndex: currentIndex,
-                  label: 'Discover',
-                  icon: Icons.explore_outlined,
-                  activeIcon: Icons.explore_rounded,
-                  isDark: isDark,
-                ),
-                _buildNavItem(
-                  index: 1,
-                  currentIndex: currentIndex,
-                  label: 'Experiences',
-                  icon: Icons.auto_awesome_outlined,
-                  activeIcon: Icons.auto_awesome_rounded,
-                  isDark: isDark,
-                ),
-                _buildNavItem(
-                  index: 2,
-                  currentIndex: currentIndex,
-                  label: 'Connections',
-                  icon: Icons.people_outline_rounded,
-                  activeIcon: Icons.people_rounded,
-                  isDark: isDark,
-                ),
-                _buildNavItem(
-                  index: 3,
-                  currentIndex: currentIndex,
-                  label: 'Inbox',
-                  icon: Icons.chat_bubble_outline_rounded,
-                  activeIcon: Icons.chat_bubble_rounded,
-                  isDark: isDark,
-                ),
-                _buildNavItem(
-                  index: 4,
-                  currentIndex: currentIndex,
-                  label: 'Profile',
-                  icon: Icons.person_outline_rounded,
-                  activeIcon: Icons.person_rounded,
-                  isDark: isDark,
-                ),
-              ],
             ),
           ),
         ),
-      ),
       ),
     );
   }
 
   Widget _buildNavItem({
-    required int index,
+    required int branchIndex,
     required int currentIndex,
     required String label,
     required IconData icon,
     required IconData activeIcon,
     required bool isDark,
   }) {
-    final isSelected = index == currentIndex;
+    // If currentIndex is 3 (Inbox), highlight Connections as closest category
+    final isSelected = branchIndex == currentIndex ||
+        (branchIndex == 2 && currentIndex == 3);
 
-    final activeColor = isDark ? AppColors.luminousMauve : AppColors.mauve;
+    final activeColor = isDark ? AppColors.brightViolet : AppColors.primaryPurple;
     final inactiveColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
     return Expanded(
       child: GestureDetector(
         behavior: HitTestBehavior.opaque,
-        onTap: () => _onTap(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          curve: Curves.easeOutCubic,
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          decoration: BoxDecoration(
-            color: isSelected
-                ? (isDark
-                    ? AppColors.luminousMauve.withValues(alpha: 0.16)
-                    : AppColors.mauve.withValues(alpha: 0.10))
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(24),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              AnimatedScale(
-                scale: isSelected ? 1.15 : 1.0,
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutBack,
-                child: Icon(
-                  isSelected ? activeIcon : icon,
-                  size: 22,
-                  color: isSelected ? activeColor : inactiveColor,
-                ),
+        onTap: () => _onBranchTap(branchIndex),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            AnimatedScale(
+              scale: isSelected ? 1.12 : 1.0,
+              duration: const Duration(milliseconds: 200),
+              curve: Curves.easeOutBack,
+              child: Icon(
+                isSelected ? activeIcon : icon,
+                size: 22,
+                color: isSelected ? activeColor : inactiveColor,
               ),
-              const SizedBox(height: 3),
-              AnimatedDefaultTextStyle(
-                duration: const Duration(milliseconds: 200),
-                style: AppTypography.labelSmall.copyWith(
-                  fontSize: 10.5,
-                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                  color: isSelected ? activeColor : inactiveColor,
-                  letterSpacing: isSelected ? 0.2 : 0,
-                ),
-                child: Text(
-                  label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
+            ),
+            const SizedBox(height: 3),
+            AnimatedDefaultTextStyle(
+              duration: const Duration(milliseconds: 180),
+              style: AppTypography.labelSmall.copyWith(
+                fontSize: 10.5,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                color: isSelected ? activeColor : inactiveColor,
               ),
-            ],
-          ),
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+              ),
+            ),
+          ],
         ),
       ),
     );
