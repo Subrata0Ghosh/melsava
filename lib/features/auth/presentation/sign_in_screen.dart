@@ -17,8 +17,8 @@ class SignInScreen extends ConsumerStatefulWidget {
 }
 
 class _SignInScreenState extends ConsumerState<SignInScreen> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _emailController = TextEditingController(text: 'admin@melsava.com');
+  final _passwordController = TextEditingController(text: 'Melsava2026');
   bool _isLoading = false;
   String? _errorMessage;
 
