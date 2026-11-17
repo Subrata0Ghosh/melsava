@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../models/experience_model.dart';
+import 'trending_badge.dart';
 
 /// Premium experience card with immersive image, glassmorphic overlays,
 /// and smooth micro-interactions. Inspired by Event Discovery (Dribbble)
@@ -272,28 +273,9 @@ class _ExperienceCardState extends State<ExperienceCard>
                 ),
                 if (exp.currentParticipants >= 8) ...[
                   const SizedBox(width: 6),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: Colors.black.withValues(alpha: 0.65),
-                      borderRadius: BorderRadius.circular(10),
-                      border: Border.all(color: Colors.white24, width: 0.8),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text('🔥', style: TextStyle(fontSize: 11)),
-                        SizedBox(width: 3),
-                        Text(
-                          'Trending',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w700,
-                          ),
-                        ),
-                      ],
-                    ),
+                  const TrendingBadge(
+                    fontSize: 10,
+                    padding: EdgeInsets.symmetric(horizontal: 7, vertical: 3.5),
                   ),
                 ],
               ],

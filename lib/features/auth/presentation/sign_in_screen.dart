@@ -171,6 +171,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
               PrimaryButton(
                 label: 'Sign In',
                 isLoading: _isLoading,
+                gradient: AppColors.sunsetCtaGradient,
                 onPressed: _handleSignIn,
               ),
               const SizedBox(height: AppConstants.spacingXL),

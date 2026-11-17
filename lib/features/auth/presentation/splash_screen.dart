@@ -3,9 +3,19 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/animated_melsava_brand_logo.dart';
+import '../../../shared/widgets/fluid_wave_ribbon.dart';
 import 'auth_providers.dart';
 
+/// Screen 1: Scenic Twilight Mountain Sunset Splash Screen
+///
+/// Features:
+/// - Scenic twilight hillside backdrop with 4 friends looking at the sunset
+/// - Centered animated glowing MELSAVA brand logo
+/// - Brand title and tagline: "Meet through moments. Less swiping. More living."
+/// - Soft circular progress ring and connection status
+/// - Fluid layered wave ribbons at the bottom
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
@@ -24,10 +34,14 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     super.initState();
     _checkAuthSession();
 
-    // 2.6s brand logo sequence
-    _navigationTimer = Timer(const Duration(milliseconds: 2600), () {
-      _animationCompleted = true;
-      _attemptNavigation();
+    // Start timer only after first frame is drawn on screen
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _navigationTimer = Timer(const Duration(milliseconds: 3200), () {
+        if (mounted) {
+          setState(() => _animationCompleted = true);
+          _attemptNavigation();
+        }
+      });
     });
   }
 
@@ -61,39 +75,146 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
-
     return Scaffold(
-      body: Container(
-        width: double.infinity,
-        height: double.infinity,
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: isDark
-                ? [
-                    const Color(0xFF161224),
-                    AppColors.obsidian,
-                  ]
-                : [
-                    const Color(0xFFFAF6F2),
-                    AppColors.warmIvory,
+      backgroundColor: const Color(0xFF151226),
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Scenic Twilight Mountain & Hillside Backdrop ───────────────
+          Image.asset(
+            'assets/images/splash_scenic_backdrop.png',
+            fit: BoxFit.cover,
+            errorBuilder: (context, error, stackTrace) => Container(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    Color(0xFF151226),
+                    Color(0xFF3B1E54),
+                    Color(0xFF8A2BE2),
+                    Color(0xFF140D24),
                   ],
+                ),
+              ),
+            ),
           ),
-        ),
-        child: Center(
-          child: AnimatedMelsavaBrandLogo(
-            size: 110,
-            isDark: isDark,
-            onAnimationComplete: () {
-              if (mounted) {
-                setState(() => _animationCompleted = true);
-                _attemptNavigation();
-              }
-            },
+
+          // ── Soft Top & Center Lighting Vignette ─────────────────────────
+          Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topCenter,
+                end: Alignment.bottomCenter,
+                stops: const [0.0, 0.45, 0.75, 1.0],
+                colors: [
+                  Colors.black.withValues(alpha: 0.25),
+                  Colors.transparent,
+                  Colors.black.withValues(alpha: 0.15),
+                  Colors.black.withValues(alpha: 0.55),
+                ],
+              ),
+            ),
           ),
-        ),
+
+          // ── Upper Brand & Logo Section ──────────────────────────────────
+          SafeArea(
+            child: Column(
+              children: [
+                const Spacer(flex: 3),
+
+                // Animated glowing MELSAVA brand logo (Iconic 'M' meeting circles)
+                const AnimatedMelsavaBrandLogo(
+                  size: 92,
+                  isDark: true,
+                ),
+                const SizedBox(height: 18),
+
+                // "MELSAVA" Brand Typography with glowing highlight
+                Text(
+                  'MELSAVA',
+                  style: AppTypography.displaySmall.copyWith(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 4.5,
+                    fontSize: 26,
+                    shadows: [
+                      Shadow(
+                        color: Colors.white.withValues(alpha: 0.45),
+                        blurRadius: 16,
+                      ),
+                      Shadow(
+                        color: AppColors.brightViolet.withValues(alpha: 0.55),
+                        blurRadius: 24,
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+
+                // Taglines
+                Text(
+                  'Meet through moments.',
+                  style: AppTypography.titleSmall.copyWith(
+                    color: Colors.white.withValues(alpha: 0.95),
+                    fontWeight: FontWeight.w600,
+                    fontSize: 14.5,
+                    letterSpacing: 0.3,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Less swiping. More living.',
+                  style: AppTypography.bodySmall.copyWith(
+                    color: const Color(0xFFE2D6F5),
+                    fontSize: 12,
+                    letterSpacing: 0.2,
+                  ),
+                ),
+
+                const Spacer(flex: 7),
+
+                // Connecting status indicator
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.0,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          Colors.white.withValues(alpha: 0.75),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      'Connecting people through shared experiences...',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 24),
+              ],
+            ),
+          ),
+
+          // ── Fluid Layered Wave Ribbon at Bottom ─────────────────────────
+          const Positioned(
+            bottom: 0,
+            left: 0,
+            right: 0,
+            child: FluidWaveRibbon(
+              height: 70,
+              opacity: 0.95,
+            ),
+          ),
+        ],
       ),
     );
   }

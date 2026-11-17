@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 
 /// Screen 7 (from Image 9): Join Experience Flow
 ///
@@ -114,35 +115,38 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
       ),
       child: _isSuccess
           ? _buildSuccessView(isDark, exp, primaryTextColor, mutedTextColor)
-          : Column(
+          : Stack(
+              clipBehavior: Clip.none,
               children: [
-                // Top drag pill
-                Container(
-                  margin: const EdgeInsets.only(top: 14, bottom: 6),
-                  width: 44,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: isDark ? Colors.white24 : AppColors.divider,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
+                Column(
+                  children: [
+                    // Top drag pill
+                    Container(
+                      margin: const EdgeInsets.only(top: 14, bottom: 6),
+                      width: 44,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: isDark ? Colors.white24 : AppColors.divider,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
+                    ),
 
-                Expanded(
-                  child: SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(22, 10, 22, 20),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        // Title Header
-                        Text(
-                          'Join Experience',
-                          style: AppTypography.titleLarge.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 20,
-                            color: primaryTextColor,
-                          ),
-                        ),
+                    Expanded(
+                      child: SingleChildScrollView(
+                        physics: const BouncingScrollPhysics(),
+                        padding: const EdgeInsets.fromLTRB(22, 10, 22, 20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            // Title Header
+                            Text(
+                              'Join Experience',
+                              style: AppTypography.titleLarge.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                                color: primaryTextColor,
+                              ),
+                            ),
                         const SizedBox(height: 16),
 
                         // Mini summary card
@@ -341,16 +345,20 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                         GestureDetector(
                           onTap: _isSubmitting ? null : _handleConfirm,
                           child: Container(
-                            height: 52,
+                            height: 54,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              gradient: AppColors.purpleGradient,
-                              borderRadius: BorderRadius.circular(18),
+                              gradient: AppColors.sunsetCtaGradient,
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 1.0,
+                              ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: AppColors.primaryPurple.withValues(alpha: 0.4),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
+                                  color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 5),
                                 ),
                               ],
                             ),
@@ -368,7 +376,7 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                                     style: AppTypography.labelLarge.copyWith(
                                       color: Colors.white,
                                       fontWeight: FontWeight.w800,
-                                      fontSize: 15,
+                                      fontSize: 15.5,
                                     ),
                                   ),
                           ),
@@ -390,6 +398,21 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                 ),
               ],
             ),
+
+            // Botanical Monstera leaf peeking out from the right edge (Image 9 Screen 7)
+            const Positioned(
+              top: 175,
+              right: -12,
+              child: BotanicalLeafDecoration(
+                style: BotanicalLeafStyle.monstera,
+                width: 55,
+                height: 95,
+                rotation: -0.22,
+                opacity: 0.95,
+              ),
+            ),
+          ],
+        ),
     );
   }
 

@@ -9,6 +9,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../auth/presentation/auth_providers.dart';
 
 /// Screen 12 & 13 (from Image 9): Profile & Settings Screen
@@ -189,145 +190,174 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Header Profile Card (Image 9 Screen 12) ──
-              Container(
-                padding: const EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(24),
-                  border: Border.all(color: borderColor, width: 0.9),
-                  boxShadow: [
-                    BoxShadow(
-                      color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+              // ── Header Profile Card with Botanical Accents (Image 9 Screen 12) ──
+              Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  // Top-Right Tropical Foliage Accent
+                  const Positioned(
+                    top: -14,
+                    right: -10,
+                    child: BotanicalLeafDecoration(
+                      style: BotanicalLeafStyle.tropicalFoliage,
+                      width: 68,
+                      height: 105,
+                      rotation: 0.32,
                     ),
-                  ],
-                ),
-                child: Column(
-                  children: [
-                    // Avatar with Active Green Ring & Verified Badge
-                    Stack(
-                      clipBehavior: Clip.none,
-                      children: [
-                        Container(
-                          width: 84,
-                          height: 84,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: AppColors.mintAccent,
-                              width: 3,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child: CachedNetworkImage(
-                              imageUrl: user?.avatarUrl ??
-                                  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                  ),
+
+                  // Bottom-Left Tropical Foliage Accent
+                  const Positioned(
+                    bottom: -14,
+                    left: -10,
+                    child: BotanicalLeafDecoration(
+                      style: BotanicalLeafStyle.tropicalFoliage,
+                      width: 58,
+                      height: 92,
+                      rotation: -2.35,
+                    ),
+                  ),
+
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(24),
+                      border: Border.all(color: borderColor, width: 0.9),
+                      boxShadow: [
+                        BoxShadow(
+                          color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
                         ),
-                        Positioned(
-                          bottom: 0,
-                          right: 0,
-                          child: Container(
-                            width: 24,
-                            height: 24,
-                            decoration: BoxDecoration(
-                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                              shape: BoxShape.circle,
-                              border: Border.all(
-                                color: isDark ? AppColors.darkSurface : Colors.white,
-                                width: 2,
+                      ],
+                    ),
+                    child: Column(
+                      children: [
+                        // Avatar with Active Green Ring & Verified Badge
+                        Stack(
+                          clipBehavior: Clip.none,
+                          children: [
+                            Container(
+                              width: 84,
+                              height: 84,
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: AppColors.mintAccent,
+                                  width: 3,
+                                ),
+                              ),
+                              child: ClipOval(
+                                child: CachedNetworkImage(
+                                  imageUrl: user?.avatarUrl ??
+                                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                             ),
-                            child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
-                          ),
+                            Positioned(
+                              bottom: 0,
+                              right: 0,
+                              child: Container(
+                                width: 24,
+                                height: 24,
+                                decoration: BoxDecoration(
+                                  color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: isDark ? AppColors.darkSurface : Colors.white,
+                                    width: 2,
+                                  ),
+                                ),
+                                child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
+                              ),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    const SizedBox(height: 14),
+                        const SizedBox(height: 14),
 
-                    // User Name & Verification
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
+                        // User Name & Verification
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Text(
+                              displayName,
+                              style: AppTypography.titleLarge.copyWith(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w800,
+                                fontSize: 20,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            Icon(
+                              Icons.verified_rounded,
+                              size: 18,
+                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
                         Text(
-                          displayName,
-                          style: AppTypography.titleLarge.copyWith(
-                            color: primaryTextColor,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 20,
+                          'Friend • ${userLoc.city}',
+                          style: AppTypography.bodySmall.copyWith(
+                            color: mutedTextColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 12.5,
                           ),
                         ),
-                        const SizedBox(width: 6),
-                        Icon(
-                          Icons.verified_rounded,
-                          size: 18,
-                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        const SizedBox(height: 8),
+                        Text(
+                          'Nature lover | Coffee enthusiast | Explorer',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: primaryTextColor,
+                            fontSize: 13,
+                          ),
+                        ),
+                        const SizedBox(height: 18),
+
+                        // Stats Row: 24 Experiences, 78 Connections, 12 Followers
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                          children: [
+                            _buildStatCol('24', 'Experiences', primaryTextColor, mutedTextColor),
+                            Container(height: 28, width: 1, color: borderColor),
+                            _buildStatCol('78', 'Connections', primaryTextColor, mutedTextColor),
+                            Container(height: 28, width: 1, color: borderColor),
+                            _buildStatCol('12', 'Followers', primaryTextColor, mutedTextColor),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // Edit Profile Button with pill radius
+                        GestureDetector(
+                          onTap: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(content: Text('Edit Profile opened!')),
+                            );
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8.5),
+                            decoration: BoxDecoration(
+                              color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: borderColor),
+                            ),
+                            child: Text(
+                              'Edit Profile',
+                              style: AppTypography.labelSmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                                color: primaryTextColor,
+                              ),
+                            ),
+                          ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Friend • ${userLoc.city}',
-                      style: AppTypography.bodySmall.copyWith(
-                        color: mutedTextColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Nature lover | Coffee enthusiast | Explorer',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodyMedium.copyWith(
-                        color: primaryTextColor,
-                        fontSize: 13,
-                      ),
-                    ),
-                    const SizedBox(height: 18),
-
-                    // Stats Row: 24 Experiences, 78 Connections, 12 Followers
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                      children: [
-                        _buildStatCol('24', 'Experiences', primaryTextColor, mutedTextColor),
-                        Container(height: 28, width: 1, color: borderColor),
-                        _buildStatCol('78', 'Connections', primaryTextColor, mutedTextColor),
-                        Container(height: 28, width: 1, color: borderColor),
-                        _buildStatCol('12', 'Followers', primaryTextColor, mutedTextColor),
-                      ],
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Edit Profile Button
-                    GestureDetector(
-                      onTap: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Edit Profile opened!')),
-                        );
-                      },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(color: borderColor),
-                        ),
-                        child: Text(
-                          'Edit Profile',
-                          style: AppTypography.labelSmall.copyWith(
-                            fontWeight: FontWeight.w700,
-                            fontSize: 12,
-                            color: primaryTextColor,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+                  ),
+                ],
               ),
 
               const SizedBox(height: 16),

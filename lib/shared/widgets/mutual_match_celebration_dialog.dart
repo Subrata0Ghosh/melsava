@@ -314,35 +314,44 @@ class _MutualMatchCelebrationDialogState
                       const SizedBox(width: 12),
                       Expanded(
                         flex: 2,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: isDark
-                                ? AppColors.luminousMauve
-                                : AppColors.mauve,
-                            foregroundColor: Colors.white,
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            elevation: 0,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
-                          ),
-                          onPressed: () {
+                        child: GestureDetector(
+                          onTap: () {
                             Navigator.of(context).pop();
                             context.push('/chat/${widget.matchName}');
                           },
-                          child: const Row(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.chat_bubble_rounded, size: 16),
-                              SizedBox(width: 6),
-                              Text(
-                                'Say Hello',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 13,
-                                ),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 13),
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.sunsetCtaGradient,
+                              borderRadius: BorderRadius.circular(24),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 1.0,
                               ),
-                            ],
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.white),
+                                SizedBox(width: 6),
+                                Text(
+                                  'Start Chat 💬',
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13.5,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                              ],
+                            ),
                           ),
                         ),
                       ),

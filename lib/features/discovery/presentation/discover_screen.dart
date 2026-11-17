@@ -11,6 +11,7 @@ import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/activity_radar_map_card.dart';
 import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
+import '../../../shared/widgets/trending_badge.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
@@ -693,27 +694,10 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 child: Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white24, width: 0.8),
-                      ),
-                      child: Row(
-                        children: [
-                          const Text('🔥', style: TextStyle(fontSize: 12)),
-                          const SizedBox(width: 4),
-                          Text(
-                            'Trending',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 11,
-                            ),
-                          ),
-                        ],
-                      ),
+                    // Glossy Golden Trending badge (Image 9 Screen 5)
+                    const TrendingBadge(
+                      fontSize: 10.5,
+                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                     ),
 
                     // 1/3 indicator pill
@@ -797,18 +781,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                     const SizedBox(width: 10),
 
-                    // Join Now -> pill button
+                    // Join Now -> pill button with sunset gradient
                     GestureDetector(
                       onTap: () => _openJoinFlow(exp),
                       child: Container(
                         padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: AppColors.purpleGradient,
-                          borderRadius: BorderRadius.circular(20),
+                          gradient: AppColors.sunsetCtaGradient,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.25),
+                            width: 1.0,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryPurple.withValues(alpha: 0.4),
-                              blurRadius: 8,
+                              color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
+                              blurRadius: 10,
                               offset: const Offset(0, 3),
                             ),
                           ],

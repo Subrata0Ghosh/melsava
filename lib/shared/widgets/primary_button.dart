@@ -5,8 +5,8 @@ import '../../core/constants/app_typography.dart';
 
 /// Primary action button for MELSAVA
 ///
-/// Features Deep Plum / Mauve fill, 16px corner radius, tactile press state,
-/// and smooth inline progress indicator when [isLoading] is true.
+/// Features rich multi-stop gradient (or solid color), pill corner radius (28dp),
+/// tactile press state, glowing drop shadow, and smooth inline progress indicator.
 class PrimaryButton extends StatelessWidget {
   final String label;
   final VoidCallback? onPressed;
@@ -16,6 +16,8 @@ class PrimaryButton extends StatelessWidget {
   final double height;
   final Color? backgroundColor;
   final Color? foregroundColor;
+  final Gradient? gradient;
+  final double borderRadius;
 
   const PrimaryButton({
     super.key,
@@ -24,61 +26,86 @@ class PrimaryButton extends StatelessWidget {
     this.isLoading = false,
     this.icon,
     this.width,
-    this.height = 52.0,
+    this.height = 54.0,
     this.backgroundColor,
     this.foregroundColor,
+    this.gradient,
+    this.borderRadius = 28.0,
   });
 
   @override
   Widget build(BuildContext context) {
-    final bg = backgroundColor ?? AppColors.deepPlum;
-    final fg = foregroundColor ?? AppColors.white;
+    final fg = foregroundColor ?? Colors.white;
+    final effectiveGradient = backgroundColor != null
+        ? null
+        : (gradient ?? AppColors.purpleGradient);
+
+    final isEnabled = !isLoading && onPressed != null;
 
     return SizedBox(
       width: width ?? double.infinity,
       height: height,
-      child: ElevatedButton(
-        onPressed: isLoading ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: bg,
-          foregroundColor: fg,
-          disabledBackgroundColor: bg.withOpacity(0.5),
-          disabledForegroundColor: fg.withOpacity(0.7),
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(AppConstants.buttonRadiusLarge),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: effectiveGradient == null
+              ? (backgroundColor ?? AppColors.primaryPurple)
+              : null,
+          gradient: effectiveGradient,
+          borderRadius: BorderRadius.circular(borderRadius),
+          border: Border.all(
+            color: Colors.white.withValues(alpha: 0.22),
+            width: 1.0,
           ),
-          padding: const EdgeInsets.symmetric(
-            horizontal: AppConstants.spacingLG,
+          boxShadow: isEnabled
+              ? [
+                  BoxShadow(
+                    color: (effectiveGradient != null
+                            ? AppColors.primaryPurple
+                            : (backgroundColor ?? AppColors.primaryPurple))
+                        .withValues(alpha: 0.38),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
+                  ),
+                ]
+              : null,
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(borderRadius),
+            onTap: isEnabled ? onPressed : null,
+            child: Center(
+              child: isLoading
+                  ? SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2.2,
+                        valueColor: AlwaysStoppedAnimation<Color>(fg),
+                      ),
+                    )
+                  : Row(
+                      mainAxisSize: MainAxisSize.min,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        if (icon != null) ...[
+                          Icon(icon, size: 20, color: fg),
+                          const SizedBox(width: AppConstants.spacingSM),
+                        ],
+                        Text(
+                          label,
+                          style: AppTypography.labelLarge.copyWith(
+                            color: fg,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 15,
+                            letterSpacing: 0.2,
+                          ),
+                        ),
+                      ],
+                    ),
+            ),
           ),
         ),
-        child: isLoading
-            ? SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.2,
-                  valueColor: AlwaysStoppedAnimation<Color>(fg),
-                ),
-              )
-            : Row(
-                mainAxisSize: MainAxisSize.min,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  if (icon != null) ...[
-                    Icon(icon, size: 20, color: fg),
-                    const SizedBox(width: AppConstants.spacingSM),
-                  ],
-                  Text(
-                    label,
-                    style: AppTypography.labelLarge.copyWith(
-                      color: fg,
-                      fontWeight: FontWeight.w600,
-                      letterSpacing: 0.2,
-                    ),
-                  ),
-                ],
-              ),
       ),
     );
   }

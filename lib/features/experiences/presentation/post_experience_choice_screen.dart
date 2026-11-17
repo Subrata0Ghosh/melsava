@@ -344,16 +344,20 @@ class _PostExperienceChoiceScreenState
                   GestureDetector(
                     onTap: _isSubmitting ? null : _handleSubmit,
                     child: Container(
-                      height: 52,
+                      height: 54,
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
-                        gradient: AppColors.purpleGradient,
-                        borderRadius: BorderRadius.circular(18),
+                        gradient: AppColors.sunsetCtaGradient,
+                        borderRadius: BorderRadius.circular(28),
+                        border: Border.all(
+                          color: Colors.white.withValues(alpha: 0.25),
+                          width: 1.0,
+                        ),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryPurple.withValues(alpha: 0.4),
-                            blurRadius: 14,
-                            offset: const Offset(0, 4),
+                            color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
+                            blurRadius: 16,
+                            offset: const Offset(0, 5),
                           ),
                         ],
                       ),

@@ -6,6 +6,7 @@ import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
+import '../../../shared/widgets/trending_badge.dart';
 import 'join_experience_sheet.dart';
 
 /// Screen 2: Experience Details Screen
@@ -153,33 +154,10 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              // Trending pill badge
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: Colors.black.withValues(alpha: 0.65),
-                                  borderRadius: BorderRadius.circular(14),
-                                  border: Border.all(
-                                    color: Colors.white.withValues(alpha: 0.25),
-                                  ),
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Text('🔥', style: TextStyle(fontSize: 12)),
-                                    SizedBox(width: 5),
-                                    Text(
-                                      'Trending',
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontWeight: FontWeight.w800,
-                                        fontSize: 12,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                              // Glossy Golden Trending badge (Image 9 Screen 5)
+                              const TrendingBadge(
+                                fontSize: 12,
+                                padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               ),
 
                               // Bookmark & Share Buttons
@@ -628,18 +606,26 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                         height: 50,
                         alignment: Alignment.center,
                         decoration: BoxDecoration(
-                          gradient: exp.hasJoined ? null : AppColors.purpleGradient,
+                          gradient: exp.hasJoined ? null : AppColors.sunsetCtaGradient,
                           color: exp.hasJoined
                               ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
                               : null,
-                          borderRadius: BorderRadius.circular(16),
+                          borderRadius: BorderRadius.circular(28),
+                          border: exp.hasJoined
+                              ? Border.all(
+                                  color: isDark ? AppColors.darkBorder : AppColors.divider,
+                                )
+                              : Border.all(
+                                  color: Colors.white.withValues(alpha: 0.25),
+                                  width: 1.0,
+                                ),
                           boxShadow: exp.hasJoined
                               ? null
                               : [
                                   BoxShadow(
-                                    color: AppColors.primaryPurple.withValues(alpha: 0.35),
-                                    blurRadius: 12,
-                                    offset: const Offset(0, 4),
+                                    color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 5),
                                   ),
                                 ],
                         ),
