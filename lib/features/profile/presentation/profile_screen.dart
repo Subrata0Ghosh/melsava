@@ -273,8 +273,11 @@ class ProfileScreen extends ConsumerWidget {
                           size: 20,
                         ),
                         onPressed: () {
-                          if (Navigator.of(context).canPop()) {
-                            Navigator.of(context).pop();
+                          HapticFeedback.lightImpact();
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/discover');
                           }
                         },
                       ),

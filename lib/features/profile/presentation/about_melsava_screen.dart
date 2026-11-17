@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/melsava_logo.dart';
@@ -73,7 +74,13 @@ class AboutMelsavaScreen extends StatelessWidget {
                         ),
                         child: IconButton(
                           icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
-                          onPressed: () => Navigator.of(context).pop(),
+                          onPressed: () {
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/discover');
+                            }
+                          },
                         ),
                       ),
                     ],

@@ -6,6 +6,7 @@ import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/services/worldwide_location_service.dart';
+import 'full_screen_radar_map_sheet.dart';
 import 'location_venue_picker_sheet.dart';
 
 /// Interactive Real-World Activity Radar Map Card
@@ -103,9 +104,13 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
     _mapController.move(_mapController.camera.center, currentZoom - 1.0);
   }
 
-  void _recenter() {
+  Future<void> _recenter() async {
     HapticFeedback.lightImpact();
     _mapController.move(_cityCenter, 14.5);
+    final gpsLoc = await WorldwideLocationService.instance.getCurrentGpsLocation();
+    if (mounted && gpsLoc != null) {
+      _mapController.move(LatLng(gpsLoc.lat, gpsLoc.lon), 15.0);
+    }
   }
 
   @override
@@ -118,10 +123,8 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
     final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
     final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
-    // CartoDB tiles: Voyager for Light, Dark Matter for Dark
-    final tileUrl = isDark
-        ? 'https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png'
-        : 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
+    // OpenStreetMap official tiles: 100% Free, Zero Sign-In, Zero API key required, Zero watermarks!
+    const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     return Container(
       decoration: BoxDecoration(
@@ -144,6 +147,7 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
       child: ClipRRect(
         borderRadius: BorderRadius.circular(24),
         child: Column(
+          mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             // ── Live Real Map Canvas Stack ─────────────────────────────────
@@ -151,6 +155,13 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
               height: 240,
               child: Stack(
                 children: [
+                  // Ambient baseline canvas background (matching theme while tiles load)
+                  Positioned.fill(
+                    child: ColoredBox(
+                      color: isDark ? const Color(0xFF130E1F) : const Color(0xFFF3EFEA),
+                    ),
+                  ),
+
                   // Real Interactive FlutterMap
                   FlutterMap(
                     mapController: _mapController,
@@ -166,11 +177,28 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                       ),
                     ),
                     children: [
-                      // Tile Layer (Real OpenStreetMap / CartoDB Street Data)
+                      // Tile Layer (Real OpenStreetMap Street Data — 100% Zero Sign-In & Watermark-Free)
                       TileLayer(
                         urlTemplate: tileUrl,
                         userAgentPackageName: 'com.melsava.app',
                         tileProvider: NetworkTileProvider(),
+                        tileBuilder: (context, tileWidget, tile) {
+                          if (isDark) {
+                            return ColorFiltered(
+                              colorFilter: const ColorFilter.matrix(<double>[
+                                // Obsidian Inversion & Midnight Violet Tint Matrix:
+                                // Turns white land into sleek dark obsidian (#120E1C),
+                                // roads into crisp silver/lavender ribbons, and water into deep indigo
+                                -0.22, -0.45, -0.10, 0.0, 220.0,
+                                -0.22, -0.45, -0.10, 0.0, 210.0,
+                                -0.15, -0.35, -0.10, 0.0, 238.0,
+                                 0.00,  0.00,  0.00, 1.0,   0.0,
+                              ]),
+                              child: tileWidget,
+                            );
+                          }
+                          return tileWidget;
+                        },
                       ),
 
                       // Animated Radar Pulse Circles Layer
@@ -355,13 +383,23 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                     ),
                   ),
 
-                  // Floating Map Navigation Controls (Zoom & Recenter)
+                  // Floating Map Navigation Controls (Fullscreen, Zoom & Recenter)
                   Positioned(
                     bottom: 12,
                     right: 12,
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
+                        _buildFloatingMapButton(
+                          icon: Icons.fullscreen_rounded,
+                          onTap: () => FullScreenRadarMapSheet.show(
+                            context,
+                            location: widget.location,
+                            onVenueSelected: widget.onVenueSelected,
+                          ),
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 6),
                         _buildFloatingMapButton(
                           icon: Icons.add_rounded,
                           onTap: _zoomIn,
@@ -400,136 +438,161 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
 
             // ── Active Venue Bottom Drawer / Info Box ──────────────────────
             if (activeVenue != null)
-              Container(
-                padding: const EdgeInsets.all(14),
-                decoration: BoxDecoration(
-                  color: isDark ? const Color(0xFF1E182D) : const Color(0xFFFAF7F2),
-                  border: Border(
-                    top: BorderSide(
-                      color: isDark ? AppColors.darkBorder : AppColors.divider,
-                      width: 0.8,
+              GestureDetector(
+                onTap: () {
+                  HapticFeedback.lightImpact();
+                  widget.onVenueSelected?.call(activeVenue);
+                },
+                child: Container(
+                  height: 84,
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: isDark ? const Color(0xFF1E182D) : const Color(0xFFFAF7F2),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark ? AppColors.darkBorder : AppColors.divider,
+                        width: 0.8,
+                      ),
                     ),
                   ),
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          colors: [
-                            isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                            AppColors.vividCoral,
-                          ],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        borderRadius: BorderRadius.circular(14),
-                        boxShadow: [
-                          BoxShadow(
-                            color: AppColors.primaryPurple.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 3),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.center,
+                    children: [
+                      Container(
+                        width: 44,
+                        height: 44,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              AppColors.vividCoral,
+                            ],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
                           ),
-                        ],
+                          borderRadius: BorderRadius.circular(14),
+                          boxShadow: [
+                            BoxShadow(
+                              color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
+                        ),
+                        child: Icon(
+                          _getVenueIcon(activeVenue.category),
+                          color: Colors.white,
+                          size: 22,
+                        ),
                       ),
-                      child: Icon(
-                        _getVenueIcon(activeVenue.category),
-                        color: Colors.white,
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              Text(
-                                activeVenue.category.toUpperCase(),
-                                style: AppTypography.labelSmall.copyWith(
-                                  fontSize: 10,
-                                  letterSpacing: 1.2,
-                                  fontWeight: FontWeight.w700,
-                                  color: isDark ? AppColors.vividCoral : AppColors.primaryPurple,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 6,
-                                  vertical: 2,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: AppColors.mintAccent.withValues(alpha: 0.15),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Text(
-                                  'Vetted Public Spot',
-                                  style: AppTypography.labelSmall.copyWith(
-                                    fontSize: 9.5,
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? AppColors.mintAccent
-                                        : const Color(0xFF28795A),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    activeVenue.category.toUpperCase(),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.labelSmall.copyWith(
+                                      fontSize: 10,
+                                      letterSpacing: 1.2,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? AppColors.vividCoral
+                                          : AppColors.primaryPurple,
+                                    ),
                                   ),
                                 ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.mintAccent
+                                        .withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Text(
+                                    'Verified Spot',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      fontSize: 9.5,
+                                      fontWeight: FontWeight.w700,
+                                      color: isDark
+                                          ? AppColors.mintAccent
+                                          : const Color(0xFF28795A),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              activeVenue.name,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.titleSmall.copyWith(
+                                fontWeight: FontWeight.w700,
+                                color: primaryTextColor,
+                                fontSize: 13,
                               ),
-                            ],
-                          ),
-                          const SizedBox(height: 3),
-                          Text(
-                            activeVenue.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.titleSmall.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: primaryTextColor,
                             ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            '${activeVenue.address} • Small group venue',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: mutedTextColor,
-                              fontSize: 11.5,
+                            const SizedBox(height: 2),
+                            Text(
+                              activeVenue.address,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: mutedTextColor,
+                                fontSize: 11,
+                              ),
                             ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          minimumSize: const Size(0, 32),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 6,
                           ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: isDark
-                            ? AppColors.brightViolet
-                            : AppColors.primaryPurple,
-                        foregroundColor: Colors.white,
-                        elevation: 0,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 8,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                      ),
-                      onPressed: () {
-                        widget.onVenueSelected?.call(activeVenue);
-                      },
-                      child: const Text(
-                        'View Meetup',
-                        style: TextStyle(
-                          fontSize: 11.5,
-                          fontWeight: FontWeight.w700,
+                        onPressed: () {
+                          widget.onVenueSelected?.call(activeVenue);
+                        },
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'Meetup',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                            SizedBox(width: 2),
+                            Icon(Icons.arrow_forward_rounded, size: 12),
+                          ],
                         ),
                       ),
-                    ),
-                  ],
+                    ],
+                  ),
                 ),
               ),
           ],

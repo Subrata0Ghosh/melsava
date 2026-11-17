@@ -72,7 +72,14 @@ class SettingsScreen extends ConsumerWidget {
                           color: primaryTextColor,
                           size: 20,
                         ),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/profile');
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: 14),
@@ -336,7 +343,14 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                       IconButton(
                         icon: Icon(Icons.close_rounded, color: mutedTextColor),
-                        onPressed: () => Navigator.of(context).pop(),
+                        onPressed: () {
+                          HapticFeedback.lightImpact();
+                          if (context.canPop()) {
+                            context.pop();
+                          } else {
+                            context.go('/profile');
+                          }
+                        },
                       ),
                     ],
                   ),
