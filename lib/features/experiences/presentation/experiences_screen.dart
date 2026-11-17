@@ -3,7 +3,6 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
-import '../../../core/services/location_providers.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/experience_card.dart';
@@ -72,7 +71,6 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final userLoc = ref.watch(userLocationProvider);
     final allExperiences = ref.watch(experiencesListProvider);
     final myExperiences = allExperiences
         .where((e) => e.hasJoined || e.isCompleted)
@@ -106,37 +104,33 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
           ),
         ),
         actions: [
-          // Worldwide Location Pill
+          // Worldwide Location Button (Icon only)
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
               onTap: () => LocationVenuePickerSheet.show(context),
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                width: 38,
+                height: 38,
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkElevated : AppColors.white,
-                  borderRadius: BorderRadius.circular(16),
+                  shape: BoxShape.circle,
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.divider,
+                    color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.38),
+                    width: 1.0,
                   ),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.place_rounded,
-                      size: 14,
-                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                    ),
-                    const SizedBox(width: 4),
-                    Text(
-                      userLoc.city,
-                      style: AppTypography.labelSmall.copyWith(
-                        color: primaryTextColor,
-                        fontWeight: FontWeight.w700,
-                      ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.12 : 0.06),
+                      blurRadius: 6,
+                      offset: const Offset(0, 1),
                     ),
                   ],
+                ),
+                child: const Icon(
+                  Icons.location_on_rounded,
+                  size: 19,
+                  color: Color(0xFFF59E0B),
                 ),
               ),
             ),
@@ -191,6 +185,11 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                         size: 20,
                       ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -203,7 +202,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                 child: ListView.separated(
                   padding: const EdgeInsets.symmetric(horizontal: 18),
                   scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   itemCount: _categories.length,
                   separatorBuilder: (context, index) => const SizedBox(width: 8),
                   itemBuilder: (context, index) {
@@ -273,7 +272,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                           right: 18,
                           bottom: 120, // Guaranteed 120dp clearance for floating navbar
                         ),
-                        physics: const BouncingScrollPhysics(),
+                        physics: const ClampingScrollPhysics(),
                         itemCount: filteredAll.length,
                         itemBuilder: (context, index) {
                           final exp = filteredAll[index];
@@ -309,7 +308,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                     top: 14,
                     bottom: 120, // Guaranteed 120dp clearance for floating navbar
                   ),
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   itemCount: myExperiences.length,
                   itemBuilder: (context, index) {
                     final exp = myExperiences[index];
@@ -428,13 +427,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                     backgroundColor:
                                         isDark ? AppColors.brightViolet : AppColors.primaryPurple,
                                     onPressed: () {
-                                      Navigator.of(context).push(
-                                        MaterialPageRoute(
-                                          builder: (context) => PostExperienceChoiceScreen(
-                                            experience: exp,
-                                          ),
-                                        ),
-                                      );
+                                      PostExperienceChoiceScreen.show(context, exp);
                                     },
                                   ),
                                 ),

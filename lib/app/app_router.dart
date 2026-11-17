@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import '../features/auth/presentation/adults_only_screen.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
@@ -13,7 +14,9 @@ import '../features/connections/presentation/connections_screen.dart';
 import '../features/discovery/presentation/discover_screen.dart';
 import '../features/experiences/presentation/experiences_screen.dart';
 import '../features/main_shell/main_shell_screen.dart';
+import '../features/profile/presentation/about_melsava_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
+import '../features/profile/presentation/settings_screen.dart';
 
 /// Global navigation key
 final GlobalKey<NavigatorState> _rootNavigatorKey = GlobalKey<NavigatorState>(
@@ -38,28 +41,61 @@ class AppRouter {
         builder: (context, state) => const OnboardingScreen(),
       ),
 
-      // Welcome & Auth routes
+      // Adults Only Age Certification (Screen 4)
+      GoRoute(
+        path: '/adults-only',
+        builder: (context, state) => const AdultsOnlyScreen(),
+      ),
+
+      // About MELSAVA (Screen 15)
+      GoRoute(
+        path: '/about',
+        builder: (context, state) => const AboutMelsavaScreen(),
+      ),
+
+      // Settings (Screen 13)
+      GoRoute(
+        path: '/settings',
+        builder: (context, state) => const SettingsScreen(),
+      ),
+
+      // Welcome & Auth routes (Smooth fluid switching between pages)
       GoRoute(
         path: '/welcome',
-        builder: (context, state) => const WelcomeScreen(),
+        pageBuilder: (context, state) => _buildAuthPageTransition(
+          key: state.pageKey,
+          child: const WelcomeScreen(),
+        ),
       ),
       GoRoute(
         path: '/sign-in',
-        builder: (context, state) => const SignInScreen(),
+        pageBuilder: (context, state) => _buildAuthPageTransition(
+          key: state.pageKey,
+          child: const SignInScreen(),
+        ),
       ),
       GoRoute(
         path: '/sign-up',
-        builder: (context, state) => const SignUpScreen(),
+        pageBuilder: (context, state) => _buildAuthPageTransition(
+          key: state.pageKey,
+          child: const SignUpScreen(),
+        ),
       ),
       GoRoute(
         path: '/forgot-password',
-        builder: (context, state) => const ForgotPasswordScreen(),
+        pageBuilder: (context, state) => _buildAuthPageTransition(
+          key: state.pageKey,
+          child: const ForgotPasswordScreen(),
+        ),
       ),
       GoRoute(
         path: '/verify-email',
-        builder: (context, state) {
+        pageBuilder: (context, state) {
           final email = state.extra as String? ?? 'your email';
-          return VerifyEmailScreen(email: email);
+          return _buildAuthPageTransition(
+            key: state.pageKey,
+            child: VerifyEmailScreen(email: email),
+          );
         },
       ),
 
@@ -131,4 +167,33 @@ class AppRouter {
       ),
     ],
   );
+
+  static Page<dynamic> _buildAuthPageTransition({
+    required LocalKey key,
+    required Widget child,
+  }) {
+    return CustomTransitionPage(
+      key: key,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 280),
+      reverseTransitionDuration: const Duration(milliseconds: 240),
+      transitionsBuilder: (context, animation, secondaryAnimation, child) {
+        final curveAnim = CurvedAnimation(
+          parent: animation,
+          curve: Curves.easeOutCubic,
+          reverseCurve: Curves.easeInCubic,
+        );
+        return FadeTransition(
+          opacity: curveAnim,
+          child: SlideTransition(
+            position: Tween<Offset>(
+              begin: const Offset(0.06, 0.0),
+              end: Offset.zero,
+            ).animate(curveAnim),
+            child: child,
+          ),
+        );
+      },
+    );
+  }
 }

@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,20 +6,27 @@ import '../../../app/theme_provider.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
-import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../experiences/data/experiences_repository.dart';
+import '../../experiences/presentation/experience_detail_sheet.dart';
+import '../../experiences/presentation/join_experience_sheet.dart';
+import 'edit_profile_sheet.dart';
 
-/// Screen 12 & 13 (from Image 9): Profile & Settings Screen
+/// Screen 12 & 13 (Image 7): Profile & Settings Screen
 ///
-/// High-fidelity Profile & Settings matching the approved prototype:
-/// - Avatar with green active ring and verified checkmark
-/// - Name, user title & bio ("Nature lover | Coffee enthusiast | Explorer")
-/// - Stats Row: 24 Experiences, 78 Connections, 12 Followers
-/// - [ Edit Profile ] pill button
-/// - "Go Premium" card preview (Golden crown, key benefits, Upgrade CTA)
-/// - Clean settings menu (Account & Security, Notifications, Privacy & Safety, Theme, Sign Out)
+/// Luxury Artistic UI matching Image 7:
+/// - Watercolor ambient mesh background (Sky blue top-left, sunny golden amber top-right)
+/// - Botanical leaves framing avatar from both sides
+/// - Avatar with green verified badge
+/// - "Sneha" with green checkmark
+/// - "Friend • Kolkata, India" with "Friend" highlighted in royal purple
+/// - Bio: "Nature lover | Coffee enthusiast | Explorer"
+/// - Organic rounded stats card: 24 Experiences, 78 Connections, 12 Followers
+/// - Stadium outline [ Edit Profile ] button
+/// - "Go Premium" golden card & modern settings list
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
 
@@ -29,86 +35,151 @@ class ProfileScreen extends ConsumerWidget {
       context: context,
       builder: (context) => Dialog(
         backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+        insetPadding: const EdgeInsets.symmetric(horizontal: 22),
         child: Container(
-          padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: isDark ? const Color(0xFF1B142A) : AppColors.white,
+            gradient: LinearGradient(
+              colors: isDark
+                  ? const [Color(0xFF261044), Color(0xFF130926)]
+                  : const [
+                      Color(0xFFFFFFFF),
+                      Color(0xFFFFF9EE),
+                    ],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
+            ),
             borderRadius: BorderRadius.circular(28),
             border: Border.all(
-              color: isDark ? AppColors.darkBorder : AppColors.divider,
+              color: isDark
+                  ? const Color(0xFFFFB800).withValues(alpha: 0.35)
+                  : const Color(0xFFE5A93C).withValues(alpha: 0.45),
+              width: 1.2,
             ),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.35),
-                blurRadius: 28,
+                color: isDark
+                    ? Colors.black.withValues(alpha: 0.5)
+                    : const Color(0xFF261044).withValues(alpha: 0.16),
+                blurRadius: 32,
                 offset: const Offset(0, 10),
               ),
             ],
           ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
+          child: Stack(
             children: [
-              Container(
-                width: 60,
-                height: 60,
-                decoration: const BoxDecoration(
-                  gradient: AppColors.goldenGradient,
-                  shape: BoxShape.circle,
-                ),
-                child: const Icon(Icons.workspace_premium_rounded, color: Colors.white, size: 34),
-              ),
-              const SizedBox(height: 16),
-              Text(
-                'Go Premium',
-                style: AppTypography.headlineSmall.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: isDark ? Colors.white : AppColors.deepPlum,
-                ),
-              ),
-              const SizedBox(height: 6),
-              Text(
-                'Unlock more features and get the most out of MELSAVA.',
-                textAlign: TextAlign.center,
-                style: AppTypography.bodySmall.copyWith(
-                  color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
-                  fontSize: 12.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              _buildBenefitRow('See who liked you after meetups', isDark),
-              _buildBenefitRow('Advanced filters by intent & vibe', isDark),
-              _buildBenefitRow('Priority RSVP in micro-group caps', isDark),
-              const SizedBox(height: 24),
-              GestureDetector(
-                onTap: () {
-                  Navigator.of(context).pop();
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('MELSAVA Premium successfully activated!')),
-                  );
-                },
-                child: Container(
-                  height: 48,
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    gradient: AppColors.goldenGradient,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFFFFB800).withValues(alpha: 0.4),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: Text(
-                    'Upgrade Now',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: Colors.white,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 14.5,
+              // Close button on top-right (Image 3 Screen 14)
+              Positioned(
+                top: 12,
+                right: 12,
+                child: GestureDetector(
+                  onTap: () => Navigator.of(context).pop(),
+                  child: Container(
+                    padding: const EdgeInsets.all(6),
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: isDark
+                          ? Colors.white.withValues(alpha: 0.12)
+                          : const Color(0xFFEDE8F5),
+                    ),
+                    child: Icon(
+                      Icons.close_rounded,
+                      color: isDark ? Colors.white70 : const Color(0xFF5B4D70),
+                      size: 18,
                     ),
                   ),
+                ),
+              ),
+
+              Padding(
+                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // 3D Golden Crown Emblem (Screen 14)
+                    Container(
+                      width: 60,
+                      height: 60,
+                      decoration: BoxDecoration(
+                        gradient: const LinearGradient(
+                          colors: [Color(0xFFFFB800), Color(0xFFF59E0B)],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
+                        ),
+                        shape: BoxShape.circle,
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFFB800).withValues(alpha: 0.45),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                      child: const Center(
+                        child: Text('👑', style: TextStyle(fontSize: 28)),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Go Premium',
+                      style: AppTypography.headlineSmall.copyWith(
+                        fontWeight: FontWeight.w900,
+                        color: isDark ? Colors.white : const Color(0xFF1E1435),
+                        fontSize: 22,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      'Unlock more features and get the most out of MELSAVA.',
+                      textAlign: TextAlign.center,
+                      style: AppTypography.bodySmall.copyWith(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.8)
+                            : const Color(0xFF6B5E82),
+                        fontSize: 12.5,
+                      ),
+                    ),
+                    const SizedBox(height: 20),
+                    _buildBenefitRow('See who liked you', isDark),
+                    _buildBenefitRow('Advanced filters', isDark),
+                    _buildBenefitRow('Priority support', isDark),
+                    const SizedBox(height: 24),
+                    GestureDetector(
+                      onTap: () {
+                        Navigator.of(context).pop();
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(content: Text('MELSAVA Premium successfully activated!')),
+                        );
+                      },
+                      child: Container(
+                        height: 50,
+                        alignment: Alignment.center,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF9D2E), Color(0xFFFF7A00)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(25),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF7A00).withValues(alpha: 0.40),
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          'Upgrade Now',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w900,
+                            fontSize: 15,
+                            letterSpacing: 0.3,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ],
@@ -120,18 +191,25 @@ class ProfileScreen extends ConsumerWidget {
 
   static Widget _buildBenefitRow(String text, bool isDark) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5),
+      padding: const EdgeInsets.symmetric(vertical: 5.5),
       child: Row(
         children: [
-          const Icon(Icons.check_circle_rounded, color: Color(0xFFFFB800), size: 18),
+          Container(
+            padding: const EdgeInsets.all(2),
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: const Color(0xFFFFB800).withValues(alpha: 0.16),
+            ),
+            child: const Icon(Icons.check_circle_rounded, color: Color(0xFFF59E0B), size: 18),
+          ),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
               style: TextStyle(
-                fontSize: 12.5,
+                fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: isDark ? Colors.white70 : AppColors.deepPlum,
+                color: isDark ? Colors.white.withValues(alpha: 0.9) : const Color(0xFF261044),
               ),
             ),
           ),
@@ -146,243 +224,424 @@ class ProfileScreen extends ConsumerWidget {
     final user = ref.watch(currentUserProvider);
     final userLoc = ref.watch(userLocationProvider);
 
-    final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final cardBg = isDark ? const Color(0xFF1B1528) : Colors.white;
+    final borderColor = isDark ? const Color(0xFF332A45) : const Color(0xFFEDE9FE);
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
+    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
 
-    final displayName = user?.displayName ?? 'Sneha Roy';
+    final displayName = user?.displayName ?? 'Sneha';
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
-      appBar: AppBar(
-        title: Text(
-          'Profile',
-          style: AppTypography.titleLarge.copyWith(
-            fontWeight: FontWeight.w800,
-            fontSize: 22,
-            color: primaryTextColor,
-          ),
-        ),
-        actions: [
-          // Theme Switcher Quick Toggle
-          IconButton(
-            tooltip: isDark ? 'Light Mode' : 'Dark Mode',
-            icon: Icon(
-              isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-            ),
-            onPressed: () {
-              HapticFeedback.lightImpact();
-              ref.read(themeModeProvider.notifier).toggleTheme(isDark);
-            },
-          ),
-          const SizedBox(width: 8),
-        ],
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-      ),
-      body: SafeArea(
-        bottom: false,
-        child: SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
+      body: AmbientNatureBackdrop(
+        showTopLeaf: true,
+        showBottomLeaf: true,
+        leafStyle: BotanicalLeafStyle.monstera,
+        leafColors: BotanicalLeafDecoration.goldenSunlit,
+        child: SafeArea(
+          bottom: false,
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Header Profile Card with Botanical Accents (Image 9 Screen 12) ──
-              Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  // Top-Right Tropical Foliage Accent
-                  const Positioned(
-                    top: -14,
-                    right: -10,
-                    child: BotanicalLeafDecoration(
-                      style: BotanicalLeafStyle.tropicalFoliage,
-                      width: 68,
-                      height: 105,
-                      rotation: 0.32,
-                    ),
-                  ),
-
-                  // Bottom-Left Tropical Foliage Accent
-                  const Positioned(
-                    bottom: -14,
-                    left: -10,
-                    child: BotanicalLeafDecoration(
-                      style: BotanicalLeafStyle.tropicalFoliage,
-                      width: 58,
-                      height: 92,
-                      rotation: -2.35,
-                    ),
-                  ),
-
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(24),
-                      border: Border.all(color: borderColor, width: 0.9),
-                      boxShadow: [
-                        BoxShadow(
-                          color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+              // ── Pinned Top Navigation Bar (Image 6 Screen 12) - Never drags down ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Back Arrow Button
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: borderColor, width: 0.9),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.04),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        padding: EdgeInsets.zero,
+                        icon: Icon(
+                          Icons.arrow_back_rounded,
+                          color: primaryTextColor,
+                          size: 20,
                         ),
-                      ],
+                        onPressed: () {
+                          if (Navigator.of(context).canPop()) {
+                            Navigator.of(context).pop();
+                          }
+                        },
+                      ),
                     ),
-                    child: Column(
+
+                    // Actions: Theme toggle & Settings Gear
+                    Row(
                       children: [
-                        // Avatar with Active Green Ring & Verified Badge
-                        Stack(
-                          clipBehavior: Clip.none,
-                          children: [
-                            Container(
-                              width: 84,
-                              height: 84,
-                              decoration: BoxDecoration(
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: AppColors.mintAccent,
-                                  width: 3,
-                                ),
-                              ),
-                              child: ClipOval(
-                                child: CachedNetworkImage(
-                                  imageUrl: user?.avatarUrl ??
-                                      'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
-                                  fit: BoxFit.cover,
-                                ),
-                              ),
-                            ),
-                            Positioned(
-                              bottom: 0,
-                              right: 0,
-                              child: Container(
-                                width: 24,
-                                height: 24,
-                                decoration: BoxDecoration(
-                                  color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: isDark ? AppColors.darkSurface : Colors.white,
-                                    width: 2,
-                                  ),
-                                ),
-                                child: const Icon(Icons.check_rounded, color: Colors.white, size: 14),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 14),
-
-                        // User Name & Verification
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Text(
-                              displayName,
-                              style: AppTypography.titleLarge.copyWith(
-                                color: primaryTextColor,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            Icon(
-                              Icons.verified_rounded,
-                              size: 18,
-                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Friend • ${userLoc.city}',
-                          style: AppTypography.bodySmall.copyWith(
-                            color: mutedTextColor,
-                            fontWeight: FontWeight.w600,
-                            fontSize: 12.5,
+                        IconButton(
+                          tooltip: isDark ? 'Light Mode' : 'Dark Mode',
+                          icon: Icon(
+                            isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
+                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            size: 22,
                           ),
-                        ),
-                        const SizedBox(height: 8),
-                        Text(
-                          'Nature lover | Coffee enthusiast | Explorer',
-                          textAlign: TextAlign.center,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: primaryTextColor,
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(height: 18),
-
-                        // Stats Row: 24 Experiences, 78 Connections, 12 Followers
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildStatCol('24', 'Experiences', primaryTextColor, mutedTextColor),
-                            Container(height: 28, width: 1, color: borderColor),
-                            _buildStatCol('78', 'Connections', primaryTextColor, mutedTextColor),
-                            Container(height: 28, width: 1, color: borderColor),
-                            _buildStatCol('12', 'Followers', primaryTextColor, mutedTextColor),
-                          ],
-                        ),
-                        const SizedBox(height: 16),
-
-                        // Edit Profile Button with pill radius
-                        GestureDetector(
-                          onTap: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              const SnackBar(content: Text('Edit Profile opened!')),
-                            );
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            ref.read(themeModeProvider.notifier).toggleTheme(isDark);
                           },
+                        ),
+                        const SizedBox(width: 4),
+                        GestureDetector(
+                          onTap: () => context.push('/settings'),
                           child: Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 8.5),
+                            width: 40,
+                            height: 40,
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
-                              borderRadius: BorderRadius.circular(22),
-                              border: Border.all(color: borderColor),
+                              color: cardBg,
+                              shape: BoxShape.circle,
+                              border: Border.all(color: borderColor, width: 0.9),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            child: Text(
-                              'Edit Profile',
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 12,
-                                color: primaryTextColor,
-                              ),
+                            child: Icon(
+                              Icons.settings_outlined,
+                              color: primaryTextColor,
+                              size: 20,
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
 
-              const SizedBox(height: 16),
+              // ── Clamping Scrollable Profile Body ──
+              Expanded(
+                child: SingleChildScrollView(
+                  physics: const ClampingScrollPhysics(),
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
 
-              // ── Go Premium Card (Image 9 Screen 14) ──
+                const SizedBox(height: 12),
+
+                // ── Open Artistic Profile Header Canvas (Image 6 Screen 12) ──
+                Stack(
+                  clipBehavior: Clip.none,
+                  alignment: Alignment.center,
+                  children: [
+                    // Top-Left Soft Sky Blue Watercolor Aura
+                    Positioned(
+                      top: -10,
+                      left: -20,
+                      width: 180,
+                      height: 180,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              const Color(0xFF7DD3FC).withValues(alpha: isDark ? 0.18 : 0.35),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Top-Right Vibrant Sunny Golden Amber Aura
+                    Positioned(
+                      top: -15,
+                      right: -15,
+                      width: 200,
+                      height: 200,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          gradient: RadialGradient(
+                            colors: [
+                              const Color(0xFFFDE047).withValues(alpha: isDark ? 0.16 : 0.38),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    // Lush Tropical Leaves Framing Avatar (Screen 12)
+                    const Positioned(
+                      top: 10,
+                      left: 10,
+                      child: BotanicalLeafDecoration(
+                        style: BotanicalLeafStyle.tropicalFoliage,
+                        width: 72,
+                        height: 120,
+                        rotation: 0.22,
+                        opacity: 0.92,
+                      ),
+                    ),
+                    const Positioned(
+                      top: 5,
+                      right: 12,
+                      child: BotanicalLeafDecoration(
+                        style: BotanicalLeafStyle.monstera,
+                        width: 75,
+                        height: 125,
+                        rotation: -0.24,
+                        opacity: 0.94,
+                      ),
+                    ),
+
+                    // Profile Content flowing seamlessly
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 12),
+                      child: Column(
+                        children: [
+                          // Avatar with Green Verified Badge (Image 6 Screen 12)
+                          Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 94,
+                                height: 94,
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: 3.5,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(alpha: 0.14),
+                                      blurRadius: 16,
+                                      offset: const Offset(0, 5),
+                                    ),
+                                  ],
+                                ),
+                                child: ClipOval(
+                                  child: AppSmartImage(
+                                    imagePath: user?.avatarUrl,
+                                    isAvatar: true,
+                                    nameHint: user?.displayName,
+                                    fit: BoxFit.cover,
+                                  ),
+                                ),
+                              ),
+                              // Green Verified Badge
+                              Positioned(
+                                bottom: 2,
+                                right: 2,
+                                child: Container(
+                                  width: 24,
+                                  height: 24,
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF10B981),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: Colors.white,
+                                      width: 2,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(0xFF10B981).withValues(alpha: 0.4),
+                                        blurRadius: 6,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: const Icon(
+                                    Icons.check_rounded,
+                                    color: Colors.white,
+                                    size: 14,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          const SizedBox(height: 12),
+
+                          // User Name & Verification Icon (Adaptive for long names)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(horizontal: 16),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    displayName,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.titleLarge.copyWith(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: displayName.length > 18
+                                          ? 17
+                                          : (displayName.length > 13 ? 19 : 21),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                const Icon(
+                                  Icons.verified_rounded,
+                                  size: 19,
+                                  color: Color(0xFF10B981),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+
+                          // Subtitle: "Friend • Kolkata, India" (Friend in purple)
+                          RichText(
+                            text: TextSpan(
+                              style: AppTypography.bodySmall.copyWith(
+                                fontSize: 12.5,
+                                fontWeight: FontWeight.w600,
+                              ),
+                              children: [
+                                TextSpan(
+                                  text: user?.primaryIntent ?? 'Friend',
+                                  style: const TextStyle(
+                                    color: Color(0xFF6366F1),
+                                    fontWeight: FontWeight.w800,
+                                  ),
+                                ),
+                                TextSpan(
+                                  text: ' • ${user?.city ?? userLoc.city}',
+                                  style: TextStyle(color: mutedTextColor),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+
+                          // Bio
+                          Text(
+                            user?.bio ?? 'Nature lover | Coffee enthusiast | Explorer',
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: primaryTextColor.withValues(alpha: 0.88),
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 18),
+
+                          // Stats Organic Container (Image 6 Screen 12)
+                          Container(
+                            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
+                            decoration: BoxDecoration(
+                              color: cardBg,
+                              borderRadius: BorderRadius.circular(22),
+                              border: Border.all(color: borderColor, width: 1.0),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: isDark ? Colors.black38 : Colors.black.withValues(alpha: 0.04),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                              children: [
+                                _buildStatCol('24', 'Experiences', primaryTextColor, mutedTextColor),
+                                Container(height: 28, width: 1, color: borderColor),
+                                _buildStatCol('78', 'Connections', primaryTextColor, mutedTextColor),
+                                Container(height: 28, width: 1, color: borderColor),
+                                _buildStatCol('12', 'Followers', primaryTextColor, mutedTextColor),
+                              ],
+                            ),
+                          ),
+
+                          const SizedBox(height: 16),
+
+                          // Stadium Outline [ Edit Profile ] Button (Image 6 Screen 12)
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.lightImpact();
+                              EditProfileSheet.show(context);
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 9),
+                              decoration: BoxDecoration(
+                                color: isDark ? Colors.white.withValues(alpha: 0.05) : Colors.white,
+                                borderRadius: BorderRadius.circular(24),
+                                border: Border.all(
+                                  color: isDark ? AppColors.brightViolet : const Color(0xFF6366F1),
+                                  width: 1.3,
+                                ),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: (isDark ? AppColors.brightViolet : const Color(0xFF6366F1))
+                                        .withValues(alpha: 0.12),
+                                    blurRadius: 8,
+                                    offset: const Offset(0, 2),
+                                  ),
+                                ],
+                              ),
+                              child: Text(
+                                'Edit Profile',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13,
+                                  color: isDark ? AppColors.brightViolet : const Color(0xFF6366F1),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+
+              const SizedBox(height: 18),
+
+              // ── Go Premium Card ──
               GestureDetector(
                 onTap: () => _showGoPremiumDialog(context, isDark),
                 child: Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF2C1E4A), Color(0xFF1A132C)],
+                    gradient: LinearGradient(
+                      colors: isDark
+                          ? const [Color(0xFF2C1E4A), Color(0xFF1A132C)]
+                          : const [
+                              Color(0xFFFFF9EE), // warm pearlescent champagne cream
+                              Color(0xFFFFF1D6), // soft honey gold glow
+                            ],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    borderRadius: BorderRadius.circular(20),
+                    borderRadius: BorderRadius.circular(22),
                     border: Border.all(
-                      color: const Color(0xFFFFB800).withValues(alpha: 0.35),
-                      width: 1.0,
+                      color: isDark
+                          ? const Color(0xFFFFB800).withValues(alpha: 0.35)
+                          : const Color(0xFFE5A93C).withValues(alpha: 0.50),
+                      width: 1.2,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: const Color(0xFFFFB800).withValues(alpha: 0.15),
-                        blurRadius: 16,
-                        offset: const Offset(0, 4),
+                        color: isDark
+                            ? const Color(0xFFFFB800).withValues(alpha: 0.15)
+                            : const Color(0xFFE5A93C).withValues(alpha: 0.22),
+                        blurRadius: 18,
+                        offset: const Offset(0, 5),
                       ),
                     ],
                   ),
@@ -391,9 +650,20 @@ class ProfileScreen extends ConsumerWidget {
                       Container(
                         width: 44,
                         height: 44,
-                        decoration: const BoxDecoration(
-                          gradient: AppColors.goldenGradient,
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFFB800), Color(0xFFF59E0B)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
                           shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Icon(
                           Icons.workspace_premium_rounded,
@@ -406,37 +676,76 @@ class ProfileScreen extends ConsumerWidget {
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Go Premium',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                              ),
+                            Row(
+                              children: [
+                                Text(
+                                  'Go Premium',
+                                  style: TextStyle(
+                                    color: isDark ? Colors.white : const Color(0xFF1E1435),
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 15.5,
+                                    letterSpacing: -0.2,
+                                  ),
+                                ),
+                                const SizedBox(width: 6),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1.5),
+                                  decoration: BoxDecoration(
+                                    gradient: const LinearGradient(
+                                      colors: [Color(0xFFFFB800), Color(0xFFF59E0B)],
+                                    ),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Text(
+                                    'VIP',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w900,
+                                      fontSize: 9.5,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Unlock who liked you & priority RSVP',
                               style: TextStyle(
-                                color: Colors.white.withValues(alpha: 0.75),
+                                color: isDark
+                                    ? Colors.white.withValues(alpha: 0.75)
+                                    : const Color(0xFF6B5E82),
                                 fontSize: 11.5,
+                                fontWeight: isDark ? FontWeight.normal : FontWeight.w500,
                               ),
                             ),
                           ],
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                         decoration: BoxDecoration(
-                          gradient: AppColors.goldenGradient,
-                          borderRadius: BorderRadius.circular(14),
+                          gradient: const LinearGradient(
+                            colors: [Color(0xFFFF9D2E), Color(0xFFFF7A00)],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                          borderRadius: BorderRadius.circular(18),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFFF7A00).withValues(alpha: 0.38),
+                              blurRadius: 10,
+                              offset: const Offset(0, 3),
+                            ),
+                          ],
                         ),
                         child: const Text(
                           'Upgrade',
                           style: TextStyle(
                             color: Colors.white,
                             fontWeight: FontWeight.w800,
-                            fontSize: 11.5,
+                            fontSize: 12.5,
+                            letterSpacing: 0.2,
                           ),
                         ),
                       ),
@@ -447,9 +756,48 @@ class ProfileScreen extends ConsumerWidget {
 
               const SizedBox(height: 20),
 
-              // ── Settings List Section (Image 9 Screen 13) ──
+              // ── My Joined Experiences Section (Screen 12) ──
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'My Joined Experiences',
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16.5,
+                      color: primaryTextColor,
+                    ),
+                  ),
+                  GestureDetector(
+                    onTap: () => context.go('/experiences'),
+                    child: Text(
+                      'View All →',
+                      style: TextStyle(
+                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        fontSize: 12.5,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 10),
+
+              _buildJoinedExperiencesCarousel(
+                context,
+                ref,
+                isDark,
+                primaryTextColor,
+                mutedTextColor,
+                cardBg,
+                borderColor,
+              ),
+
+              const SizedBox(height: 22),
+
+              // ── Community Badges & Vibe Tags (Screen 12) ──
               Text(
-                'Settings',
+                'Safety & Community Badges',
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w800,
                   fontSize: 16.5,
@@ -458,102 +806,266 @@ class ProfileScreen extends ConsumerWidget {
               ),
               const SizedBox(height: 10),
 
-              Container(
-                decoration: BoxDecoration(
-                  color: cardBg,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(color: borderColor, width: 0.9),
-                ),
-                child: Column(
-                  children: [
-                    _buildSettingsTile(
-                      icon: Icons.shield_outlined,
-                      title: 'Account & Security',
-                      onTap: () {},
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
+              _buildBadgesGrid(
+                isDark,
+                cardBg,
+                borderColor,
+                primaryTextColor,
+                mutedTextColor,
+              ),
+
+              const SizedBox(height: 24),
+
+              // ── Sign Out Stadium Button ──
+              GestureDetector(
+                onTap: () async {
+                  final confirm = await ConfirmationDialog.show(
+                    context,
+                    title: 'Sign Out',
+                    message: 'Are you sure you want to sign out of MELSAVA?',
+                    confirmLabel: 'Sign Out',
+                    isDestructive: true,
+                  );
+                  if (confirm == true) {
+                    await ref.read(authRepositoryProvider).signOut();
+                    if (context.mounted) {
+                      context.go('/welcome');
+                    }
+                  }
+                },
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 13),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(
+                      color: AppColors.error.withValues(alpha: 0.35),
+                      width: 1.0,
                     ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.notifications_none_rounded,
-                      title: 'Notifications',
-                      onTap: () {},
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.lock_outline_rounded,
-                      title: 'Privacy & Safety',
-                      onTap: () {},
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.tune_rounded,
-                      title: 'Preferences & City',
-                      onTap: () => LocationVenuePickerSheet.show(context),
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.help_outline_rounded,
-                      title: 'Help & Support',
-                      onTap: () {},
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.info_outline_rounded,
-                      title: 'About MELSAVA',
-                      subtitle: 'v2.0.0 (Build 2026)',
-                      onTap: () {},
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                    _buildDivider(borderColor),
-                    _buildSettingsTile(
-                      icon: Icons.logout_rounded,
-                      title: 'Sign Out',
-                      isDestructive: true,
-                      onTap: () async {
-                        final confirm = await ConfirmationDialog.show(
-                          context,
-                          title: 'Sign Out',
-                          message: 'Are you sure you want to sign out of MELSAVA?',
-                          confirmLabel: 'Sign Out',
-                          isDestructive: true,
-                        );
-                        if (confirm == true) {
-                          await ref.read(authRepositoryProvider).signOut();
-                          if (context.mounted) {
-                            context.go('/welcome');
-                          }
-                        }
-                      },
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      isDark: isDark,
-                    ),
-                  ],
+                  ),
+                  child: const Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.logout_rounded, color: AppColors.error, size: 18),
+                      SizedBox(width: 8),
+                      Text(
+                        'Sign Out of MELSAVA',
+                        style: TextStyle(
+                          color: AppColors.error,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13.5,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
 
-              // Guaranteed 120dp clearance so no button or setting is overlapped by bottom nav
+              // Guaranteed clearance for bottom nav
               const SizedBox(height: 120),
             ],
           ),
         ),
       ),
+    ],
+  ),
+),
+      ),
+    );
+  }
+
+  Widget _buildJoinedExperiencesCarousel(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    Color cardBg,
+    Color borderColor,
+  ) {
+    final experiences = ref.watch(experiencesListProvider);
+    final displayExperiences = experiences.take(3).toList();
+
+    return SizedBox(
+      height: 132,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        physics: const ClampingScrollPhysics(),
+        itemCount: displayExperiences.length,
+        separatorBuilder: (context, index) => const SizedBox(width: 12),
+        itemBuilder: (context, index) {
+          final exp = displayExperiences[index];
+          return GestureDetector(
+            onTap: () {
+              ExperienceDetailSheet.show(
+                context,
+                experience: exp,
+                onToggleJoin: () {
+                  JoinExperienceSheet.show(
+                    context,
+                    experience: exp,
+                    onConfirmed: () {
+                      ref.read(experiencesRepositoryProvider).toggleJoin(exp.id);
+                      ref.invalidate(experiencesListProvider);
+                    },
+                  );
+                },
+              );
+            },
+            child: Container(
+              width: 260,
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: cardBg,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(color: borderColor, width: 0.9),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.02),
+                    blurRadius: 8,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: SizedBox(
+                      width: 74,
+                      height: 112,
+                      child: AppSmartImage(
+                        imagePath: exp.coverImageUrl,
+                        categoryHint: exp.categoryName,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2.5),
+                          decoration: BoxDecoration(
+                            color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: const Text(
+                            'Joined • Upcoming',
+                            style: TextStyle(
+                              color: Color(0xFF10B981),
+                              fontSize: 9.5,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          exp.title,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: primaryTextColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(Icons.place_outlined, size: 12, color: mutedTextColor),
+                            const SizedBox(width: 3),
+                            Expanded(
+                              child: Text(
+                                exp.city,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: TextStyle(color: mutedTextColor, fontSize: 10.5),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildBadgesGrid(
+    bool isDark,
+    Color cardBg,
+    Color borderColor,
+    Color primaryTextColor,
+    Color mutedTextColor,
+  ) {
+    final badges = [
+      {'icon': '🌲', 'title': 'Nature Lover', 'desc': 'Joined 8 outdoor treks'},
+      {'icon': '☕', 'title': 'Coffee Buff', 'desc': 'Attended 12 café meetups'},
+      {'icon': '🛡️', 'title': 'Verified Host', 'desc': 'ID & Phone confirmed'},
+      {'icon': '⭐', 'title': 'Reliable RSVP', 'desc': '100% attendance rate'},
+    ];
+
+    return GridView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: badges.length,
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        crossAxisSpacing: 10,
+        mainAxisSpacing: 10,
+        childAspectRatio: 2.3,
+      ),
+      itemBuilder: (context, index) {
+        final b = badges[index];
+        return Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+          decoration: BoxDecoration(
+            color: cardBg,
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: borderColor, width: 0.9),
+          ),
+          child: Row(
+            children: [
+              Text(b['icon']!, style: const TextStyle(fontSize: 22)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      b['title']!,
+                      style: TextStyle(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12,
+                      ),
+                    ),
+                    Text(
+                      b['desc']!,
+                      style: TextStyle(
+                        color: mutedTextColor,
+                        fontSize: 9.5,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 
@@ -579,62 +1091,10 @@ class ProfileScreen extends ConsumerWidget {
           style: AppTypography.bodySmall.copyWith(
             fontSize: 11,
             color: mutedColor,
+            fontWeight: FontWeight.w500,
           ),
         ),
       ],
     );
-  }
-
-  static Widget _buildSettingsTile({
-    required IconData icon,
-    required String title,
-    String? subtitle,
-    bool isDestructive = false,
-    required VoidCallback onTap,
-    required Color primaryTextColor,
-    required Color mutedTextColor,
-    required bool isDark,
-  }) {
-    return ListTile(
-      leading: Container(
-        width: 36,
-        height: 36,
-        decoration: BoxDecoration(
-          color: isDestructive
-              ? AppColors.error.withValues(alpha: 0.12)
-              : (isDark ? AppColors.darkElevated : AppColors.creamElevated),
-          borderRadius: BorderRadius.circular(10),
-        ),
-        child: Icon(
-          icon,
-          size: 19,
-          color: isDestructive
-              ? AppColors.error
-              : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
-        ),
-      ),
-      title: Text(
-        title,
-        style: TextStyle(
-          color: isDestructive ? AppColors.error : primaryTextColor,
-          fontWeight: FontWeight.w600,
-          fontSize: 13.5,
-        ),
-      ),
-      subtitle: subtitle != null
-          ? Text(
-              subtitle,
-              style: TextStyle(color: mutedTextColor, fontSize: 11),
-            )
-          : null,
-      trailing: isDestructive
-          ? null
-          : Icon(Icons.chevron_right_rounded, size: 20, color: mutedTextColor),
-      onTap: onTap,
-    );
-  }
-
-  static Widget _buildDivider(Color borderColor) {
-    return Divider(height: 1, thickness: 0.7, color: borderColor);
   }
 }

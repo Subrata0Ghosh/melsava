@@ -11,6 +11,7 @@ abstract class AuthRepository {
   Future<void> sendPasswordResetEmail({required String email});
   Future<void> signOut();
   Future<void> restoreSession();
+  Future<void> updateProfile(AppUser updatedUser);
 }
 
 /// Unified Auth Repository supporting session persistence across app launches
@@ -63,13 +64,38 @@ class SupabaseAuthRepository implements AuthRepository {
           id: prefs.getString('melsava_user_id') ?? 'user-saved',
           email: savedEmail,
           displayName: prefs.getString('melsava_user_name') ?? savedEmail.split('@').first,
+          avatarUrl: prefs.getString('melsava_user_avatar') ?? 'assets/images/sneha_avatar.png',
           city: prefs.getString('melsava_user_city') ?? 'Mumbai',
+          bio: prefs.getString('melsava_user_bio') ?? 'Nature lover | Coffee enthusiast | Explorer',
+          primaryIntent: prefs.getString('melsava_user_intent') ?? 'Friend',
           isEmailVerified: true,
           onboardingCompleted: true,
         );
         _controller.add(_cachedUser);
       }
     }
+  }
+
+  @override
+  Future<void> updateProfile(AppUser updatedUser) async {
+    _cachedUser = updatedUser;
+    final prefs = await SharedPreferences.getInstance();
+    if (updatedUser.displayName != null) {
+      await prefs.setString('melsava_user_name', updatedUser.displayName!);
+    }
+    if (updatedUser.city != null) {
+      await prefs.setString('melsava_user_city', updatedUser.city!);
+    }
+    if (updatedUser.avatarUrl != null) {
+      await prefs.setString('melsava_user_avatar', updatedUser.avatarUrl!);
+    }
+    if (updatedUser.bio != null) {
+      await prefs.setString('melsava_user_bio', updatedUser.bio!);
+    }
+    if (updatedUser.primaryIntent != null) {
+      await prefs.setString('melsava_user_intent', updatedUser.primaryIntent!);
+    }
+    _controller.add(_cachedUser);
   }
 
   @override

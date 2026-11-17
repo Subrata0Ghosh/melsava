@@ -1,11 +1,12 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/primary_button.dart';
+import 'live_experience_screen.dart';
 
 /// Experience Hub (Pre-Meetup Group Space)
 ///
@@ -86,7 +87,7 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
 
           Expanded(
             child: SingleChildScrollView(
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.fromLTRB(20, 8, 20, 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -381,6 +382,17 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
 
                   const SizedBox(height: 24),
 
+                  // Enter Live Experience Mode (Image 3 Screen 8)
+                  PrimaryButton(
+                    label: 'Enter Live Experience Mode →',
+                    gradient: AppColors.sunsetCtaGradient,
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      LiveExperienceScreen.show(context, exp);
+                    },
+                  ),
+                  const SizedBox(height: 12),
+
                   PrimaryButton(
                     label: 'Done',
                     backgroundColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
@@ -416,8 +428,10 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
           ),
           padding: const EdgeInsets.all(2),
           child: ClipOval(
-            child: CachedNetworkImage(
-              imageUrl: avatarUrl,
+            child: AppSmartImage(
+              imagePath: avatarUrl,
+              isAvatar: true,
+              nameHint: name,
               fit: BoxFit.cover,
             ),
           ),

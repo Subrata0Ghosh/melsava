@@ -6,7 +6,10 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/custom_text_field.dart';
+import '../../../shared/widgets/glass_back_button.dart';
+import '../../../shared/widgets/melsava_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import 'auth_providers.dart';
 
 class SignInScreen extends ConsumerStatefulWidget {
@@ -69,34 +72,69 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+
     return Scaffold(
-      backgroundColor: AppColors.warmIvory,
-      appBar: AppBar(
-        title: const Text('Sign In'),
-        backgroundColor: Colors.transparent,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(AppConstants.spacingLG),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              const SizedBox(height: AppConstants.spacingMD),
+      backgroundColor: isDark ? AppColors.obsidian : const Color(0xFFFBF8F5),
+      body: AmbientNatureBackdrop(
+        showTopLeaf: true,
+        showBottomLeaf: true,
+        leafStyle: BotanicalLeafStyle.eucalyptus,
+        leafColors: BotanicalLeafDecoration.mintDew,
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // ── Top Bar with Frosted Glass Back Button ─────────────────
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: GlassBackButton(
+                    isDark: isDark,
+                    iconColor: primaryTextColor,
+                    onTap: () {
+                      if (Navigator.of(context).canPop()) {
+                        Navigator.of(context).pop();
+                      } else {
+                        context.go('/welcome');
+                      }
+                    },
+                  ),
+                ),
+                const SizedBox(height: 6),
+
+                // ── Centered Melsava Logo ───────────────────────────────────
+                const Center(
+                  child: MelsavaLogo(
+                    size: 58,
+                    showWordmark: false,
+                  ),
+                ),
+                const SizedBox(height: 18),
+
+              // ── Header Titles (Image 3 Screen 3) ────────────────────────
               Text(
-                'Welcome back',
+                'Welcome Back!',
+                textAlign: TextAlign.center,
                 style: AppTypography.headlineLarge.copyWith(
-                  color: AppColors.deepPlum,
-                  fontWeight: FontWeight.w800,
+                  color: primaryTextColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 26,
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingSM),
+              const SizedBox(height: 6),
               Text(
-                'Sign in to explore experiences and reconnect with people you\'ve met.',
+                'Sign in to continue your journey',
+                textAlign: TextAlign.center,
                 style: AppTypography.bodyMedium.copyWith(
-                  color: AppColors.mutedText,
+                  color: mutedTextColor,
+                  fontSize: 14,
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingXL),
+              const SizedBox(height: 28),
 
               if (_errorMessage != null) ...[
                 Container(
@@ -130,18 +168,20 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 const SizedBox(height: AppConstants.spacingMD),
               ],
 
+              // ── Email Input ─────────────────────────────────────────────
               CustomTextField(
                 controller: _emailController,
-                label: 'Email address',
+                label: 'Email Address',
                 hintText: 'name@example.com',
                 keyboardType: TextInputType.emailAddress,
                 prefixIcon: const Icon(
                   Icons.mail_outline_rounded,
-                  color: AppColors.mutedText,
+                  size: 20,
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMD),
 
+              // ── Password Input ──────────────────────────────────────────
               CustomTextField(
                 controller: _passwordController,
                 label: 'Password',
@@ -149,7 +189,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 obscureText: true,
                 prefixIcon: const Icon(
                   Icons.lock_outline_rounded,
-                  color: AppColors.mutedText,
+                  size: 20,
                 ),
               ),
               const SizedBox(height: AppConstants.spacingSM),
@@ -159,39 +199,114 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 child: TextButton(
                   onPressed: () => context.push('/forgot-password'),
                   child: Text(
-                    'Forgot password?',
+                    'Forgot Password?',
                     style: AppTypography.labelMedium.copyWith(
-                      color: AppColors.mauve,
+                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingLG),
+              const SizedBox(height: AppConstants.spacingMD),
 
+              // ── "Sign In" Button (Gradient) ─────────────────────────────
               PrimaryButton(
                 label: 'Sign In',
                 isLoading: _isLoading,
-                gradient: AppColors.sunsetCtaGradient,
+                gradient: AppColors.reverseSunsetCtaGradient,
                 onPressed: _handleSignIn,
               ),
-              const SizedBox(height: AppConstants.spacingXL),
+              const SizedBox(height: 18),
 
+              // ── "or" Divider ────────────────────────────────────────────
+              Row(
+                children: [
+                  Expanded(
+                    child: Divider(
+                      color: isDark ? Colors.white12 : AppColors.divider,
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 12),
+                    child: Text(
+                      'or',
+                      style: AppTypography.bodySmall.copyWith(
+                        color: mutedTextColor,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                  Expanded(
+                    child: Divider(
+                      color: isDark ? Colors.white12 : AppColors.divider,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 18),
+
+              // ── "Continue with Email Link" Button ───────────────────────
+              Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(26),
+                  border: Border.all(
+                    color: isDark ? AppColors.darkBorder : AppColors.divider,
+                    width: 1.2,
+                  ),
+                ),
+                child: Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(26),
+                    onTap: () {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Magic login link sent to your email!'),
+                        ),
+                      );
+                    },
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.mail_outline_rounded,
+                          size: 18,
+                          color: primaryTextColor,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Continue with Email Link',
+                          style: AppTypography.labelLarge.copyWith(
+                            color: primaryTextColor,
+                            fontWeight: FontWeight.w700,
+                            fontSize: 14,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+
+              // ── "Don't have an account? Sign Up" ─────────────────────────
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
-                    'Don\'t have an account?',
+                    'Don\'t have an account? ',
                     style: AppTypography.bodyMedium.copyWith(
-                      color: AppColors.mutedText,
+                      color: mutedTextColor,
                     ),
                   ),
-                  TextButton(
-                    onPressed: () => context.pushReplacement('/sign-up'),
+                  GestureDetector(
+                    onTap: () => context.pushReplacement('/sign-up'),
                     child: Text(
                       'Sign Up',
                       style: AppTypography.labelLarge.copyWith(
-                        color: AppColors.mauve,
-                        fontWeight: FontWeight.w700,
+                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        fontWeight: FontWeight.w800,
                       ),
                     ),
                   ),
@@ -201,6 +316,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

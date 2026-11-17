@@ -10,12 +10,12 @@ void main() {
 
     expect(find.text('MELSAVA'), findsWidgets);
 
-    // Advance past splash animation (2.6s)
-    await tester.pump(const Duration(seconds: 3));
-    await tester.pumpAndSettle();
+    // Advance past splash animation (3.2s timer) and page transition
+    await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 400));
 
     // Verifies onboarding screen loaded with primary action
-    expect(find.text('Continue'), findsOneWidget);
+    expect(find.text('Get Started →'), findsOneWidget);
     expect(find.text('Skip'), findsOneWidget);
   });
 }

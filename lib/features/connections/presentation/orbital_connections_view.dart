@@ -1,10 +1,10 @@
 import 'dart:math' as math;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import 'connections_screen.dart';
 
 /// Orbital Cosmic Connection System inspired by Proxima (Dribbble).
@@ -19,8 +19,7 @@ class OrbitalConnectionsView extends StatefulWidget {
   const OrbitalConnectionsView({
     super.key,
     required this.connections,
-    this.userAvatarUrl =
-        'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+    this.userAvatarUrl = 'assets/images/sneha_avatar.png',
     this.userName = 'You',
   });
 
@@ -152,17 +151,10 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
       ),
       padding: const EdgeInsets.all(2.5),
       child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: widget.userAvatarUrl,
+        child: AppSmartImage(
+          imagePath: widget.userAvatarUrl,
+          isAvatar: true,
           fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
-            color: AppColors.deepPlum,
-            child: const Icon(Icons.person, color: Colors.white, size: 28),
-          ),
-          errorWidget: (context, url, error) => Container(
-            color: AppColors.deepPlum,
-            child: const Icon(Icons.person, color: Colors.white, size: 28),
-          ),
         ),
       ),
     );
@@ -194,10 +186,12 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
       ),
       padding: const EdgeInsets.all(2),
       child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: conn.avatarUrl,
+        child: AppSmartImage(
+          imagePath: conn.avatarUrl,
+          isAvatar: true,
+          nameHint: conn.name,
           fit: BoxFit.cover,
-          placeholder: (context, url) => Container(
+          placeholder: Container(
             color: isDark ? AppColors.darkElevated : AppColors.sage,
           ),
         ),
@@ -248,8 +242,10 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
                 ),
                 padding: const EdgeInsets.all(2),
                 child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: conn.avatarUrl,
+                  child: AppSmartImage(
+                    imagePath: conn.avatarUrl,
+                    isAvatar: true,
+                    nameHint: conn.name,
                     fit: BoxFit.cover,
                   ),
                 ),

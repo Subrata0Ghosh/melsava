@@ -1,9 +1,10 @@
 import 'dart:math' as math;
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
+import 'app_smart_image.dart';
+import 'botanical_leaf_decoration.dart';
 
 /// Celebratory Mutual Match Dialog inspired by Bean58 & BlindLove (Dribbble).
 ///
@@ -142,64 +143,79 @@ class _MutualMatchCelebrationDialogState
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Celebration Badge Pill
+                  // Floating Pink Heart Jewel (Image 3 Screen 9)
                   Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 6,
-                    ),
+                    width: 44,
+                    height: 44,
                     decoration: BoxDecoration(
+                      shape: BoxShape.circle,
                       gradient: const LinearGradient(
-                        colors: [Color(0xFFFF7A60), Color(0xFFA67FD6)],
+                        colors: [Color(0xFFFF5E7E), Color(0xFFFF8A70)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        const Icon(
-                          Icons.favorite_rounded,
-                          color: Colors.white,
-                          size: 14,
-                        ),
-                        const SizedBox(width: 6),
-                        Text(
-                          "IT'S A MUTUAL MATCH!",
-                          style: AppTypography.labelSmall.copyWith(
-                            color: Colors.white,
-                            letterSpacing: 1.5,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 11,
-                          ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFFFF5E7E).withValues(alpha: 0.45),
+                          blurRadius: 14,
+                          offset: const Offset(0, 4),
                         ),
                       ],
                     ),
+                    child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 24),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // Dual Overlapping Profile Cards with Heart Jewel
+                  // Dual Overlapping Profile Cards with Heart Jewel & Botanical Framing (Image 3 Screen 9)
                   SizedBox(
                     height: 110,
-                    width: 200,
+                    width: 230,
                     child: Stack(
                       alignment: Alignment.center,
+                      clipBehavior: Clip.none,
                       children: [
-                        // Left User Avatar
-                        Positioned(
-                          left: 10,
-                          child: _buildAvatarCard(
-                            widget.userAvatarUrl,
-                            isDark ? AppColors.luminousMauve : AppColors.mauve,
+                        // Left Botanical Leaf framing Sneha
+                        const Positioned(
+                          left: -14,
+                          top: -6,
+                          child: BotanicalLeafDecoration(
+                            style: BotanicalLeafStyle.tropicalFoliage,
+                            width: 50,
+                            height: 85,
+                            rotation: -0.35,
+                            opacity: 0.85,
                           ),
                         ),
 
-                        // Right Match Avatar
+                        // Right Botanical Leaf framing Rohan
+                        const Positioned(
+                          right: -14,
+                          top: -6,
+                          child: BotanicalLeafDecoration(
+                            style: BotanicalLeafStyle.monstera,
+                            width: 52,
+                            height: 85,
+                            rotation: 0.35,
+                            opacity: 0.88,
+                          ),
+                        ),
+
+                        // Left User Avatar (Sneha)
                         Positioned(
-                          right: 10,
+                          left: 20,
                           child: _buildAvatarCard(
-                            widget.matchAvatarUrl,
-                            AppColors.vividCoral,
+                            widget.userAvatarUrl.isNotEmpty ? widget.userAvatarUrl : 'assets/images/sneha_avatar.png',
+                            const Color(0xFF10B981),
+                          ),
+                        ),
+
+                        // Right Match Avatar (Rohan)
+                        Positioned(
+                          right: 20,
+                          child: _buildAvatarCard(
+                            widget.matchAvatarUrl.isNotEmpty ? widget.matchAvatarUrl : 'assets/images/rohan_avatar.png',
+                            const Color(0xFF38BDF8),
                           ),
                         ),
 
@@ -235,35 +251,41 @@ class _MutualMatchCelebrationDialogState
 
                   const SizedBox(height: 16),
 
-                  // Headline
+                  // Headline (Image 3 Screen 9)
                   Text(
-                    'You and ${widget.matchName}\nUnlocked Mutual Connection!',
+                    "You've got a\nmutual choice!",
                     textAlign: TextAlign.center,
                     style: AppTypography.headlineSmall.copyWith(
                       color: primaryTextColor,
-                      fontWeight: FontWeight.w800,
+                      fontWeight: FontWeight.w900,
+                      fontSize: 24,
                       height: 1.25,
                     ),
                   ),
 
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 12),
 
                   // Subtitle info
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
                     decoration: BoxDecoration(
-                      color: isDark
-                          ? AppColors.darkElevated
-                          : AppColors.sage.withValues(alpha: 0.4),
-                      borderRadius: BorderRadius.circular(14),
+                      gradient: isDark
+                          ? const LinearGradient(colors: [Color(0xFF281E38), Color(0xFF1E172C)])
+                          : const LinearGradient(colors: [Color(0xFFF6EEFF), Color(0xFFFFECEE)]),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(
+                        color: isDark ? AppColors.darkBorder : const Color(0xFFE2D6F5),
+                        width: 1.0,
+                      ),
                     ),
                     child: Text(
-                      'Both chose: "${widget.mutualIntention}" from ${widget.experienceTitle}',
+                      'Both of you chose\n${widget.mutualIntention}',
                       textAlign: TextAlign.center,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isDark ? AppColors.softCoral : AppColors.deepPlum,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 11.5,
+                      style: AppTypography.titleSmall.copyWith(
+                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        height: 1.3,
                       ),
                     ),
                   ),
@@ -271,91 +293,74 @@ class _MutualMatchCelebrationDialogState
                   const SizedBox(height: 12),
 
                   Text(
-                    'Direct chat is now unlocked. Say hello and continue the conversation from where you left off!',
+                    'Start a private chat and keep the connection going.',
                     textAlign: TextAlign.center,
                     style: AppTypography.bodySmall.copyWith(
                       color: mutedTextColor,
-                      fontSize: 12,
+                      fontSize: 12.5,
                       height: 1.4,
                     ),
                   ),
 
                   const SizedBox(height: 24),
 
-                  // Action Buttons
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton(
-                          style: OutlinedButton.styleFrom(
-                            side: BorderSide(
-                              color: isDark
-                                  ? AppColors.darkBorder
-                                  : AppColors.divider,
-                            ),
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(16),
-                            ),
+                  // Action Button: Start Chat (Full Width Stadium Button matching Screen 9)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/chat/${widget.matchName}');
+                    },
+                    child: Container(
+                      height: 52,
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        gradient: AppColors.sunsetCtaGradient,
+                        borderRadius: BorderRadius.circular(26),
+                        boxShadow: [
+                          BoxShadow(
+                            color: const Color(0xFFFF5A78).withValues(alpha: 0.42),
+                            blurRadius: 18,
+                            offset: const Offset(0, 5),
                           ),
-                          onPressed: () {
-                            Navigator.of(context).pop();
-                            context.go('/connections');
-                          },
-                          child: Text(
-                            'Connections',
+                        ],
+                      ),
+                      child: const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Text(
+                            'Start Chat',
                             style: TextStyle(
-                              color: mutedTextColor,
-                              fontWeight: FontWeight.w700,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16,
+                              color: Colors.white,
                             ),
                           ),
+                          SizedBox(width: 8),
+                          Icon(Icons.chat_bubble_rounded, size: 18, color: Colors.white),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Flat Text Button: Explore More (Screen 9)
+                  GestureDetector(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.go('/discover');
+                    },
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 4),
+                      child: Text(
+                        'Explore More',
+                        style: TextStyle(
+                          color: mutedTextColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        flex: 2,
-                        child: GestureDetector(
-                          onTap: () {
-                            Navigator.of(context).pop();
-                            context.push('/chat/${widget.matchName}');
-                          },
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(vertical: 13),
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              gradient: AppColors.sunsetCtaGradient,
-                              borderRadius: BorderRadius.circular(24),
-                              border: Border.all(
-                                color: Colors.white.withValues(alpha: 0.25),
-                                width: 1.0,
-                              ),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
-                                  blurRadius: 14,
-                                  offset: const Offset(0, 4),
-                                ),
-                              ],
-                            ),
-                            child: const Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.chat_bubble_rounded, size: 16, color: Colors.white),
-                                SizedBox(width: 6),
-                                Text(
-                                  'Start Chat 💬',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13.5,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ),
-                    ],
+                    ),
                   ),
                 ],
               ),
@@ -383,8 +388,9 @@ class _MutualMatchCelebrationDialogState
       ),
       padding: const EdgeInsets.all(2.5),
       child: ClipOval(
-        child: CachedNetworkImage(
-          imageUrl: url,
+        child: AppSmartImage(
+          imagePath: url,
+          isAvatar: true,
           fit: BoxFit.cover,
         ),
       ),

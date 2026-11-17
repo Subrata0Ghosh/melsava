@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/report_dialog.dart';
 
@@ -30,21 +31,14 @@ class _ConversationScreenState extends State<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final List<ChatMessage> _messages = [
     const ChatMessage(
-      text: 'Hey! Loved the coffee discussion yesterday.',
+      text: 'That was an amazing trek! 😊',
       isMe: false,
-      time: '4:15 PM',
+      time: '7:20 PM',
     ),
     const ChatMessage(
-      text:
-          'Hey Rhea! Yes, Subko was a fantastic venue choice. Have you read that book you mentioned?',
+      text: "Yes! Let's do more together.",
       isMe: true,
-      time: '4:18 PM',
-    ),
-    const ChatMessage(
-      text:
-          'Just started chapter three! Really enjoying the conversational tone.',
-      isMe: false,
-      time: '4:22 PM',
+      time: '7:22 PM',
     ),
   ];
 
@@ -78,43 +72,46 @@ class _ConversationScreenState extends State<ConversationScreen> {
       appBar: AppBar(
         backgroundColor: isDark ? AppColors.darkSurface : AppColors.white,
         elevation: 0.5,
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        titleSpacing: 0,
+        title: Row(
           children: [
-            Row(
+            Container(
+              width: 38,
+              height: 38,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                  width: 1.5,
+                ),
+              ),
+              child: ClipOval(
+                child: AppSmartImage(
+                  imagePath: widget.participantName.toLowerCase().contains('rohan')
+                      ? 'assets/images/rohan_avatar.png'
+                      : 'assets/images/sneha_avatar.png',
+                  fit: BoxFit.cover,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   widget.participantName,
                   style: AppTypography.titleMedium.copyWith(
                     fontWeight: FontWeight.w800,
+                    fontSize: 15.5,
                     color: primaryTextColor,
                   ),
                 ),
-                const SizedBox(width: 4),
-                Icon(
-                  Icons.verified_rounded,
-                  size: 15,
-                  color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                ),
-              ],
-            ),
-            Row(
-              children: [
-                Container(
-                  width: 7,
-                  height: 7,
-                  decoration: const BoxDecoration(
-                    color: AppColors.mintAccent,
-                    shape: BoxShape.circle,
-                  ),
-                ),
-                const SizedBox(width: 5),
                 Text(
-                  'Mutual Connection • Online',
+                  'Active 2m ago',
                   style: AppTypography.bodySmall.copyWith(
-                    color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                    color: mutedTextColor,
                     fontSize: 11,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
@@ -228,7 +225,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
           // Messages list
           Expanded(
             child: ListView.builder(
-              physics: const BouncingScrollPhysics(),
+              physics: const ClampingScrollPhysics(),
               padding: const EdgeInsets.all(16),
               itemCount: _messages.length,
               itemBuilder: (context, index) {
@@ -237,83 +234,111 @@ class _ConversationScreenState extends State<ConversationScreen> {
                     ? Colors.white
                     : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum);
 
-                return Align(
-                  alignment: msg.isMe
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-                  child: Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.76,
+                final bubble = Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  constraints: BoxConstraints(
+                    maxWidth: MediaQuery.of(context).size.width * 0.74,
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 11,
+                  ),
+                  decoration: BoxDecoration(
+                    gradient: msg.isMe ? AppColors.purpleGradient : null,
+                    color: msg.isMe
+                        ? null
+                        : (isDark ? AppColors.darkSurface : AppColors.white),
+                    borderRadius: BorderRadius.only(
+                      topLeft: const Radius.circular(18),
+                      topRight: const Radius.circular(18),
+                      bottomLeft: Radius.circular(msg.isMe ? 18 : 4),
+                      bottomRight: Radius.circular(msg.isMe ? 4 : 18),
                     ),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 11,
-                    ),
-                    decoration: BoxDecoration(
-                      gradient: msg.isMe ? AppColors.purpleGradient : null,
-                      color: msg.isMe
-                          ? null
-                          : (isDark ? AppColors.darkSurface : AppColors.white),
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(18),
-                        topRight: const Radius.circular(18),
-                        bottomLeft: Radius.circular(msg.isMe ? 18 : 4),
-                        bottomRight: Radius.circular(msg.isMe ? 4 : 18),
+                    border: msg.isMe
+                        ? null
+                        : Border.all(color: borderColor, width: 0.8),
+                    boxShadow: [
+                      BoxShadow(
+                        color: msg.isMe
+                            ? AppColors.primaryPurple.withValues(alpha: 0.25)
+                            : (isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.04)),
+                        blurRadius: 8,
+                        offset: const Offset(0, 2),
                       ),
-                      border: msg.isMe
-                          ? null
-                          : Border.all(color: borderColor, width: 0.8),
-                      boxShadow: [
-                        BoxShadow(
-                          color: msg.isMe
-                              ? AppColors.primaryPurple.withValues(alpha: 0.25)
-                              : (isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.04)),
-                          blurRadius: 8,
-                          offset: const Offset(0, 2),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: msg.isMe
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        msg.text,
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: msgTextColor,
+                          fontSize: 14,
+                          height: 1.4,
                         ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: msg.isMe
-                          ? CrossAxisAlignment.end
-                          : CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          msg.text,
-                          style: AppTypography.bodyMedium.copyWith(
-                            color: msgTextColor,
-                            fontSize: 14,
-                            height: 1.4,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              msg.time,
-                              style: AppTypography.bodySmall.copyWith(
-                                fontSize: 10,
-                                color: msg.isMe
-                                    ? Colors.white.withValues(alpha: 0.75)
-                                    : mutedTextColor,
-                              ),
+                      ),
+                      const SizedBox(height: 3),
+                      Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            msg.time,
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 10,
+                              color: msg.isMe
+                                  ? Colors.white.withValues(alpha: 0.75)
+                                  : mutedTextColor,
                             ),
-                            if (msg.isMe) ...[
-                              const SizedBox(width: 4),
-                              const Icon(
-                                Icons.done_all_rounded,
-                                size: 13,
-                                color: Colors.white,
-                              ),
-                            ],
+                          ),
+                          if (msg.isMe) ...[
+                            const SizedBox(width: 4),
+                            const Icon(
+                              Icons.done_all_rounded,
+                              size: 13,
+                              color: Colors.white,
+                            ),
                           ],
-                        ),
-                      ],
-                    ),
+                        ],
+                      ),
+                    ],
                   ),
                 );
+
+                if (msg.isMe) {
+                  return Align(
+                    alignment: Alignment.centerRight,
+                    child: bubble,
+                  );
+                } else {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 2),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Container(
+                          width: 28,
+                          height: 28,
+                          margin: const EdgeInsets.only(right: 8, top: 4),
+                          decoration: const BoxDecoration(
+                            shape: BoxShape.circle,
+                          ),
+                          child: ClipOval(
+                            child: AppSmartImage(
+                              imagePath: widget.participantName.toLowerCase().contains('rohan')
+                                  ? 'assets/images/rohan_avatar.png'
+                                  : 'assets/images/sneha_avatar.png',
+                              fit: BoxFit.cover,
+                            ),
+                          ),
+                        ),
+                        bubble,
+                      ],
+                    ),
+                  );
+                }
               },
             ),
           ),

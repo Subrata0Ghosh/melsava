@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/animated_melsava_brand_logo.dart';
 import '../../../shared/widgets/fluid_wave_ribbon.dart';
@@ -123,83 +122,47 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
               children: [
                 const Spacer(flex: 3),
 
-                // Animated glowing MELSAVA brand logo (Iconic 'M' meeting circles)
+                // Animated glowing MELSAVA brand logo (Iconic 'M' meeting circles & Glowing Wordmark)
                 const AnimatedMelsavaBrandLogo(
                   size: 92,
                   isDark: true,
                 ),
-                const SizedBox(height: 18),
-
-                // "MELSAVA" Brand Typography with glowing highlight
-                Text(
-                  'MELSAVA',
-                  style: AppTypography.displaySmall.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 4.5,
-                    fontSize: 26,
-                    shadows: [
-                      Shadow(
-                        color: Colors.white.withValues(alpha: 0.45),
-                        blurRadius: 16,
-                      ),
-                      Shadow(
-                        color: AppColors.brightViolet.withValues(alpha: 0.55),
-                        blurRadius: 24,
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 8),
-
-                // Taglines
-                Text(
-                  'Meet through moments.',
-                  style: AppTypography.titleSmall.copyWith(
-                    color: Colors.white.withValues(alpha: 0.95),
-                    fontWeight: FontWeight.w600,
-                    fontSize: 14.5,
-                    letterSpacing: 0.3,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'Less swiping. More living.',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: const Color(0xFFE2D6F5),
-                    fontSize: 12,
-                    letterSpacing: 0.2,
-                  ),
-                ),
 
                 const Spacer(flex: 7),
 
-                // Connecting status indicator
+                // Connecting status indicator cleanly elevated above bottom fluid waves
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     SizedBox(
-                      width: 16,
-                      height: 16,
+                      width: 14,
+                      height: 14,
                       child: CircularProgressIndicator(
                         strokeWidth: 2.0,
                         valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withValues(alpha: 0.75),
+                          Colors.white.withValues(alpha: 0.85),
                         ),
                       ),
                     ),
-                    const SizedBox(width: 10),
+                    const SizedBox(width: 8),
                     Text(
                       'Connecting people through shared experiences...',
                       style: AppTypography.bodySmall.copyWith(
-                        color: Colors.white.withValues(alpha: 0.75),
-                        fontSize: 11.5,
-                        fontWeight: FontWeight.w500,
+                        color: Colors.white.withValues(alpha: 0.88),
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0.3,
+                        shadows: [
+                          Shadow(
+                            color: Colors.black.withValues(alpha: 0.8),
+                            blurRadius: 8,
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 24),
+                const SizedBox(height: 64),
               ],
             ),
           ),

@@ -1,9 +1,10 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_smart_image.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 
 class ChatThreadPreview {
@@ -53,9 +54,8 @@ class _InboxScreenState extends State<InboxScreen> {
   final List<ChatThreadPreview> _threads = [
     const ChatThreadPreview(
       id: 'thread-1',
-      participantName: 'Rhea Sen',
-      participantAvatar:
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+      participantName: 'Aditi Sen',
+      participantAvatar: 'assets/images/aditi_avatar.png',
       lastMessage: 'It was great chatting about architectural photography today! Have you tried that lens?',
       timestamp: '2h ago',
       isUnread: true,
@@ -65,9 +65,8 @@ class _InboxScreenState extends State<InboxScreen> {
     ),
     const ChatThreadPreview(
       id: 'thread-2',
-      participantName: 'Aarav Mehta',
-      participantAvatar:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      participantName: 'Vikram Mehta',
+      participantAvatar: 'assets/images/vikram_avatar.png',
       lastMessage: 'Let\'s rally at the wooden court next Tuesday evening?',
       timestamp: '1d ago',
       isUnread: false,
@@ -129,31 +128,41 @@ class _InboxScreenState extends State<InboxScreen> {
         ),
         backgroundColor: Colors.transparent,
       ),
-      body: SafeArea(
-        bottom: false,
-        child: Column(
-          children: [
-            // ── Search Bar ──
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              child: Container(
-                height: 44,
-                decoration: BoxDecoration(
-                  color: isDark ? AppColors.darkSurface : AppColors.white,
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(
-                    color: isDark ? AppColors.darkBorder : AppColors.divider,
-                    width: 0.9,
-                  ),
-                ),
-                child: Row(
-                  children: [
-                    const SizedBox(width: 12),
-                    Icon(
-                      Icons.search_rounded,
-                      size: 18,
-                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+      body: AmbientNatureBackdrop(
+        showTopLeaf: false,
+        showBottomLeaf: true,
+        child: SafeArea(
+          bottom: false,
+          child: Column(
+            children: [
+              // ── Search Bar ──
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                child: Container(
+                  height: 46,
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkElevated : Colors.white,
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(
+                      color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.28),
+                      width: 1.0,
                     ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.10 : 0.04),
+                        blurRadius: 10,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: Row(
+                    children: [
+                      const SizedBox(width: 14),
+                      Icon(
+                        Icons.search_rounded,
+                        size: 20,
+                        color: isDark ? const Color(0xFFC084FC) : const Color(0xFF8B5CF6),
+                      ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: TextField(
@@ -170,11 +179,32 @@ class _InboxScreenState extends State<InboxScreen> {
                             fontSize: 13,
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
                           isDense: true,
                           contentPadding: EdgeInsets.zero,
                         ),
                       ),
                     ),
+                    if (_searchQuery.isNotEmpty)
+                      GestureDetector(
+                        onTap: () {
+                          _searchController.clear();
+                          setState(() => _searchQuery = '');
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 12),
+                          child: Icon(
+                            Icons.close_rounded,
+                            size: 18,
+                            color: mutedTextColor,
+                          ),
+                        ),
+                      ),
+                    const SizedBox(width: 4),
                   ],
                 ),
               ),
@@ -187,7 +217,7 @@ class _InboxScreenState extends State<InboxScreen> {
                 height: 88,
                 child: ListView(
                   scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
+                  physics: const ClampingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   children: [
                     // Discover shortcut bubble
@@ -264,8 +294,10 @@ class _InboxScreenState extends State<InboxScreen> {
                                         ),
                                       ),
                                       child: ClipOval(
-                                        child: CachedNetworkImage(
-                                          imageUrl: thread.participantAvatar,
+                                        child: AppSmartImage(
+                                          imagePath: thread.participantAvatar,
+                                          isAvatar: true,
+                                          nameHint: thread.participantName,
                                           fit: BoxFit.cover,
                                         ),
                                       ),
@@ -333,7 +365,7 @@ class _InboxScreenState extends State<InboxScreen> {
                           'Enjoyed meeting someone at an event? Your mutual connections and messages will appear here.',
                     )
                   : ListView.separated(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       padding: const EdgeInsets.only(
                         left: 20,
                         right: 20,
@@ -390,8 +422,10 @@ class _InboxScreenState extends State<InboxScreen> {
                                         ),
                                       ),
                                       child: ClipOval(
-                                        child: CachedNetworkImage(
-                                          imageUrl: thread.participantAvatar,
+                                        child: AppSmartImage(
+                                          imagePath: thread.participantAvatar,
+                                          isAvatar: true,
+                                          nameHint: thread.participantName,
                                           fit: BoxFit.cover,
                                         ),
                                       ),
@@ -549,7 +583,8 @@ class _InboxScreenState extends State<InboxScreen> {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 
   Widget _buildFilterTab(int index, String label, bool isDark) {

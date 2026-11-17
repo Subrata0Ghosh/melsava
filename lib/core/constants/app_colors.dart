@@ -101,25 +101,33 @@ class AppColors {
   );
 
   // ── High-Fidelity Prototype Accents & Gradients ───────────────────────
-  static const Color primaryPurple = Color(0xFF6C38CC);
-  static const Color vividPurple = Color(0xFF7A3BB8);
-  static const Color brightViolet = Color(0xFF9D4EDD);
-  static const Color accentSunset = Color(0xFFFF5A78);
+  static const Color primaryPurple = Color(0xFF6E32EC);
+  static const Color vividPurple = Color(0xFF8A3BF4);
+  static const Color brightViolet = Color(0xFFA855F7);
+  static const Color accentSunset = Color(0xFFFF5E7E);
+  static const Color sunsetCoral = Color(0xFFFF7A60);
+  static const Color radiantAmber = Color(0xFFFFA53B);
 
   static const LinearGradient purpleGradient = LinearGradient(
-    colors: [Color(0xFF6C38CC), Color(0xFF9D4EDD)],
+    colors: [Color(0xFF6E32EC), Color(0xFFA855F7)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );
 
   static const LinearGradient sunsetCtaGradient = LinearGradient(
-    colors: [Color(0xFFFF5A78), Color(0xFF8A3BF4)],
+    colors: [Color(0xFF7524E4), Color(0xFFC026D3), Color(0xFFFF5E7E)],
+    begin: Alignment.centerLeft,
+    end: Alignment.centerRight,
+  );
+
+  static const LinearGradient reverseSunsetCtaGradient = LinearGradient(
+    colors: [Color(0xFFFF725E), Color(0xFFC026D3), Color(0xFF6E32EC)],
     begin: Alignment.centerLeft,
     end: Alignment.centerRight,
   );
 
   static const LinearGradient goldenGradient = LinearGradient(
-    colors: [Color(0xFFFFB800), Color(0xFFFF8A00)],
+    colors: [Color(0xFFFFC043), Color(0xFFFF8B3D)],
     begin: Alignment.topLeft,
     end: Alignment.bottomRight,
   );

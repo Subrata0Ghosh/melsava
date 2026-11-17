@@ -1,10 +1,11 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import 'orbital_connections_view.dart';
 
 class ConnectionItem {
@@ -55,8 +56,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     const ConnectionItem(
       id: 'conn-1',
       name: 'Sneha',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: 'assets/images/sneha_avatar.png',
       connectionType: 'Friends',
       experienceName: 'Trekking to Mukutmanipur',
       lastMessage: 'Great trekking experience! Let\'s go again soon.',
@@ -67,8 +67,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     const ConnectionItem(
       id: 'conn-2',
       name: 'Rohan',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: 'assets/images/rohan_avatar.png',
       connectionType: 'Activity',
       experienceName: 'Cycling Club Ride',
       lastMessage: 'Shall we plan for next weekend ride at Salt Lake?',
@@ -79,8 +78,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     const ConnectionItem(
       id: 'conn-3',
       name: 'Aditi',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: 'assets/images/aditi_avatar.png',
       connectionType: 'Dates',
       experienceName: 'Coffee & Conversation',
       lastMessage: 'Had a lovely time discussing books yesterday!',
@@ -91,8 +89,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     const ConnectionItem(
       id: 'conn-4',
       name: 'Priya',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80',
+      avatarUrl: 'assets/images/priya_avatar.png',
       connectionType: 'Friends',
       experienceName: 'Morning Yoga & Wellness',
       lastMessage: 'Let\'s catch up soon 😊 The herbal tea was amazing.',
@@ -102,21 +99,19 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     ),
     const ConnectionItem(
       id: 'conn-5',
-      name: 'Karan',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
+      name: 'Vikram',
+      avatarUrl: 'assets/images/vikram_avatar.png',
       connectionType: 'Activity',
-      experienceName: 'Board Game Evening',
-      lastMessage: 'That Catan strategy was brilliant!',
+      experienceName: 'Badminton Doubles League',
+      lastMessage: 'That rally strategy was brilliant!',
       timeAgo: '4d ago',
       isOnline: false,
       compatibilityScore: 88,
     ),
     const ConnectionItem(
       id: 'conn-6',
-      name: 'Meera',
-      avatarUrl:
-          'https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&w=200&q=80',
+      name: 'Sneha R.',
+      avatarUrl: 'assets/images/sneha_avatar.png',
       connectionType: 'Dates',
       experienceName: 'Coffee & Conversation',
       lastMessage: 'Loved our conversation on heritage architecture.',
@@ -163,7 +158,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
+      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
       appBar: AppBar(
         title: Text(
           'My Connections',
@@ -191,11 +186,16 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: _isOrbitView
-          ? OrbitalConnectionsView(
-              connections: filtered,
-            )
-          : Column(
+      body: AmbientNatureBackdrop(
+        showTopLeaf: true,
+        showBottomLeaf: true,
+        leafStyle: BotanicalLeafStyle.wildGrass,
+        leafColors: BotanicalLeafDecoration.warmOlive,
+        child: _isOrbitView
+            ? OrbitalConnectionsView(
+                connections: filtered,
+              )
+            : Column(
               children: [
                 // Filter Tabs (Image 8 Screen 8)
                 Padding(
@@ -204,7 +204,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                     height: 38,
                     child: ListView.separated(
                       scrollDirection: Axis.horizontal,
-                      physics: const BouncingScrollPhysics(),
+                      physics: const ClampingScrollPhysics(),
                       itemCount: filterTabs.length,
                       separatorBuilder: (context, index) => const SizedBox(width: 8),
                       itemBuilder: (context, index) {
@@ -266,7 +266,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                             top: 6,
                             bottom: 120, // Guaranteed 120dp clearance for floating navbar
                           ),
-                          physics: const BouncingScrollPhysics(),
+                          physics: const ClampingScrollPhysics(),
                           itemCount: filtered.length,
                           separatorBuilder: (context, index) => const SizedBox(height: 12),
                           itemBuilder: (context, index) {
@@ -283,6 +283,7 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                 ),
               ],
             ),
+      ),
     );
   }
 
@@ -332,8 +333,10 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
                   ),
                 ),
                 child: ClipOval(
-                  child: CachedNetworkImage(
-                    imageUrl: conn.avatarUrl,
+                  child: AppSmartImage(
+                    imagePath: conn.avatarUrl,
+                    isAvatar: true,
+                    nameHint: conn.name,
                     fit: BoxFit.cover,
                   ),
                 ),

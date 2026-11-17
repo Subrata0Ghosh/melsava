@@ -5,6 +5,9 @@ class AppUser {
   final String? displayName;
   final String? avatarUrl;
   final String? city;
+  final String? bio;
+  final String? primaryIntent;
+  final List<String>? interests;
   final bool isEmailVerified;
   final bool onboardingCompleted;
 
@@ -14,6 +17,9 @@ class AppUser {
     this.displayName,
     this.avatarUrl,
     this.city,
+    this.bio,
+    this.primaryIntent,
+    this.interests,
     this.isEmailVerified = false,
     this.onboardingCompleted = false,
   });
@@ -24,6 +30,9 @@ class AppUser {
     String? displayName,
     String? avatarUrl,
     String? city,
+    String? bio,
+    String? primaryIntent,
+    List<String>? interests,
     bool? isEmailVerified,
     bool? onboardingCompleted,
   }) {
@@ -33,6 +42,9 @@ class AppUser {
       displayName: displayName ?? this.displayName,
       avatarUrl: avatarUrl ?? this.avatarUrl,
       city: city ?? this.city,
+      bio: bio ?? this.bio,
+      primaryIntent: primaryIntent ?? this.primaryIntent,
+      interests: interests ?? this.interests,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );

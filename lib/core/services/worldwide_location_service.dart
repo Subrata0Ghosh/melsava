@@ -230,7 +230,7 @@ class WorldwideLocationService {
       debugPrint('Photon venue search failed, returning curated venues: $e');
     }
 
-    return _getCuratedFallbackVenues(location.city, categoryFilter);
+    return _getCuratedFallbackVenues(location, categoryFilter);
   }
 
   String _mapOsmToCategory(String osm) {
@@ -246,49 +246,65 @@ class WorldwideLocationService {
     return 'cafe';
   }
 
-  List<MeetupVenue> _getCuratedFallbackVenues(String city, String? category) {
+  List<MeetupVenue> _getCuratedFallbackVenues(WorldLocation location, String? category) {
+    final baseLat = (location.lat != 0.0) ? location.lat : 19.0760;
+    final baseLon = (location.lon != 0.0) ? location.lon : 72.8777;
+    final city = location.city;
+
     final venues = [
       MeetupVenue(
         name: 'Artisan Coffee Roasters',
         category: 'cafe',
         address: 'Downtown Arts Quarter, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat + 0.0035,
+        lon: baseLon - 0.0042,
       ),
       MeetupVenue(
         name: 'Tabletop & Dice Game Lounge',
         category: 'board_games',
         address: 'Central Plaza 4th Floor, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat - 0.0028,
+        lon: baseLon + 0.0048,
       ),
       MeetupVenue(
         name: 'The Botanical Greenhouse Bistro',
         category: 'restaurant',
         address: 'Civic Garden Way, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat + 0.0052,
+        lon: baseLon + 0.0025,
       ),
       MeetupVenue(
         name: 'Heritage Bookshop & Tearoom',
         category: 'cafe',
         address: 'Old Quarter Promenade, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat - 0.0045,
+        lon: baseLon - 0.0032,
       ),
       MeetupVenue(
         name: 'Riverside Walk & Sunset Trail',
         category: 'park',
         address: 'Harbor Waterfront, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat + 0.0070,
+        lon: baseLon - 0.0060,
       ),
       MeetupVenue(
         name: 'Clay & Canvas Ceramic Studio',
         category: 'culture',
         address: 'Craftworks Avenue, $city',
         city: city,
-        country: '',
+        country: location.country,
+        lat: baseLat - 0.0062,
+        lon: baseLon + 0.0038,
       ),
     ];
 

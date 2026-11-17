@@ -1,14 +1,16 @@
-import 'dart:math' as math;
+import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_typography.dart';
 import '../../core/services/worldwide_location_service.dart';
 import 'location_venue_picker_sheet.dart';
 
-/// Interactive Activity Radar & Curated Meetup Venue Map
-/// Inspired by modern dark map concepts on Dribbble.
-/// Visualizes verified public meetup venues (Cafes, Lounges, Board Game spots)
-/// in the user's active city anywhere in the world.
+/// Interactive Real-World Activity Radar Map Card
+/// Powered by live OpenStreetMap / CartoDB tiles with real GPS coordinates,
+/// interactive pan/zoom, animated radar pulse, and verified venue pins.
 class ActivityRadarMapCard extends StatefulWidget {
   final WorldLocation location;
   final Function(MeetupVenue venue)? onVenueSelected;
@@ -25,14 +27,21 @@ class ActivityRadarMapCard extends StatefulWidget {
 
 class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
     with SingleTickerProviderStateMixin {
-  late AnimationController _pulseController;
+  late final MapController _mapController;
+  late final AnimationController _pulseController;
   int _selectedVenueIndex = 0;
   List<MeetupVenue> _venues = [];
   bool _isLoading = true;
 
+  LatLng get _cityCenter => LatLng(
+        widget.location.lat != 0.0 ? widget.location.lat : 19.0760,
+        widget.location.lon != 0.0 ? widget.location.lon : 72.8777,
+      );
+
   @override
   void initState() {
     super.initState();
+    _mapController = MapController();
     _pulseController = AnimationController(
       vsync: this,
       duration: const Duration(milliseconds: 2400),
@@ -43,8 +52,12 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
   @override
   void didUpdateWidget(covariant ActivityRadarMapCard oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.location.city != widget.location.city) {
+    if (oldWidget.location.city != widget.location.city ||
+        oldWidget.location.lat != widget.location.lat) {
       _loadVenues();
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        _mapController.move(_cityCenter, 14.5);
+      });
     }
   }
 
@@ -65,8 +78,34 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
 
   @override
   void dispose() {
+    _mapController.dispose();
     _pulseController.dispose();
     super.dispose();
+  }
+
+  void _selectVenue(int index) {
+    HapticFeedback.selectionClick();
+    setState(() => _selectedVenueIndex = index);
+    final venue = _venues[index];
+    if (venue.lat != 0.0 && venue.lon != 0.0) {
+      _mapController.move(LatLng(venue.lat, venue.lon), 15.5);
+    }
+    widget.onVenueSelected?.call(venue);
+  }
+
+  void _zoomIn() {
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(_mapController.camera.center, currentZoom + 1.0);
+  }
+
+  void _zoomOut() {
+    final currentZoom = _mapController.camera.zoom;
+    _mapController.move(_mapController.camera.center, currentZoom - 1.0);
+  }
+
+  void _recenter() {
+    HapticFeedback.lightImpact();
+    _mapController.move(_cityCenter, 14.5);
   }
 
   @override
@@ -78,6 +117,11 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
 
     final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
     final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+
+    // CartoDB tiles: Voyager for Light, Dark Matter for Dark
+    final tileUrl = isDark
+        ? 'https://basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}@2x.png'
+        : 'https://basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}@2x.png';
 
     return Container(
       decoration: BoxDecoration(
@@ -102,114 +146,208 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // Map Canvas Stack
+            // ── Live Real Map Canvas Stack ─────────────────────────────────
             SizedBox(
-              height: 220,
+              height: 240,
               child: Stack(
                 children: [
-                  // Stylized Map Background Painter
-                  Positioned.fill(
-                    child: CustomPaint(
-                      painter: _StylizedRadarMapPainter(
-                        isDark: isDark,
-                        pulseValue: _pulseController.value,
+                  // Real Interactive FlutterMap
+                  FlutterMap(
+                    mapController: _mapController,
+                    options: MapOptions(
+                      initialCenter: _cityCenter,
+                      initialZoom: 14.5,
+                      minZoom: 11.0,
+                      maxZoom: 18.0,
+                      interactionOptions: const InteractionOptions(
+                        flags: InteractiveFlag.pinchZoom |
+                            InteractiveFlag.drag |
+                            InteractiveFlag.doubleTapZoom,
                       ),
                     ),
+                    children: [
+                      // Tile Layer (Real OpenStreetMap / CartoDB Street Data)
+                      TileLayer(
+                        urlTemplate: tileUrl,
+                        userAgentPackageName: 'com.melsava.app',
+                        tileProvider: NetworkTileProvider(),
+                      ),
+
+                      // Animated Radar Pulse Circles Layer
+                      AnimatedBuilder(
+                        animation: _pulseController,
+                        builder: (context, child) {
+                          final pulseRadius = 180.0 + (_pulseController.value * 280.0);
+                          final pulseAlpha = (1.0 - _pulseController.value) * 0.22;
+
+                          return CircleLayer(
+                            circles: [
+                              // Fixed inner radar boundary
+                              CircleMarker(
+                                point: _cityCenter,
+                                radius: 260,
+                                useRadiusInMeter: true,
+                                color: (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: 0.06),
+                                borderColor: (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: 0.25),
+                                borderStrokeWidth: 1.2,
+                              ),
+                              // Expanding pulse ripple
+                              CircleMarker(
+                                point: _cityCenter,
+                                radius: pulseRadius,
+                                useRadiusInMeter: true,
+                                color: (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: pulseAlpha),
+                                borderColor: (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: pulseAlpha * 1.5),
+                                borderStrokeWidth: 1.5,
+                              ),
+                            ],
+                          );
+                        },
+                      ),
+
+                      // Interactive Venue Markers Layer
+                      if (!_isLoading && _venues.isNotEmpty)
+                        MarkerLayer(
+                          markers: List.generate(_venues.length, (index) {
+                            final venue = _venues[index];
+                            final pos = LatLng(
+                              venue.lat != 0.0 ? venue.lat : _cityCenter.latitude,
+                              venue.lon != 0.0 ? venue.lon : _cityCenter.longitude,
+                            );
+
+                            return Marker(
+                              point: pos,
+                              width: 48,
+                              height: 48,
+                              child: _buildVenueMarker(
+                                index: index,
+                                venue: venue,
+                                isDark: isDark,
+                              ),
+                            );
+                          }),
+                        ),
+                    ],
                   ),
 
                   // Top Pill Overlay: City & Status
                   Positioned(
-                    top: 14,
-                    left: 14,
-                    right: 14,
+                    top: 12,
+                    left: 12,
+                    right: 12,
                     child: Row(
                       children: [
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 10,
-                            vertical: 5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: (isDark
-                                    ? const Color(0xFF151022)
-                                    : Colors.white)
-                                .withValues(alpha: 0.88),
-                            borderRadius: BorderRadius.circular(16),
-                            border: Border.all(
-                              color: isDark
-                                  ? Colors.white.withValues(alpha: 0.12)
-                                  : AppColors.divider,
+                        // Live Radar Status Pill
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: BackdropFilter(
+                            filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: (isDark ? const Color(0xFF130F1F) : Colors.white)
+                                    .withValues(alpha: 0.88),
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isDark
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : AppColors.divider,
+                                ),
+                              ),
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: 7,
+                                    height: 7,
+                                    decoration: const BoxDecoration(
+                                      color: AppColors.mintAccent,
+                                      shape: BoxShape.circle,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 6),
+                                  Text(
+                                    '${widget.location.city} Activity Radar',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      fontWeight: FontWeight.w700,
+                                      color: primaryTextColor,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: 7,
-                                height: 7,
-                                decoration: const BoxDecoration(
-                                  color: AppColors.mintAccent,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                '${widget.location.city} Activity Radar',
-                                style: AppTypography.labelSmall.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: primaryTextColor,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
                           ),
                         ),
                         const Spacer(),
+
+                        // "Change Area" Button
                         GestureDetector(
                           onTap: () => LocationVenuePickerSheet.show(
                             context,
                             selectVenueMode: true,
                           ),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: (isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.mauve)
-                                  .withValues(alpha: 0.18),
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: (isDark
-                                        ? AppColors.luminousMauve
-                                        : AppColors.mauve)
-                                    .withValues(alpha: 0.35),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.tune_rounded,
-                                  size: 13,
-                                  color: isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.mauve,
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(16),
+                            child: BackdropFilter(
+                              filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
                                 ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Change Area',
-                                  style: AppTypography.labelSmall.copyWith(
-                                    fontWeight: FontWeight.w700,
-                                    color: isDark
-                                        ? AppColors.luminousMauve
-                                        : AppColors.mauve,
-                                    fontSize: 11,
+                                decoration: BoxDecoration(
+                                  color: (isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
+                                      .withValues(alpha: 0.20),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: 0.40),
                                   ),
                                 ),
-                              ],
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.tune_rounded,
+                                      size: 13,
+                                      color: isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple,
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Change Area',
+                                      style: AppTypography.labelSmall.copyWith(
+                                        fontWeight: FontWeight.w700,
+                                        color: isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
                           ),
                         ),
@@ -217,71 +355,55 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                     ),
                   ),
 
-                  // Pins on the radar
+                  // Floating Map Navigation Controls (Zoom & Recenter)
+                  Positioned(
+                    bottom: 12,
+                    right: 12,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        _buildFloatingMapButton(
+                          icon: Icons.add_rounded,
+                          onTap: _zoomIn,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 6),
+                        _buildFloatingMapButton(
+                          icon: Icons.remove_rounded,
+                          onTap: _zoomOut,
+                          isDark: isDark,
+                        ),
+                        const SizedBox(height: 6),
+                        _buildFloatingMapButton(
+                          icon: Icons.my_location_rounded,
+                          onTap: _recenter,
+                          isDark: isDark,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  // Loading indicator
                   if (_isLoading)
-                    const Center(
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: AppColors.mauve,
+                    Container(
+                      color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.4),
+                      child: const Center(
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2.5,
+                          color: AppColors.primaryPurple,
+                        ),
                       ),
-                    )
-                  else ...[
-                    // Pin 1 (Center-Left)
-                    if (_venues.isNotEmpty)
-                      _buildMapPin(
-                        index: 0,
-                        top: 75,
-                        left: 65,
-                        venue: _venues[0],
-                        icon: _getVenueIcon(_venues[0].category),
-                        isDark: isDark,
-                      ),
-
-                    // Pin 2 (Center-Right)
-                    if (_venues.length > 1)
-                      _buildMapPin(
-                        index: 1,
-                        top: 95,
-                        left: 210,
-                        venue: _venues[1],
-                        icon: _getVenueIcon(_venues[1].category),
-                        isDark: isDark,
-                      ),
-
-                    // Pin 3 (Bottom-Center)
-                    if (_venues.length > 2)
-                      _buildMapPin(
-                        index: 2,
-                        top: 140,
-                        left: 135,
-                        venue: _venues[2],
-                        icon: _getVenueIcon(_venues[2].category),
-                        isDark: isDark,
-                      ),
-
-                    // Pin 4 (Top-Right)
-                    if (_venues.length > 3)
-                      _buildMapPin(
-                        index: 3,
-                        top: 60,
-                        left: 280,
-                        venue: _venues[3],
-                        icon: _getVenueIcon(_venues[3].category),
-                        isDark: isDark,
-                      ),
-                  ],
+                    ),
                 ],
               ),
             ),
 
-            // Active Venue Bottom Drawer / Info Box
+            // ── Active Venue Bottom Drawer / Info Box ──────────────────────
             if (activeVenue != null)
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
-                  color: isDark
-                      ? const Color(0xFF1E182D)
-                      : const Color(0xFFFAF7F2),
+                  color: isDark ? const Color(0xFF1E182D) : const Color(0xFFFAF7F2),
                   border: Border(
                     top: BorderSide(
                       color: isDark ? AppColors.darkBorder : AppColors.divider,
@@ -297,15 +419,20 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: [
-                            isDark
-                                ? AppColors.luminousMauve
-                                : AppColors.mauve,
-                            AppColors.softCoral,
+                            isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            AppColors.vividCoral,
                           ],
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
                         borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                            blurRadius: 8,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
                       ),
                       child: Icon(
                         _getVenueIcon(activeVenue.category),
@@ -326,9 +453,7 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                   fontSize: 10,
                                   letterSpacing: 1.2,
                                   fontWeight: FontWeight.w700,
-                                  color: isDark
-                                      ? AppColors.softCoral
-                                      : AppColors.mauve,
+                                  color: isDark ? AppColors.vividCoral : AppColors.primaryPurple,
                                 ),
                               ),
                               const SizedBox(width: 6),
@@ -338,8 +463,7 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                   vertical: 2,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: AppColors.mintAccent
-                                      .withValues(alpha: 0.15),
+                                  color: AppColors.mintAccent.withValues(alpha: 0.15),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: Text(
@@ -367,7 +491,7 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                           ),
                           const SizedBox(height: 2),
                           Text(
-                            '${activeVenue.address} • 3-5 small group capacity',
+                            '${activeVenue.address} • Small group venue',
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodySmall.copyWith(
@@ -382,8 +506,8 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                     ElevatedButton(
                       style: ElevatedButton.styleFrom(
                         backgroundColor: isDark
-                            ? AppColors.luminousMauve
-                            : AppColors.mauve,
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                         foregroundColor: Colors.white,
                         elevation: 0,
                         padding: const EdgeInsets.symmetric(
@@ -414,94 +538,123 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
     );
   }
 
-  Widget _buildMapPin({
+  Widget _buildVenueMarker({
     required int index,
-    required double top,
-    required double left,
     required MeetupVenue venue,
-    required IconData icon,
     required bool isDark,
   }) {
     final isSelected = _selectedVenueIndex == index;
+    final icon = _getVenueIcon(venue.category);
 
-    return Positioned(
-      top: top,
-      left: left,
-      child: GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onTap: () {
-          setState(() => _selectedVenueIndex = index);
-          widget.onVenueSelected?.call(venue);
-        },
-        child: AnimatedBuilder(
-          animation: _pulseController,
-          builder: (context, child) {
-            final pulseScale = 1.0 + (_pulseController.value * 0.4);
-            final pulseAlpha = (1.0 - _pulseController.value).clamp(0.0, 1.0);
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: () => _selectVenue(index),
+      child: AnimatedBuilder(
+        animation: _pulseController,
+        builder: (context, child) {
+          final pulseScale = 1.0 + (_pulseController.value * 0.35);
+          final pulseAlpha = (1.0 - _pulseController.value).clamp(0.0, 1.0);
 
-            return Stack(
-              alignment: Alignment.center,
-              children: [
-                // Pulse ripple
-                if (isSelected)
-                  Transform.scale(
-                    scale: pulseScale,
-                    child: Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: (isDark
-                                ? AppColors.vividCoral
-                                : AppColors.mauve)
-                            .withValues(alpha: 0.35 * pulseAlpha),
-                      ),
-                    ),
-                  ),
-
-                // Pin Body
-                AnimatedContainer(
-                  duration: const Duration(milliseconds: 200),
-                  width: isSelected ? 38 : 32,
-                  height: isSelected ? 38 : 32,
-                  decoration: BoxDecoration(
-                    color: isSelected
-                        ? (isDark ? AppColors.vividCoral : AppColors.deepPlum)
-                        : (isDark
-                            ? const Color(0xFF282038)
-                            : Colors.white),
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark
-                              ? AppColors.luminousMauve
-                              : AppColors.mauve),
-                      width: isSelected ? 2.2 : 1.4,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withValues(alpha: 0.3),
-                        blurRadius: 8,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Icon(
-                      icon,
-                      size: isSelected ? 18 : 15,
-                      color: isSelected
-                          ? Colors.white
-                          : (isDark
-                              ? AppColors.luminousMauve
-                              : AppColors.mauve),
+          return Stack(
+            alignment: Alignment.center,
+            children: [
+              // Glowing Ripple on Selected Pin
+              if (isSelected)
+                Transform.scale(
+                  scale: pulseScale,
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                          .withValues(alpha: 0.35 * pulseAlpha),
                     ),
                   ),
                 ),
+
+              // Volumetric 3D Map Pin Badge
+              AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                width: isSelected ? 40 : 34,
+                height: isSelected ? 40 : 34,
+                decoration: BoxDecoration(
+                  color: isSelected
+                      ? (isDark ? const Color(0xFF281E38) : const Color(0xFF2A1C3E))
+                      : (isDark ? const Color(0xFF282038) : Colors.white),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                    width: isSelected ? 2.2 : 1.4,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: isSelected ? 0.40 : 0.22),
+                      blurRadius: isSelected ? 10 : 6,
+                      offset: const Offset(0, 3),
+                    ),
+                    if (isSelected)
+                      BoxShadow(
+                        color: AppColors.primaryPurple.withValues(alpha: 0.45),
+                        blurRadius: 12,
+                      ),
+                  ],
+                ),
+                child: Center(
+                  child: Icon(
+                    icon,
+                    size: isSelected ? 19 : 16,
+                    color: isSelected
+                        ? Colors.white
+                        : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildFloatingMapButton({
+    required IconData icon,
+    required VoidCallback onTap,
+    required bool isDark,
+  }) {
+    return GestureDetector(
+      onTap: onTap,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(10),
+        child: BackdropFilter(
+          filter: ImageFilter.blur(sigmaX: 8, sigmaY: 8),
+          child: Container(
+            width: 32,
+            height: 32,
+            decoration: BoxDecoration(
+              color: (isDark ? const Color(0xFF130F1F) : Colors.white)
+                  .withValues(alpha: 0.88),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: isDark ? Colors.white.withValues(alpha: 0.15) : AppColors.divider,
+                width: 0.8,
+              ),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withValues(alpha: 0.12),
+                  blurRadius: 4,
+                  offset: const Offset(0, 1),
+                ),
               ],
-            );
-          },
+            ),
+            child: Icon(
+              icon,
+              size: 18,
+              color: isDark ? Colors.white : AppColors.deepPlum,
+            ),
+          ),
         ),
       ),
     );
@@ -526,134 +679,5 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
       default:
         return Icons.place_rounded;
     }
-  }
-}
-
-/// Custom painter that creates a beautiful minimalist architectural dark/light map
-class _StylizedRadarMapPainter extends CustomPainter {
-  final bool isDark;
-  final double pulseValue;
-
-  _StylizedRadarMapPainter({
-    required this.isDark,
-    required this.pulseValue,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final w = size.width;
-    final h = size.height;
-
-    // Base background
-    final bgPaint = Paint()
-      ..color = isDark ? const Color(0xFF130F1F) : const Color(0xFFEBE5DC);
-    canvas.drawRect(Rect.fromLTWH(0, 0, w, h), bgPaint);
-
-    // Subtle city block polygons
-    final blockPaint = Paint()
-      ..color = isDark ? const Color(0xFF191429) : const Color(0xFFF3ECE3)
-      ..style = PaintingStyle.fill;
-
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(20, 25, 90, 75),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(130, 20, 110, 60),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(260, 30, 110, 80),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(40, 120, 120, 80),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-    canvas.drawRRect(
-      RRect.fromRectAndRadius(
-        Rect.fromLTWH(180, 100, 160, 95),
-        const Radius.circular(8),
-      ),
-      blockPaint,
-    );
-
-    // Architectural Road Network Lines
-    final roadPaint = Paint()
-      ..color = (isDark ? const Color(0xFF261F3B) : const Color(0xFFDDD5C8))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 3.5
-      ..strokeCap = StrokeCap.round;
-
-    final secondaryRoadPaint = Paint()
-      ..color = (isDark ? const Color(0xFF201A33) : const Color(0xFFE4DDD2))
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.8;
-
-    // Major Arteries
-    final mainRoad1 = Path()
-      ..moveTo(0, 50)
-      ..cubicTo(w * 0.35, 60, w * 0.65, 30, w, 40);
-    canvas.drawPath(mainRoad1, roadPaint);
-
-    final mainRoad2 = Path()
-      ..moveTo(0, 155)
-      ..cubicTo(w * 0.40, 140, w * 0.70, 175, w, 150);
-    canvas.drawPath(mainRoad2, roadPaint);
-
-    final crossRoad = Path()
-      ..moveTo(125, 0)
-      ..cubicTo(115, h * 0.45, 145, h * 0.75, 135, h);
-    canvas.drawPath(crossRoad, roadPaint);
-
-    final crossRoad2 = Path()
-      ..moveTo(250, 0)
-      ..cubicTo(260, h * 0.50, 240, h * 0.85, 255, h);
-    canvas.drawPath(crossRoad2, secondaryRoadPaint);
-
-    // Subtle radar sweep circle in center
-    final center = Offset(w * 0.50, h * 0.50);
-    final radarRingPaint = Paint()
-      ..color = (isDark ? AppColors.luminousMauve : AppColors.mauve)
-          .withValues(alpha: 0.12)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.0;
-
-    canvas.drawCircle(center, 60, radarRingPaint);
-    canvas.drawCircle(center, 120, radarRingPaint);
-
-    // Subtle glowing sweep line
-    final sweepAngle = pulseValue * 2 * math.pi;
-    final sweepEnd = Offset(
-      center.dx + 120 * math.cos(sweepAngle),
-      center.dy + 120 * math.sin(sweepAngle),
-    );
-    final sweepPaint = Paint()
-      ..shader = LinearGradient(
-        colors: [
-          (isDark ? AppColors.luminousMauve : AppColors.mauve)
-              .withValues(alpha: 0.25),
-          Colors.transparent,
-        ],
-      ).createShader(Rect.fromPoints(center, sweepEnd))
-      ..strokeWidth = 1.5;
-    canvas.drawLine(center, sweepEnd, sweepPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _StylizedRadarMapPainter oldDelegate) {
-    return oldDelegate.isDark != isDark || oldDelegate.pulseValue != pulseValue;
   }
 }

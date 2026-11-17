@@ -165,22 +165,43 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
 
             const SizedBox(height: AppConstants.spacingLG),
 
-            // Wordmark: M E L S A V A
+            // Wordmark: M E L S A V A with Luminous Outer Glow (Image 2)
             Opacity(
               opacity: _wordmarkFade.value,
               child: Text(
                 AppConstants.appName,
                 style: AppTypography.displayMedium.copyWith(
                   letterSpacing: _wordmarkTracking.value,
-                  color: primaryTextColor,
-                  fontWeight: FontWeight.w800,
+                  color: isDark ? Colors.white : primaryTextColor,
+                  fontWeight: FontWeight.w900,
+                  fontSize: 28,
+                  shadows: isDark
+                      ? [
+                          const Shadow(
+                            color: Colors.white,
+                            blurRadius: 10,
+                          ),
+                          Shadow(
+                            color: const Color(0xFFC084FC).withValues(alpha: 0.90),
+                            blurRadius: 24,
+                          ),
+                          Shadow(
+                            color: const Color(0xFFA855F7).withValues(alpha: 0.85),
+                            blurRadius: 42,
+                          ),
+                          Shadow(
+                            color: const Color(0xFF7E22CE).withValues(alpha: 0.70),
+                            blurRadius: 65,
+                          ),
+                        ]
+                      : null,
                 ),
               ),
             ),
 
             const SizedBox(height: AppConstants.spacingSM),
 
-            // Narrative Philosophy Justification
+            // Narrative Philosophy Justification with Luminous Glow
             Opacity(
               opacity: _taglineFade.value,
               child: Column(
@@ -188,17 +209,34 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
                   Text(
                     'TWO PATHS • ONE MOMENT',
                     style: AppTypography.labelSmall.copyWith(
-                      color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                      letterSpacing: 2.5,
-                      fontWeight: FontWeight.w700,
+                      color: isDark ? const Color(0xFFDCC8FC) : AppColors.mauve,
+                      letterSpacing: 2.8,
+                      fontWeight: FontWeight.w800,
+                      shadows: isDark
+                          ? [
+                              Shadow(
+                                color: const Color(0xFFA855F7).withValues(alpha: 0.65),
+                                blurRadius: 16,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 5),
                   Text(
                     'Meet through shared experiences.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+                      color: isDark ? const Color(0xFFEDE4FA) : AppColors.mutedText,
                       fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3,
+                      shadows: isDark
+                          ? [
+                              Shadow(
+                                color: Colors.black.withValues(alpha: 0.6),
+                                blurRadius: 10,
+                              ),
+                            ]
+                          : null,
                     ),
                   ),
                 ],
@@ -233,9 +271,30 @@ class _DynamicStrokeMelsavaPainter extends CustomPainter {
     final h = size.height;
     final strokeWidth = w * 0.125;
 
-    final color1 = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-    final color2 = isDark ? const Color(0xFFC7A3EC) : AppColors.mauve;
-    final color3 = isDark ? AppColors.vividCoral : AppColors.softCoral;
+    final color1 = isDark ? const Color(0xFF9E84E8) : const Color(0xFF7E5CC8);
+    final color2 = isDark ? const Color(0xFFC4A8F8) : const Color(0xFF9A7CD8);
+    final color3 = isDark ? const Color(0xFFFF8A65) : const Color(0xFFFF6E4A);
+
+    final glowPaint1 = Paint()
+      ..color = color1.withValues(alpha: isDark ? 0.35 : 0.20)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 1.55
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final glowPaint2 = Paint()
+      ..color = color2.withValues(alpha: isDark ? 0.35 : 0.20)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 1.55
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
+
+    final glowPaint3 = Paint()
+      ..color = color3.withValues(alpha: isDark ? 0.45 : 0.25)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth * 1.55
+      ..strokeCap = StrokeCap.round
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     final paint1 = Paint()
       ..color = color1
@@ -271,21 +330,24 @@ class _DynamicStrokeMelsavaPainter extends CustomPainter {
       ..moveTo(w * 0.50, h * 0.52)
       ..cubicTo(w * 0.50, h * 0.68, w * 0.50, h * 0.78, w * 0.50, h * 0.85);
 
-    // 1. Draw animated left path
+    // 1. Draw animated left path (with glow)
     if (leftProgress > 0) {
       final animatedLeft = _extractPartialPath(fullLeftPath, leftProgress);
+      canvas.drawPath(animatedLeft, glowPaint1);
       canvas.drawPath(animatedLeft, paint1);
     }
 
-    // 2. Draw animated right path
+    // 2. Draw animated right path (with glow)
     if (rightProgress > 0) {
       final animatedRight = _extractPartialPath(fullRightPath, rightProgress);
+      canvas.drawPath(animatedRight, glowPaint2);
       canvas.drawPath(animatedRight, paint2);
     }
 
-    // 3. Draw animated center path
+    // 3. Draw animated center path (with glow)
     if (centerProgress > 0) {
       final animatedCenter = _extractPartialPath(fullCenterPath, centerProgress);
+      canvas.drawPath(animatedCenter, glowPaint3);
       canvas.drawPath(animatedCenter, paint3);
     }
 

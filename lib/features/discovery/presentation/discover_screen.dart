@@ -1,4 +1,3 @@
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,8 +8,14 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/activity_radar_map_card.dart';
+import '../../../shared/widgets/app_smart_image.dart';
+import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/experience_card.dart';
+import '../../../shared/widgets/explore_all_intents_sheet.dart';
+import '../../../shared/widgets/explore_all_categories_sheet.dart';
+import '../../../shared/widgets/intent_3d_cards_section.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
+import '../../../shared/widgets/popular_categories_row.dart';
 import '../../../shared/widgets/trending_badge.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
@@ -41,33 +46,6 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   String? _selectedIntent; // 'Friendship', 'Activity Partner', 'Dating', 'Serious Relationship'
   String _selectedCategory = 'All';
   int _viewMode = 0; // 0: Curated Feed, 1: Live Radar
-
-  final List<Map<String, dynamic>> _intents = [
-    {
-      'name': 'Friendship',
-      'icon': Icons.people_alt_rounded,
-      'bg': AppColors.intentFriendshipBg,
-      'color': AppColors.intentFriendshipText,
-    },
-    {
-      'name': 'Activity Partner',
-      'icon': Icons.extension_rounded,
-      'bg': AppColors.intentActivityBg,
-      'color': AppColors.intentActivityText,
-    },
-    {
-      'name': 'Dating',
-      'icon': Icons.bolt_rounded,
-      'bg': AppColors.intentDatingBg,
-      'color': AppColors.intentDatingText,
-    },
-    {
-      'name': 'Serious Relationship',
-      'icon': Icons.workspace_premium_rounded,
-      'bg': AppColors.intentRelationshipBg,
-      'color': AppColors.intentRelationshipText,
-    },
-  ];
 
   final List<String> _categories = [
     'All',
@@ -127,15 +105,30 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
     final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
 
-    final displayName = user?.displayName?.split(' ').first ?? 'Sneha';
+    final displayName = user?.displayName ?? 'Sneha';
 
     return Scaffold(
-      backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
-      body: SafeArea(
-        bottom: false,
-        child: CustomScrollView(
-          physics: const BouncingScrollPhysics(),
-          slivers: [
+      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
+      body: AmbientNatureBackdrop(
+        showTopLeaf: true,
+        showBottomLeaf: true,
+        leafStyle: BotanicalLeafStyle.eucalyptus,
+        leafColors: BotanicalLeafDecoration.mintDew,
+        child: SafeArea(
+          bottom: false,
+          child: RefreshIndicator(
+            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+            backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
+            onRefresh: () async {
+              HapticFeedback.lightImpact();
+              ref.invalidate(experiencesListProvider);
+              await Future.delayed(const Duration(milliseconds: 600));
+            },
+            child: CustomScrollView(
+              physics: const AlwaysScrollableScrollPhysics(
+                parent: ClampingScrollPhysics(),
+              ),
+              slivers: [
             // ── Top Header: User Greeting, Notifications & Location ──
             SliverToBoxAdapter(
               child: Padding(
@@ -147,71 +140,79 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisSize: MainAxisSize.min,
                         children: [
-                          Row(
-                            children: [
-                              Text(
-                                'Hello, $displayName',
-                                style: AppTypography.titleLarge.copyWith(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 20,
-                                  color: primaryTextColor,
-                                ),
+                          Text.rich(
+                            TextSpan(
+                              text: 'Hello, $displayName ',
+                              style: AppTypography.titleLarge.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: displayName.length > 18
+                                    ? 15.5
+                                    : (displayName.length > 12 ? 17 : 20),
+                                color: primaryTextColor,
+                                height: 1.15,
                               ),
-                              const SizedBox(width: 6),
-                              const Text('👋', style: TextStyle(fontSize: 18)),
-                            ],
+                              children: const [
+                                TextSpan(
+                                  text: '👋',
+                                  style: TextStyle(
+                                    fontSize: 17,
+                                    fontStyle: FontStyle.normal,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
                           ),
                           const SizedBox(height: 2),
                           Text(
                             'Let\'s explore experiences!',
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                             style: AppTypography.bodySmall.copyWith(
                               color: mutedTextColor,
-                              fontSize: 13,
+                              fontSize: 12.5,
                               fontWeight: FontWeight.w500,
                             ),
                           ),
                         ],
                       ),
                     ),
+                    const SizedBox(width: 8),
 
-                    // Worldwide Location Pill
+                    // Worldwide Location Button (Icon only)
                     GestureDetector(
                       onTap: () => LocationVenuePickerSheet.show(context),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        width: 38,
+                        height: 38,
                         decoration: BoxDecoration(
                           color: isDark ? AppColors.darkElevated : AppColors.white,
-                          borderRadius: BorderRadius.circular(20),
+                          shape: BoxShape.circle,
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.divider,
-                            width: 0.8,
+                            color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.38),
+                            width: 1.0,
                           ),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.location_on_rounded,
-                              size: 14,
-                              color: isDark ? AppColors.luminousMauve : AppColors.mauve,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              userLoc.city,
-                              style: AppTypography.labelSmall.copyWith(
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11.5,
-                                color: primaryTextColor,
-                              ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.12 : 0.06),
+                              blurRadius: 6,
+                              offset: const Offset(0, 1),
                             ),
                           ],
+                        ),
+                        child: const Icon(
+                          Icons.location_on_rounded,
+                          size: 19,
+                          color: Color(0xFFF59E0B), // Warm Gold Pin
                         ),
                       ),
                     ),
                     const SizedBox(width: 8),
 
-                    // Notification Bell with Unread Dot (routes to Inbox)
+                    // Notification Bell with Gold Rim & Unread Dot
                     GestureDetector(
                       onTap: () => context.push('/inbox'),
                       child: Stack(
@@ -224,8 +225,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                               color: isDark ? AppColors.darkElevated : AppColors.white,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: isDark ? AppColors.darkBorder : AppColors.divider,
-                                width: 0.8,
+                                color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.32),
+                                width: 1.0,
                               ),
                             ),
                             child: Icon(
@@ -238,11 +239,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                             top: 2,
                             right: 2,
                             child: Container(
-                              width: 9,
-                              height: 9,
-                              decoration: const BoxDecoration(
+                              width: 10,
+                              height: 10,
+                              decoration: BoxDecoration(
                                 color: AppColors.error,
                                 shape: BoxShape.circle,
+                                border: Border.all(
+                                  color: const Color(0xFFFFE082), // Gold specular rim on badge
+                                  width: 1.4,
+                                ),
                               ),
                             ),
                           ),
@@ -251,26 +256,45 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                     const SizedBox(width: 8),
 
-                    // User Avatar with Online Dot
+                    // User Avatar with Champagne Gold & Violet Jewel Ring
                     GestureDetector(
                       onTap: () => context.go('/profile'),
                       child: Container(
-                        width: 38,
-                        height: 38,
+                        width: 39,
+                        height: 39,
+                        padding: const EdgeInsets.all(1.8),
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
-                          border: Border.all(
-                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                            width: 1.8,
+                          gradient: const LinearGradient(
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                            colors: [
+                              Color(0xFFFFD700), // Champagne Gold
+                              Color(0xFFA855F7), // Royal Violet
+                              Color(0xFFF59E0B), // Warm Amber
+                            ],
                           ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
+                              blurRadius: 6,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
                         ),
-                        child: ClipOval(
-                          child: CachedNetworkImage(
-                            imageUrl: user?.avatarUrl ??
-                                'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-                            fit: BoxFit.cover,
-                            placeholder: (context, url) => Container(color: AppColors.mauve),
-                            errorWidget: (context, url, error) => const Icon(Icons.person, size: 20),
+                        child: Container(
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: isDark ? AppColors.darkSurface : Colors.white,
+                          ),
+                          padding: const EdgeInsets.all(1.0),
+                          child: ClipOval(
+                            child: AppSmartImage(
+                              imagePath: user?.avatarUrl,
+                              isAvatar: true,
+                              nameHint: user?.displayName,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       ),
@@ -310,7 +334,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                       hintStyle: AppTypography.bodyMedium.copyWith(color: mutedTextColor, fontSize: 13.5),
                       prefixIcon: Icon(
                         Icons.search_rounded,
-                        color: mutedTextColor,
+                        color: isDark ? const Color(0xFFC084FC) : const Color(0xFF8B5CF6),
                         size: 21,
                       ),
                       suffixIcon: _searchQuery.isNotEmpty
@@ -322,12 +346,25 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                                 setState(() => _searchQuery = '');
                               },
                             )
-                          : Icon(
-                              Icons.tune_rounded,
-                              color: mutedTextColor,
-                              size: 19,
+                          : Container(
+                              margin: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFEAB308)).withValues(alpha: 0.14),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: Icon(
+                                Icons.tune_rounded,
+                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
+                                size: 16,
+                              ),
                             ),
                       border: InputBorder.none,
+                      enabledBorder: InputBorder.none,
+                      focusedBorder: InputBorder.none,
+                      errorBorder: InputBorder.none,
+                      disabledBorder: InputBorder.none,
+                      filled: false,
                       contentPadding: const EdgeInsets.symmetric(vertical: 12),
                     ),
                   ),
@@ -338,7 +375,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             // ── Featured Experience Carousel (1/3 indicator, Join Now ->) ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.only(bottom: 18),
+                padding: const EdgeInsets.only(bottom: 12),
                 child: SizedBox(
                   height: 200,
                   child: PageView.builder(
@@ -360,31 +397,206 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
-            // ── Section: Explore by Intent ──
+            // ── Popular Categories (Squircle Icons matching Image 2 & Image 3 Screen 5) ──
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                padding: const EdgeInsets.only(bottom: 10),
+                child: PopularCategoriesRow(
+                  selectedCategory: _selectedCategory,
+                  onCategorySelected: (cat) {
+                    setState(() => _selectedCategory = cat);
+                  },
+                  onSeeAllTap: () {
+                    ExploreAllCategoriesSheet.show(
+                      context,
+                      selectedCategory: _selectedCategory,
+                      onSelectCategory: (cat) {
+                        setState(() => _selectedCategory = cat);
+                      },
+                    );
+                  },
+                ),
+              ),
+            ),
+
+            // ── Upcoming Experiences Section (Image 3 Screen 5) ──
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'Explore by Intent',
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16.5,
-                        color: primaryTextColor,
-                      ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Upcoming Experiences',
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 16.5,
+                            color: primaryTextColor,
+                          ),
+                        ),
+                        GestureDetector(
+                          onTap: () => context.go('/experiences'),
+                          child: Text(
+                            'See all →',
+                            style: AppTypography.labelSmall.copyWith(
+                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
+                    const SizedBox(height: 10),
+
+                    // Upcoming Experience Card (Screen 5)
                     GestureDetector(
                       onTap: () {
-                        setState(() => _selectedIntent = null);
+                        final trekExp = allExperiences.firstWhere(
+                          (e) => e.id == 'exp-1',
+                          orElse: () => allExperiences.first,
+                        );
+                        ExperienceDetailSheet.show(
+                          context,
+                          experience: trekExp,
+                          onToggleJoin: () => _openJoinFlow(trekExp),
+                        );
                       },
-                      child: Text(
-                        _selectedIntent != null ? 'Clear filter' : 'See all →',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 12,
+                      child: Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: isDark ? AppColors.darkElevated : Colors.white,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                            color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                            width: 0.9,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: SizedBox(
+                                width: 66,
+                                height: 66,
+                                child: Image.asset(
+                                  'assets/images/hikers_mountain_trek.png',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Weekend Trek',
+                                    style: AppTypography.titleSmall.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 14.5,
+                                      color: primaryTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    'Sat, Nov 15 • 6:00 AM',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: mutedTextColor,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w500,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text(
+                                    'Eco Park, Kolkata',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                      fontSize: 11.5,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+
+                            // Stacked Attendees (+24) (Screen 5)
+                            SizedBox(
+                              height: 32,
+                              width: 80,
+                              child: Stack(
+                                alignment: Alignment.centerRight,
+                                children: [
+                                  Positioned(
+                                    right: 28,
+                                    child: Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/images/sneha_avatar.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: 14,
+                                    child: Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                      ),
+                                      child: ClipOval(
+                                        child: Image.asset(
+                                          'assets/images/rohan_avatar.png',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                  Positioned(
+                                    right: 0,
+                                    child: Container(
+                                      width: 26,
+                                      height: 26,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        gradient: AppColors.sunsetCtaGradient,
+                                        border: Border.all(color: Colors.white, width: 1.5),
+                                      ),
+                                      child: const Center(
+                                        child: Text(
+                                          '+24',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 9,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
@@ -393,77 +605,22 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ),
             ),
 
-            // Intent Cards Grid
+            // ── Section: Explore by Intent (3D Claymorphic) ──
             SliverToBoxAdapter(
-              child: SizedBox(
-                height: 94,
-                child: ListView.separated(
-                  padding: const EdgeInsets.symmetric(horizontal: 20),
-                  scrollDirection: Axis.horizontal,
-                  physics: const BouncingScrollPhysics(),
-                  itemCount: _intents.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
-                  itemBuilder: (context, index) {
-                    final item = _intents[index];
-                    final name = item['name'] as String;
-                    final isSelected = _selectedIntent == name;
-
-                    return GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() {
-                          _selectedIntent = isSelected ? null : name;
-                        });
-                      },
-                      child: AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        width: 82,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : item['bg'] as Color,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: isSelected
-                                ? (item['color'] as Color)
-                                : (isDark ? AppColors.darkBorder : Colors.transparent),
-                            width: isSelected ? 2.0 : 1.0,
-                          ),
-                          boxShadow: isSelected
-                              ? [
-                                  BoxShadow(
-                                    color: (item['color'] as Color).withValues(alpha: 0.3),
-                                    blurRadius: 10,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ]
-                              : null,
-                        ),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            Icon(
-                              item['icon'] as IconData,
-                              size: 26,
-                              color: item['color'] as Color,
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              name,
-                              textAlign: TextAlign.center,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                fontSize: 10.5,
-                                fontWeight: FontWeight.w700,
-                                color: isDark ? Colors.white : (item['color'] as Color),
-                                height: 1.15,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
+              child: Intent3DCardsSection(
+                selectedIntent: _selectedIntent,
+                onIntentSelected: (intent) {
+                  setState(() => _selectedIntent = intent);
+                },
+                onSeeAllTap: () {
+                  ExploreAllIntentsSheet.show(
+                    context,
+                    currentIntent: _selectedIntent,
+                    onSelectIntent: (intent) {
+                      setState(() => _selectedIntent = intent);
+                    },
+                  );
+                },
               ),
             ),
 
@@ -475,7 +632,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text(
-                      'Popular Experiences',
+                      'Upcoming Experiences',
                       style: AppTypography.titleMedium.copyWith(
                         fontWeight: FontWeight.w800,
                         fontSize: 16.5,
@@ -529,7 +686,7 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                   child: ListView.separated(
                     padding: const EdgeInsets.symmetric(horizontal: 20),
                     scrollDirection: Axis.horizontal,
-                    physics: const BouncingScrollPhysics(),
+                    physics: const ClampingScrollPhysics(),
                     itemCount: _categories.length,
                     separatorBuilder: (context, index) => const SizedBox(width: 8),
                     itemBuilder: (context, index) {
@@ -624,10 +781,12 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
           ],
         ),
       ),
-    );
+    ),
+  ),
+);
   }
 
-  // ── Featured Hero Card (1/3 indicator, Join Now ->) ──
+  // ── Featured Hero Card (Screen 5 Coffee & Conversation) ──
   Widget _buildFeaturedHeroCard(
     BuildContext context,
     ExperienceModel exp,
@@ -636,7 +795,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     bool isDark,
     Color primaryTextColor,
   ) {
-    final dateFormat = DateFormat('EEE, MMM d · h:mm a');
+    final dateFormat = DateFormat('EEE, MMM d • h:mm a');
+    final isCoffeeExp = exp.id == 'exp-2' || exp.title.toLowerCase().contains('coffee');
 
     return GestureDetector(
       onTap: () => ExperienceDetailSheet.show(
@@ -648,6 +808,13 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         margin: const EdgeInsets.symmetric(horizontal: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(24),
+          gradient: isCoffeeExp
+              ? const LinearGradient(
+                  colors: [Color(0xFF293C2F), Color(0xFF152119)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                )
+              : null,
           boxShadow: [
             BoxShadow(
               color: isDark ? Colors.black45 : Colors.black.withValues(alpha: 0.12),
@@ -658,164 +825,241 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(24),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Hero Image
-              CachedNetworkImage(
-                imageUrl: exp.coverImageUrl,
-                fit: BoxFit.cover,
-                placeholder: (context, url) => Container(
-                  color: isDark ? AppColors.darkElevated : AppColors.creamElevated,
-                ),
-              ),
-
-              // Gradient Overlay
-              DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Colors.black.withValues(alpha: 0.25),
-                      Colors.black.withValues(alpha: 0.45),
-                      Colors.black.withValues(alpha: 0.88),
-                    ],
-                    stops: const [0.0, 0.45, 1.0],
-                  ),
-                ),
-              ),
-
-              // Top row: Category tag & 1/3 indicator
-              Positioned(
-                top: 14,
-                left: 14,
-                right: 14,
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: isCoffeeExp
+              // Split Layout matching Image 3 Screen 5
+              ? Stack(
                   children: [
-                    // Glossy Golden Trending badge (Image 9 Screen 5)
-                    const TrendingBadge(
-                      fontSize: 10.5,
-                      padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
-                    ),
-
-                    // 1/3 indicator pill
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                      decoration: BoxDecoration(
-                        color: Colors.black.withValues(alpha: 0.45),
-                        borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: Colors.white24, width: 0.8),
-                      ),
-                      child: Text(
-                        '$pageNum/$totalPages',
-                        style: AppTypography.labelSmall.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w700,
-                          fontSize: 11,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Bottom Info: Title, Date, Venue, Join Now ->
-              Positioned(
-                bottom: 14,
-                left: 14,
-                right: 14,
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
                         children: [
-                          Text(
-                            exp.title,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.titleLarge.copyWith(
-                              color: Colors.white,
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Row(
-                            children: [
-                              const Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Text(
-                                dateFormat.format(exp.startsAt),
-                                style: AppTypography.labelSmall.copyWith(
-                                  color: Colors.white70,
-                                  fontSize: 11,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                // Icon badge
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                  child: const Text('☕', style: TextStyle(fontSize: 14)),
                                 ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 2),
-                          Row(
-                            children: [
-                              const Icon(Icons.location_on_rounded, size: 12, color: Colors.white70),
-                              const SizedBox(width: 4),
-                              Expanded(
-                                child: Text(
-                                  exp.venueName,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.labelSmall.copyWith(
-                                    color: Colors.white70,
-                                    fontSize: 11,
+                                const SizedBox(height: 6),
+                                Text(
+                                  'Coffee &\nConversation',
+                                  style: AppTypography.titleLarge.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w900,
+                                    fontSize: 18,
+                                    height: 1.2,
                                   ),
                                 ),
+                                const SizedBox(height: 6),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_rounded, size: 11, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Sat, Nov 15 • 4:00 PM',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.85),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 2),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.location_on_rounded, size: 11, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Park Street, Kolkata',
+                                      style: TextStyle(
+                                        color: Colors.white.withValues(alpha: 0.85),
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 12),
+                                // Join > pill button
+                                GestureDetector(
+                                  onTap: () => _openJoinFlow(exp),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 6.5),
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.purpleGradient,
+                                      borderRadius: BorderRadius.circular(18),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primaryPurple.withValues(alpha: 0.4),
+                                          blurRadius: 10,
+                                          offset: const Offset(0, 3),
+                                        ),
+                                      ],
+                                    ),
+                                    child: const Text(
+                                      'Join >',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 12.5,
+                                      ),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Large latte art coffee cup photo on right (Screen 5)
+                          Container(
+                            width: 120,
+                            height: 120,
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 2.5),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.35),
+                                  blurRadius: 14,
+                                  offset: const Offset(0, 4),
+                                ),
+                              ],
+                            ),
+                            child: ClipOval(
+                              child: Image.asset(
+                                'assets/images/coffee_latte_art.png',
+                                fit: BoxFit.cover,
                               ),
-                            ],
+                            ),
                           ),
                         ],
                       ),
                     ),
-                    const SizedBox(width: 10),
-
-                    // Join Now -> pill button with sunset gradient
-                    GestureDetector(
-                      onTap: () => _openJoinFlow(exp),
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                        decoration: BoxDecoration(
-                          gradient: AppColors.sunsetCtaGradient,
-                          borderRadius: BorderRadius.circular(22),
-                          border: Border.all(
-                            color: Colors.white.withValues(alpha: 0.25),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
-                              blurRadius: 10,
-                              offset: const Offset(0, 3),
-                            ),
+                  ],
+                )
+              : Stack(
+                  fit: StackFit.expand,
+                  children: [
+                    AppSmartImage(
+                      imagePath: exp.coverImageUrl,
+                      categoryHint: exp.categoryName,
+                      fit: BoxFit.cover,
+                    ),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            Colors.black.withValues(alpha: 0.25),
+                            Colors.black.withValues(alpha: 0.45),
+                            Colors.black.withValues(alpha: 0.88),
                           ],
+                          stops: const [0.0, 0.45, 1.0],
                         ),
-                        child: Text(
-                          exp.hasJoined ? 'Joined ✓' : 'Join Now →',
-                          style: AppTypography.labelSmall.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w800,
-                            fontSize: 11.5,
+                      ),
+                    ),
+                    Positioned(
+                      top: 14,
+                      left: 14,
+                      right: 14,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const TrendingBadge(
+                            fontSize: 10.5,
+                            padding: EdgeInsets.symmetric(horizontal: 9, vertical: 4.5),
                           ),
-                        ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withValues(alpha: 0.45),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.white24, width: 0.8),
+                            ),
+                            child: Text(
+                              '$pageNum/$totalPages',
+                              style: AppTypography.labelSmall.copyWith(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 11,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 14,
+                      left: 14,
+                      right: 14,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Text(
+                                  exp.title,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.titleLarge.copyWith(
+                                    color: Colors.white,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 18,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.calendar_today_rounded, size: 12, color: Colors.white70),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      dateFormat.format(exp.startsAt),
+                                      style: AppTypography.labelSmall.copyWith(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: 10),
+                          GestureDetector(
+                            onTap: () => _openJoinFlow(exp),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: AppColors.sunsetCtaGradient,
+                                borderRadius: BorderRadius.circular(22),
+                              ),
+                              child: Text(
+                                exp.hasJoined ? 'Joined ✓' : 'Join Now →',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 11.5,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],
                 ),
-              ),
-            ],
-          ),
         ),
       ),
     );

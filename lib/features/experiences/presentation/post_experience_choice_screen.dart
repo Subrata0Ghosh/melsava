@@ -1,3 +1,4 @@
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
@@ -5,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
+import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/mutual_match_celebration_dialog.dart';
 import '../../../shared/widgets/primary_button.dart';
 
@@ -32,6 +34,15 @@ class PostExperienceChoiceScreen extends StatefulWidget {
 
   const PostExperienceChoiceScreen({super.key, required this.experience});
 
+  static Future<void> show(BuildContext context, ExperienceModel experience) {
+    HapticFeedback.mediumImpact();
+    return Navigator.of(context, rootNavigator: true).push(
+      MaterialPageRoute(
+        builder: (context) => PostExperienceChoiceScreen(experience: experience),
+      ),
+    );
+  }
+
   @override
   State<PostExperienceChoiceScreen> createState() =>
       _PostExperienceChoiceScreenState();
@@ -47,24 +58,21 @@ class _PostExperienceChoiceScreenState
     super.initState();
     _attendees = [
       AttendeeChoice(
-        name: 'Rhea Sen',
-        avatarUrl:
-            'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=200&q=80',
+        name: 'Aditi Sen',
+        avatarUrl: 'assets/images/aditi_avatar.png',
         bio:
             'Product designer & street photographer. Loves espresso and calm books.',
         selectedOption: 'friendship',
       ),
       AttendeeChoice(
-        name: 'Aarav Mehta',
-        avatarUrl:
-            'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=200&q=80',
+        name: 'Vikram Mehta',
+        avatarUrl: 'assets/images/vikram_avatar.png',
         bio: 'Architect, jazz enthusiast, and weekend runner.',
         selectedOption: 'activity_partner',
       ),
       AttendeeChoice(
-        name: 'Meera Nair',
-        avatarUrl:
-            'https://images.unsplash.com/photo-1524504388940-b1c1722653e1?auto=format&fit=crop&w=200&q=80',
+        name: 'Priya Nair',
+        avatarUrl: 'assets/images/priya_avatar.png',
         bio: 'Writer and botanist. Always hunting for vintage stationery.',
         selectedOption: 'dating',
       ),
@@ -95,8 +103,7 @@ class _PostExperienceChoiceScreenState
       await MutualMatchCelebrationDialog.show(
         context,
         userName: 'You',
-        userAvatarUrl:
-            'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=300&q=80',
+        userAvatarUrl: 'assets/images/sneha_avatar.png',
         matchName: selectedMatch.name,
         matchAvatarUrl: selectedMatch.avatarUrl,
         mutualIntention: intentionLabel,
@@ -168,7 +175,7 @@ class _PostExperienceChoiceScreenState
           children: [
             Expanded(
               child: SingleChildScrollView(
-                physics: const BouncingScrollPhysics(),
+                physics: const ClampingScrollPhysics(),
                 padding: const EdgeInsets.all(AppConstants.spacingLG),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -243,10 +250,16 @@ class _PostExperienceChoiceScreenState
                           children: [
                             Row(
                               children: [
-                                CircleAvatar(
-                                  radius: 26,
-                                  backgroundImage: NetworkImage(
-                                    attendee.avatarUrl,
+                                SizedBox(
+                                  width: 52,
+                                  height: 52,
+                                  child: ClipOval(
+                                    child: AppSmartImage(
+                                      imagePath: attendee.avatarUrl,
+                                      isAvatar: true,
+                                      nameHint: attendee.name,
+                                      fit: BoxFit.cover,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(width: 14),
@@ -332,15 +345,36 @@ class _PostExperienceChoiceScreenState
               ),
             ),
 
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkSurface : AppColors.white,
-                border: Border(top: BorderSide(color: borderColor, width: 0.9)),
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
+            ClipRect(
+              child: BackdropFilter(
+                filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [
+                        (isDark ? const Color(0xFF130F1E) : Colors.white)
+                            .withValues(alpha: 0.72),
+                        (isDark ? const Color(0xFF130F1E) : Colors.white)
+                            .withValues(alpha: 0.95),
+                      ],
+                    ),
+                    border: Border(
+                      top: BorderSide(
+                        color: isDark
+                            ? Colors.white.withValues(alpha: 0.10)
+                            : const Color(0xFFE5DEED).withValues(alpha: 0.60),
+                        width: 0.8,
+                      ),
+                    ),
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
                   GestureDetector(
                     onTap: _isSubmitting ? null : _handleSubmit,
                     child: Container(
@@ -395,7 +429,10 @@ class _PostExperienceChoiceScreenState
                 ],
               ),
             ),
-          ],
+          ),
+        ),
+      ),
+    ],
         ),
       ),
     );
