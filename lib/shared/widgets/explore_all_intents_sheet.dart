@@ -96,8 +96,10 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
     FullIntentOption(
       key: 'Serious Relationship',
       title: 'Serious Relationship',
-      description: 'Meaningful connection with intent toward long-term commitment',
-      iconBuilder: ({double size = 42}) => SeriousRelationship3DIcon(size: size),
+      description:
+          'Meaningful connection with intent toward long-term commitment',
+      iconBuilder: ({double size = 42}) =>
+          SeriousRelationship3DIcon(size: size),
       bgGradient: const [Color(0xFFFFF9E8), Color(0xFFFFECC0)],
       darkBgGradient: const [Color(0xFF332916), Color(0xFF231B0E)],
       accentColor: const Color(0xFFFF8F00),
@@ -114,8 +116,12 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final sheetBg = isDark ? const Color(0xFF151022) : Colors.white;
 
     return Container(
@@ -181,7 +187,9 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
                     child: Text(
                       'Clear',
                       style: AppTypography.labelMedium.copyWith(
-                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        color: isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -224,8 +232,8 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
                         color: isSelected
                             ? opt.accentColor
                             : (isDark
-                                ? Colors.white.withValues(alpha: 0.12)
-                                : Colors.white.withValues(alpha: 0.85)),
+                                  ? Colors.white.withValues(alpha: 0.12)
+                                  : Colors.white.withValues(alpha: 0.85)),
                         width: isSelected ? 2.2 : 1.2,
                       ),
                       boxShadow: [
@@ -253,7 +261,9 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
                                 opt.title,
                                 style: AppTypography.titleSmall.copyWith(
                                   fontWeight: FontWeight.w800,
-                                  color: isDark ? Colors.white : opt.accentColor,
+                                  color: isDark
+                                      ? Colors.white
+                                      : opt.accentColor,
                                   fontSize: 15,
                                 ),
                               ),
@@ -261,7 +271,9 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
                               Text(
                                 opt.description,
                                 style: AppTypography.bodySmall.copyWith(
-                                  color: isDark ? Colors.white70 : AppColors.mutedText,
+                                  color: isDark
+                                      ? Colors.white70
+                                      : AppColors.mutedText,
                                   fontSize: 12,
                                   height: 1.3,
                                 ),
@@ -276,11 +288,15 @@ class _ExploreAllIntentsSheetState extends State<ExploreAllIntentsSheet> {
                           height: 24,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isSelected ? opt.accentColor : Colors.transparent,
+                            color: isSelected
+                                ? opt.accentColor
+                                : Colors.transparent,
                             border: Border.all(
                               color: isSelected
                                   ? opt.accentColor
-                                  : (isDark ? Colors.white30 : AppColors.divider),
+                                  : (isDark
+                                        ? Colors.white30
+                                        : AppColors.divider),
                               width: 2,
                             ),
                           ),

@@ -18,9 +18,7 @@ class Friendship3DIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _Friendship3DPainter(),
-      ),
+      child: CustomPaint(painter: _Friendship3DPainter()),
     );
   }
 }
@@ -80,8 +78,7 @@ class _Friendship3DPainter extends CustomPainter {
     canvas.drawCircle(head1Center, 7.5, head1Paint);
 
     // Head 1 Specular Highlight
-    final glint1Paint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.75);
+    final glint1Paint = Paint()..color = Colors.white.withValues(alpha: 0.75);
     canvas.drawCircle(head1Center.translate(-2.5, -2.5), 1.8, glint1Paint);
 
     // ── 3. Separation Shadow Cast on Left Figure ──────────────────────────────
@@ -173,9 +170,7 @@ class ActivityPartner3DIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _ActivityPartner3DPainter(),
-      ),
+      child: CustomPaint(painter: _ActivityPartner3DPainter()),
     );
   }
 }
@@ -273,10 +268,7 @@ class _ActivityPartner3DPainter extends CustomPainter {
     // Subtle inner emboss circle in center
     final centerCorePaint = Paint()
       ..shader = RadialGradient(
-        colors: [
-          Colors.white.withValues(alpha: 0.35),
-          Colors.transparent,
-        ],
+        colors: [Colors.white.withValues(alpha: 0.35), Colors.transparent],
       ).createShader(const Rect.fromLTWH(18, 20, 12, 12));
     canvas.drawCircle(const Offset(24, 26), 5, centerCorePaint);
 
@@ -298,9 +290,7 @@ class Dating3DIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _Dating3DPainter(),
-      ),
+      child: CustomPaint(painter: _Dating3DPainter()),
     );
   }
 }
@@ -324,12 +314,12 @@ class _Dating3DPainter extends CustomPainter {
     // ── 2. Full Lightning Bolt Path ───────────────────────────────────────────
     Path createBoltPath() {
       final p = Path();
-      p.moveTo(27, 5);      // Top tip
-      p.lineTo(13, 24);     // Outer left mid
-      p.lineTo(23, 24);     // Inner left notch
-      p.lineTo(18, 43);     // Bottom tip
-      p.lineTo(35, 19);     // Outer right mid
-      p.lineTo(25, 19);     // Inner right notch
+      p.moveTo(27, 5); // Top tip
+      p.lineTo(13, 24); // Outer left mid
+      p.lineTo(23, 24); // Inner left notch
+      p.lineTo(18, 43); // Bottom tip
+      p.lineTo(35, 19); // Outer right mid
+      p.lineTo(25, 19); // Inner right notch
       p.close();
       return p;
     }
@@ -430,9 +420,7 @@ class SeriousRelationship3DIcon extends StatelessWidget {
     return SizedBox(
       width: size,
       height: size,
-      child: CustomPaint(
-        painter: _SeriousRelationship3DPainter(),
-      ),
+      child: CustomPaint(painter: _SeriousRelationship3DPainter()),
     );
   }
 }
@@ -520,7 +508,11 @@ class _SeriousRelationship3DPainter extends CustomPainter {
     canvas.drawCircle(medalCenter, medalRadius - 3.0, innerRimPaint);
 
     // ── 5. Central 3D Faceted Star Relief ─────────────────────────────────────
-    void drawFacetedStar(Offset center, double outerRadius, double innerRadius) {
+    void drawFacetedStar(
+      Offset center,
+      double outerRadius,
+      double innerRadius,
+    ) {
       const int numPoints = 5;
       const double step = math.pi / numPoints;
       final List<Offset> points = [];
@@ -528,10 +520,12 @@ class _SeriousRelationship3DPainter extends CustomPainter {
       for (int i = 0; i < numPoints * 2; i++) {
         final r = (i % 2 == 0) ? outerRadius : innerRadius;
         final angle = i * step - math.pi / 2;
-        points.add(Offset(
-          center.dx + r * math.cos(angle),
-          center.dy + r * math.sin(angle),
-        ));
+        points.add(
+          Offset(
+            center.dx + r * math.cos(angle),
+            center.dy + r * math.sin(angle),
+          ),
+        );
       }
 
       // Draw alternating light and shadow facet triangles for 3D metallic depth
@@ -554,8 +548,7 @@ class _SeriousRelationship3DPainter extends CustomPainter {
 
     // ── 6. Specular Coin Flare & Rim Glint ─────────────────────────────────────
     // Top-left rim highlight
-    final glintPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.85);
+    final glintPaint = Paint()..color = Colors.white.withValues(alpha: 0.85);
     canvas.drawCircle(medalCenter.translate(-7, -7), 2.2, glintPaint);
     canvas.drawCircle(medalCenter.translate(-4.5, -9.5), 1.2, glintPaint);
 

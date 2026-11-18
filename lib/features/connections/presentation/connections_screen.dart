@@ -130,15 +130,21 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     final filtered = _allConnections.where((c) {
-      final matchesSearch = _searchQuery.isEmpty ||
+      final matchesSearch =
+          _searchQuery.isEmpty ||
           c.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           c.experienceName.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      final matchesFilter = _selectedFilter == 'All' ||
+      final matchesFilter =
+          _selectedFilter == 'All' ||
           (_selectedFilter == 'Friends' && c.connectionType == 'Friends') ||
           (_selectedFilter == 'Activity' && c.connectionType == 'Activity') ||
           (_selectedFilter == 'Dates' && c.connectionType == 'Dates');
@@ -146,9 +152,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
       return matchesSearch && matchesFilter;
     }).toList();
 
-    final friendsCount = _allConnections.where((c) => c.connectionType == 'Friends').length;
-    final activityCount = _allConnections.where((c) => c.connectionType == 'Activity').length;
-    final datesCount = _allConnections.where((c) => c.connectionType == 'Dates').length;
+    final friendsCount = _allConnections
+        .where((c) => c.connectionType == 'Friends')
+        .length;
+    final activityCount = _allConnections
+        .where((c) => c.connectionType == 'Activity')
+        .length;
+    final datesCount = _allConnections
+        .where((c) => c.connectionType == 'Dates')
+        .length;
 
     final filterTabs = [
       {'name': 'All', 'count': _allConnections.length},
@@ -158,7 +170,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     ];
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFFFDF9),
       appBar: AppBar(
         title: Text(
           'My Connections',
@@ -192,97 +206,112 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         leafStyle: BotanicalLeafStyle.wildGrass,
         leafColors: BotanicalLeafDecoration.warmOlive,
         child: _isOrbitView
-            ? OrbitalConnectionsView(
-                connections: filtered,
-              )
+            ? OrbitalConnectionsView(connections: filtered)
             : Column(
-              children: [
-                // Filter Tabs (Image 8 Screen 8)
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
-                  child: SizedBox(
-                    height: 38,
-                    child: ListView.separated(
-                      scrollDirection: Axis.horizontal,
-                      physics: const ClampingScrollPhysics(),
-                      itemCount: filterTabs.length,
-                      separatorBuilder: (context, index) => const SizedBox(width: 8),
-                      itemBuilder: (context, index) {
-                        final tab = filterTabs[index];
-                        final name = tab['name'] as String;
-                        final count = tab['count'] as int;
-                        final isSelected = _selectedFilter == name;
+                children: [
+                  // Filter Tabs (Image 8 Screen 8)
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
+                    child: SizedBox(
+                      height: 38,
+                      child: ListView.separated(
+                        scrollDirection: Axis.horizontal,
+                        physics: const ClampingScrollPhysics(),
+                        itemCount: filterTabs.length,
+                        separatorBuilder: (context, index) =>
+                            const SizedBox(width: 8),
+                        itemBuilder: (context, index) {
+                          final tab = filterTabs[index];
+                          final name = tab['name'] as String;
+                          final count = tab['count'] as int;
+                          final isSelected = _selectedFilter == name;
 
-                        return GestureDetector(
-                          onTap: () {
-                            HapticFeedback.selectionClick();
-                            setState(() => _selectedFilter = name);
-                          },
-                          child: AnimatedContainer(
-                            duration: const Duration(milliseconds: 180),
-                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            decoration: BoxDecoration(
-                              gradient: isSelected ? AppColors.purpleGradient : null,
-                              color: isSelected
-                                  ? null
-                                  : (isDark ? AppColors.darkElevated : AppColors.white),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(
+                          return GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(() => _selectedFilter = name);
+                            },
+                            child: AnimatedContainer(
+                              duration: const Duration(milliseconds: 180),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 16,
+                                vertical: 8,
+                              ),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? AppColors.purpleGradient
+                                    : null,
                                 color: isSelected
-                                    ? Colors.transparent
-                                    : (isDark ? AppColors.darkBorder : AppColors.divider),
-                                width: 0.9,
+                                    ? null
+                                    : (isDark
+                                          ? AppColors.darkElevated
+                                          : AppColors.white),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(
+                                  color: isSelected
+                                      ? Colors.transparent
+                                      : (isDark
+                                            ? AppColors.darkBorder
+                                            : AppColors.divider),
+                                  width: 0.9,
+                                ),
+                              ),
+                              child: Text(
+                                '$name ($count)',
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark
+                                            ? AppColors.darkTextPrimary
+                                            : AppColors.deepPlum),
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
+                                  fontSize: 12,
+                                ),
                               ),
                             ),
-                            child: Text(
-                              '$name ($count)',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: isSelected
-                                    ? Colors.white
-                                    : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
-                                fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                        );
-                      },
+                          );
+                        },
+                      ),
                     ),
                   ),
-                ),
 
-                // Connections List
-                Expanded(
-                  child: filtered.isEmpty
-                      ? const EmptyStateWidget(
-                          icon: Icons.people_outline_rounded,
-                          title: 'No connections in this category',
-                          message: 'Join more public experiences to meet people and unlock mutual connections!',
-                        )
-                      : ListView.separated(
-                          padding: const EdgeInsets.only(
-                            left: 18,
-                            right: 18,
-                            top: 6,
-                            bottom: 120, // Guaranteed 120dp clearance for floating navbar
+                  // Connections List
+                  Expanded(
+                    child: filtered.isEmpty
+                        ? const EmptyStateWidget(
+                            icon: Icons.people_outline_rounded,
+                            title: 'No connections in this category',
+                            message:
+                                'Join more public experiences to meet people and unlock mutual connections!',
+                          )
+                        : ListView.separated(
+                            padding: const EdgeInsets.only(
+                              left: 18,
+                              right: 18,
+                              top: 6,
+                              bottom:
+                                  120, // Guaranteed 120dp clearance for floating navbar
+                            ),
+                            physics: const ClampingScrollPhysics(),
+                            itemCount: filtered.length,
+                            separatorBuilder: (context, index) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final conn = filtered[index];
+                              return _buildConnectionCard(
+                                context,
+                                conn,
+                                isDark,
+                                primaryTextColor,
+                                mutedTextColor,
+                              );
+                            },
                           ),
-                          physics: const ClampingScrollPhysics(),
-                          itemCount: filtered.length,
-                          separatorBuilder: (context, index) => const SizedBox(height: 12),
-                          itemBuilder: (context, index) {
-                            final conn = filtered[index];
-                            return _buildConnectionCard(
-                              context,
-                              conn,
-                              isDark,
-                              primaryTextColor,
-                              mutedTextColor,
-                            );
-                          },
-                        ),
-                ),
-              ],
-            ),
+                  ),
+                ],
+              ),
       ),
     );
   }
@@ -310,7 +339,9 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
           ),
           boxShadow: [
             BoxShadow(
-              color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
+              color: isDark
+                  ? Colors.black26
+                  : Colors.black.withValues(alpha: 0.03),
               blurRadius: 10,
               offset: const Offset(0, 3),
             ),
@@ -318,128 +349,137 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         ),
         child: Row(
           children: [
-          // Avatar with Online dot
-          Stack(
-            clipBehavior: Clip.none,
-            children: [
-              Container(
-                width: 52,
-                height: 52,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  border: Border.all(
-                    color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                    width: 1.8,
-                  ),
-                ),
-                child: ClipOval(
-                  child: AppSmartImage(
-                    imagePath: conn.avatarUrl,
-                    isAvatar: true,
-                    nameHint: conn.name,
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              if (conn.isOnline)
-                Positioned(
-                  bottom: 2,
-                  right: 2,
-                  child: Container(
-                    width: 12,
-                    height: 12,
-                    decoration: BoxDecoration(
-                      color: AppColors.mintAccent,
-                      shape: BoxShape.circle,
-                      border: Border.all(
-                        color: isDark ? AppColors.darkSurface : Colors.white,
-                        width: 2,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          const SizedBox(width: 14),
-
-          // Name, Intent & snippet
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            // Avatar with Online dot
+            Stack(
+              clipBehavior: Clip.none,
               children: [
-                Row(
-                  children: [
-                    Text(
-                      conn.name,
-                      style: AppTypography.titleSmall.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        color: primaryTextColor,
-                      ),
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isDark
+                          ? AppColors.brightViolet
+                          : AppColors.primaryPurple,
+                      width: 1.8,
                     ),
-                    const SizedBox(width: 8),
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  ),
+                  child: ClipOval(
+                    child: AppSmartImage(
+                      imagePath: conn.avatarUrl,
+                      isAvatar: true,
+                      nameHint: conn.name,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                if (conn.isOnline)
+                  Positioned(
+                    bottom: 2,
+                    right: 2,
+                    child: Container(
+                      width: 12,
+                      height: 12,
                       decoration: BoxDecoration(
-                        color: _getIntentBg(conn.connectionType, isDark),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        '${conn.connectionType} • ${conn.timeAgo}',
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w700,
-                          color: _getIntentText(conn.connectionType, isDark),
+                        color: AppColors.mintAccent,
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: isDark ? AppColors.darkSurface : Colors.white,
+                          width: 2,
                         ),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 5),
-                Text(
-                  conn.lastMessage,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.bodySmall.copyWith(
-                    color: mutedTextColor,
-                    fontSize: 12.5,
                   ),
-                ),
               ],
             ),
-          ),
-          const SizedBox(width: 10),
+            const SizedBox(width: 14),
 
-          // Direct Chat Action Button (Image 8 Screen 8)
-          GestureDetector(
-            onTap: () {
-              HapticFeedback.lightImpact();
-              context.push('/chat/${conn.name}');
-            },
-            child: Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: isDark ? AppColors.darkElevated : const Color(0xFFF3E8FF),
-                shape: BoxShape.circle,
-                border: Border.all(
-                  color: isDark
-                      ? AppColors.brightViolet.withValues(alpha: 0.3)
-                      : AppColors.primaryPurple.withValues(alpha: 0.2),
-                ),
-              ),
-              child: Icon(
-                Icons.chat_bubble_outline_rounded,
-                size: 20,
-                color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+            // Name, Intent & snippet
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Text(
+                        conn.name,
+                        style: AppTypography.titleSmall.copyWith(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
+                          color: primaryTextColor,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getIntentBg(conn.connectionType, isDark),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: Text(
+                          '${conn.connectionType} • ${conn.timeAgo}',
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w700,
+                            color: _getIntentText(conn.connectionType, isDark),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 5),
+                  Text(
+                    conn.lastMessage,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: mutedTextColor,
+                      fontSize: 12.5,
+                    ),
+                  ),
+                ],
               ),
             ),
-          ),
-        ],
+            const SizedBox(width: 10),
+
+            // Direct Chat Action Button (Image 8 Screen 8)
+            GestureDetector(
+              onTap: () {
+                HapticFeedback.lightImpact();
+                context.push('/chat/${conn.name}');
+              },
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: isDark
+                      ? AppColors.darkElevated
+                      : const Color(0xFFF3E8FF),
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: isDark
+                        ? AppColors.brightViolet.withValues(alpha: 0.3)
+                        : AppColors.primaryPurple.withValues(alpha: 0.2),
+                  ),
+                ),
+                child: Icon(
+                  Icons.chat_bubble_outline_rounded,
+                  size: 20,
+                  color: isDark
+                      ? AppColors.brightViolet
+                      : AppColors.primaryPurple,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Color _getIntentBg(String type, bool isDark) {
     if (isDark) return AppColors.darkElevated;

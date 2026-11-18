@@ -93,8 +93,12 @@ class _MutualMatchCelebrationDialogState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Dialog(
       backgroundColor: Colors.transparent,
@@ -109,9 +113,7 @@ class _MutualMatchCelebrationDialogState
               animation: _confettiAnimation,
               builder: (context, child) {
                 return CustomPaint(
-                  painter: _ConfettiPainter(
-                    progress: _confettiAnimation.value,
-                  ),
+                  painter: _ConfettiPainter(progress: _confettiAnimation.value),
                 );
               },
             ),
@@ -156,13 +158,19 @@ class _MutualMatchCelebrationDialogState
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFFFF5E7E).withValues(alpha: 0.45),
+                          color: const Color(
+                            0xFFFF5E7E,
+                          ).withValues(alpha: 0.45),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.favorite_rounded, color: Colors.white, size: 24),
+                    child: const Icon(
+                      Icons.favorite_rounded,
+                      color: Colors.white,
+                      size: 24,
+                    ),
                   ),
 
                   const SizedBox(height: 24),
@@ -205,7 +213,9 @@ class _MutualMatchCelebrationDialogState
                         Positioned(
                           left: 20,
                           child: _buildAvatarCard(
-                            widget.userAvatarUrl.isNotEmpty ? widget.userAvatarUrl : 'assets/images/sneha_avatar.png',
+                            widget.userAvatarUrl.isNotEmpty
+                                ? widget.userAvatarUrl
+                                : 'assets/images/sneha_avatar.png',
                             const Color(0xFF10B981),
                           ),
                         ),
@@ -214,7 +224,9 @@ class _MutualMatchCelebrationDialogState
                         Positioned(
                           right: 20,
                           child: _buildAvatarCard(
-                            widget.matchAvatarUrl.isNotEmpty ? widget.matchAvatarUrl : 'assets/images/rohan_avatar.png',
+                            widget.matchAvatarUrl.isNotEmpty
+                                ? widget.matchAvatarUrl
+                                : 'assets/images/rohan_avatar.png',
                             const Color(0xFF38BDF8),
                           ),
                         ),
@@ -224,7 +236,9 @@ class _MutualMatchCelebrationDialogState
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: isDark ? const Color(0xFF140F20) : Colors.white,
+                            color: isDark
+                                ? const Color(0xFF140F20)
+                                : Colors.white,
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: AppColors.vividCoral,
@@ -232,7 +246,9 @@ class _MutualMatchCelebrationDialogState
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: AppColors.vividCoral.withValues(alpha: 0.4),
+                                color: AppColors.vividCoral.withValues(
+                                  alpha: 0.4,
+                                ),
                                 blurRadius: 12,
                               ),
                             ],
@@ -267,14 +283,23 @@ class _MutualMatchCelebrationDialogState
 
                   // Subtitle info
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       gradient: isDark
-                          ? const LinearGradient(colors: [Color(0xFF281E38), Color(0xFF1E172C)])
-                          : const LinearGradient(colors: [Color(0xFFF6EEFF), Color(0xFFFFECEE)]),
+                          ? const LinearGradient(
+                              colors: [Color(0xFF281E38), Color(0xFF1E172C)],
+                            )
+                          : const LinearGradient(
+                              colors: [Color(0xFFF6EEFF), Color(0xFFFFECEE)],
+                            ),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : const Color(0xFFE2D6F5),
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : const Color(0xFFE2D6F5),
                         width: 1.0,
                       ),
                     ),
@@ -282,7 +307,9 @@ class _MutualMatchCelebrationDialogState
                       'Both of you chose\n${widget.mutualIntention}',
                       textAlign: TextAlign.center,
                       style: AppTypography.titleSmall.copyWith(
-                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        color: isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                         fontWeight: FontWeight.w800,
                         fontSize: 14,
                         height: 1.3,
@@ -318,7 +345,9 @@ class _MutualMatchCelebrationDialogState
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF5A78).withValues(alpha: 0.42),
+                            color: const Color(
+                              0xFFFF5A78,
+                            ).withValues(alpha: 0.42),
                             blurRadius: 18,
                             offset: const Offset(0, 5),
                           ),
@@ -336,7 +365,11 @@ class _MutualMatchCelebrationDialogState
                             ),
                           ),
                           SizedBox(width: 8),
-                          Icon(Icons.chat_bubble_rounded, size: 18, color: Colors.white),
+                          Icon(
+                            Icons.chat_bubble_rounded,
+                            size: 18,
+                            color: Colors.white,
+                          ),
                         ],
                       ),
                     ),
@@ -388,11 +421,7 @@ class _MutualMatchCelebrationDialogState
       ),
       padding: const EdgeInsets.all(2.5),
       child: ClipOval(
-        child: AppSmartImage(
-          imagePath: url,
-          isAvatar: true,
-          fit: BoxFit.cover,
-        ),
+        child: AppSmartImage(imagePath: url, isAvatar: true, fit: BoxFit.cover),
       ),
     );
   }

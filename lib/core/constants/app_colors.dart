@@ -73,13 +73,17 @@ class AppColors {
   static Color glassLight = const Color(0xFFFFFFFF).withValues(alpha: 0.72);
 
   /// Frosted glass border for light mode
-  static Color glassBorderLight = const Color(0xFFFFFFFF).withValues(alpha: 0.55);
+  static Color glassBorderLight = const Color(
+    0xFFFFFFFF,
+  ).withValues(alpha: 0.55);
 
   /// Frosted glass background for dark mode
   static Color glassDark = const Color(0xFF151120).withValues(alpha: 0.75);
 
   /// Frosted glass border for dark mode
-  static Color glassBorderDark = const Color(0xFFFFFFFF).withValues(alpha: 0.12);
+  static Color glassBorderDark = const Color(
+    0xFFFFFFFF,
+  ).withValues(alpha: 0.12);
 
   // ── Brand Gradients ────────────────────────────────────────────────
   static const LinearGradient brandGradient = LinearGradient(

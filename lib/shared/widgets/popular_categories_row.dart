@@ -84,7 +84,9 @@ class PopularCategoriesRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -113,16 +115,24 @@ class PopularCategoriesRow extends StatelessWidget {
                         onCategorySelected('All');
                       },
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
-                          color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              .withValues(alpha: 0.12),
+                          color:
+                              (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Text(
                           'Clear filter ✕',
                           style: AppTypography.labelSmall.copyWith(
-                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            color: isDark
+                                ? AppColors.brightViolet
+                                : AppColors.primaryPurple,
                             fontWeight: FontWeight.w700,
                             fontSize: 12,
                           ),
@@ -138,7 +148,9 @@ class PopularCategoriesRow extends StatelessWidget {
                       child: Text(
                         'See all →',
                         style: AppTypography.labelSmall.copyWith(
-                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                          color: isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple,
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),
@@ -153,11 +165,16 @@ class PopularCategoriesRow extends StatelessWidget {
                     onSeeAllTap?.call();
                   },
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 4,
+                      vertical: 4,
+                    ),
                     child: Text(
                       'See all →',
                       style: AppTypography.labelSmall.copyWith(
-                        color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        color: isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                         fontWeight: FontWeight.w700,
                         fontSize: 12,
                       ),
@@ -197,7 +214,10 @@ class PopularCategoriesRow extends StatelessWidget {
                       decoration: BoxDecoration(
                         gradient: LinearGradient(
                           colors: isDark
-                              ? [const Color(0xFF261F36), const Color(0xFF1E172C)]
+                              ? [
+                                  const Color(0xFF261F36),
+                                  const Color(0xFF1E172C),
+                                ]
                               : cat.bgGradient,
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
@@ -205,17 +225,25 @@ class PopularCategoriesRow extends StatelessWidget {
                         borderRadius: BorderRadius.circular(22),
                         border: Border.all(
                           color: isSelected
-                              ? const Color(0xFFF59E0B) // Gold Shimmer Active Accent
+                              ? const Color(
+                                  0xFFF59E0B,
+                                ) // Gold Shimmer Active Accent
                               : (isDark
-                                  ? Colors.white.withValues(alpha: 0.12)
-                                  : Colors.white.withValues(alpha: 0.85)),
+                                    ? Colors.white.withValues(alpha: 0.12)
+                                    : Colors.white.withValues(alpha: 0.85)),
                           width: isSelected ? 2.2 : 1.2,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: isSelected
-                                ? const Color(0xFFF59E0B).withValues(alpha: 0.40) // Warm Gold Halo
-                                : (isDark ? Colors.black26 : cat.shadowColor.withValues(alpha: 0.16)),
+                                ? const Color(0xFFF59E0B).withValues(
+                                    alpha: 0.40,
+                                  ) // Warm Gold Halo
+                                : (isDark
+                                      ? Colors.black26
+                                      : cat.shadowColor.withValues(
+                                          alpha: 0.16,
+                                        )),
                             blurRadius: isSelected ? 14 : 10,
                             offset: const Offset(0, 4),
                           ),
@@ -240,9 +268,13 @@ class PopularCategoriesRow extends StatelessWidget {
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
                           fontSize: 11.5,
-                          fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                          fontWeight: isSelected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
                           color: isSelected
-                              ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                              ? (isDark
+                                    ? AppColors.brightViolet
+                                    : AppColors.primaryPurple)
                               : primaryTextColor,
                         ),
                       ),

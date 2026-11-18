@@ -139,7 +139,9 @@ class _LocationVenuePickerSheetState
           final currentLocation = ref.read(userLocationProvider);
           return AlertDialog(
             backgroundColor: isDark ? const Color(0xFF1E162F) : Colors.white,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(20),
+            ),
             title: Text(
               'Add Custom Meetup Spot',
               style: TextStyle(
@@ -155,11 +157,15 @@ class _LocationVenuePickerSheetState
                 children: [
                   TextField(
                     controller: nameCtrl,
-                    style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.deepPlum,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Store / Shop / Spot Name',
                       labelStyle: TextStyle(
-                        color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText,
+                        color: isDark
+                            ? const Color(0xFFBDB2D4)
+                            : AppColors.mutedText,
                       ),
                       hintText: 'e.g. Royal Bakery, City Center Cafe',
                     ),
@@ -167,11 +173,15 @@ class _LocationVenuePickerSheetState
                   const SizedBox(height: 12),
                   TextField(
                     controller: addressCtrl,
-                    style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+                    style: TextStyle(
+                      color: isDark ? Colors.white : AppColors.deepPlum,
+                    ),
                     decoration: InputDecoration(
                       labelText: 'Address / Landmark',
                       labelStyle: TextStyle(
-                        color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText,
+                        color: isDark
+                            ? const Color(0xFFBDB2D4)
+                            : AppColors.mutedText,
                       ),
                       hintText: 'e.g. Near Station Gate 2, Main Market',
                     ),
@@ -182,25 +192,51 @@ class _LocationVenuePickerSheetState
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText,
+                      color: isDark
+                          ? const Color(0xFFBDB2D4)
+                          : AppColors.mutedText,
                     ),
                   ),
                   const SizedBox(height: 6),
                   Wrap(
                     spacing: 6,
                     children: [
-                      _buildDialogChoiceChip('shop', '🛍️ Shop / Store', category, isDark, (cat) {
-                        setDialogState(() => category = cat);
-                      }),
-                      _buildDialogChoiceChip('cafe', '☕ Cafe', category, isDark, (cat) {
-                        setDialogState(() => category = cat);
-                      }),
-                      _buildDialogChoiceChip('restaurant', '🍽️ Restaurant', category, isDark, (cat) {
-                        setDialogState(() => category = cat);
-                      }),
-                      _buildDialogChoiceChip('park', '🌿 Park / Trail', category, isDark, (cat) {
-                        setDialogState(() => category = cat);
-                      }),
+                      _buildDialogChoiceChip(
+                        'shop',
+                        '🛍️ Shop / Store',
+                        category,
+                        isDark,
+                        (cat) {
+                          setDialogState(() => category = cat);
+                        },
+                      ),
+                      _buildDialogChoiceChip(
+                        'cafe',
+                        '☕ Cafe',
+                        category,
+                        isDark,
+                        (cat) {
+                          setDialogState(() => category = cat);
+                        },
+                      ),
+                      _buildDialogChoiceChip(
+                        'restaurant',
+                        '🍽️ Restaurant',
+                        category,
+                        isDark,
+                        (cat) {
+                          setDialogState(() => category = cat);
+                        },
+                      ),
+                      _buildDialogChoiceChip(
+                        'park',
+                        '🌿 Park / Trail',
+                        category,
+                        isDark,
+                        (cat) {
+                          setDialogState(() => category = cat);
+                        },
+                      ),
                     ],
                   ),
                 ],
@@ -209,13 +245,22 @@ class _LocationVenuePickerSheetState
             actions: [
               TextButton(
                 onPressed: () => Navigator.pop(dialogCtx),
-                child: Text('Cancel', style: TextStyle(color: isDark ? Colors.white60 : AppColors.mutedText)),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: isDark ? Colors.white60 : AppColors.mutedText,
+                  ),
+                ),
               ),
               ElevatedButton(
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                  backgroundColor: isDark
+                      ? AppColors.brightViolet
+                      : AppColors.primaryPurple,
                   foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: () {
                   final name = nameCtrl.text.trim();
@@ -261,7 +306,9 @@ class _LocationVenuePickerSheetState
       onSelected: (_) => onSelect(id),
       selectedColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
       labelStyle: TextStyle(
-        color: isSelected ? Colors.white : (isDark ? Colors.white70 : AppColors.deepPlum),
+        color: isSelected
+            ? Colors.white
+            : (isDark ? Colors.white70 : AppColors.deepPlum),
         fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
       ),
     );
@@ -434,13 +481,37 @@ class _LocationVenuePickerSheetState
                       child: Row(
                         children: [
                           _buildCategoryChip('all', '🌟 All Spots', isDark),
-                          _buildCategoryChip('shop', '🛍️ Stores & Shops', isDark),
-                          _buildCategoryChip('cafe', '☕ Cafes & Coffee', isDark),
-                          _buildCategoryChip('restaurant', '🍽️ Dining', isDark),
+                          _buildCategoryChip(
+                            'shop',
+                            '🛍️ Stores & Shops',
+                            isDark,
+                          ),
+                          _buildCategoryChip(
+                            'cafe',
+                            '☕ Cafes & Coffee',
+                            isDark,
+                          ),
+                          _buildCategoryChip(
+                            'restaurant',
+                            '🍽️ Dining',
+                            isDark,
+                          ),
                           _buildCategoryChip('bakery', '🥐 Bakeries', isDark),
-                          _buildCategoryChip('board_games', '🎲 Board Games', isDark),
-                          _buildCategoryChip('park', '🌿 Parks & Trails', isDark),
-                          _buildCategoryChip('culture', '🎨 Art & Studios', isDark),
+                          _buildCategoryChip(
+                            'board_games',
+                            '🎲 Board Games',
+                            isDark,
+                          ),
+                          _buildCategoryChip(
+                            'park',
+                            '🌿 Parks & Trails',
+                            isDark,
+                          ),
+                          _buildCategoryChip(
+                            'culture',
+                            '🎨 Art & Studios',
+                            isDark,
+                          ),
                         ],
                       ),
                     ),
@@ -458,8 +529,8 @@ class _LocationVenuePickerSheetState
                             ),
                           )
                         : _activeTab == 0
-                            ? _buildCityList(scrollController, isDark)
-                            : _buildVenueList(scrollController, isDark),
+                        ? _buildCityList(scrollController, isDark)
+                        : _buildVenueList(scrollController, isDark),
                   ),
                 ],
               ),
@@ -544,7 +615,10 @@ class _LocationVenuePickerSheetState
       children: [
         // ── Option 1: Live Device GPS Button ──
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
           leading: Container(
             width: 40,
             height: 40,
@@ -553,8 +627,9 @@ class _LocationVenuePickerSheetState
                   .withValues(alpha: 0.15),
               shape: BoxShape.circle,
               border: Border.all(
-                color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                    .withValues(alpha: 0.4),
+                color:
+                    (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                        .withValues(alpha: 0.4),
               ),
             ),
             child: _isGpsLocating
@@ -568,7 +643,9 @@ class _LocationVenuePickerSheetState
                 : Icon(
                     Icons.my_location_rounded,
                     size: 20,
-                    color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                    color: isDark
+                        ? AppColors.brightViolet
+                        : AppColors.primaryPurple,
                   ),
           ),
           title: Text(
@@ -598,7 +675,10 @@ class _LocationVenuePickerSheetState
         if (queryText.isNotEmpty) ...[
           const SizedBox(height: 4),
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 4,
+            ),
             leading: Container(
               width: 40,
               height: 40,
@@ -677,7 +757,9 @@ class _LocationVenuePickerSheetState
                   'You can tap the gold pin above to use "$queryText" as your custom location.',
                   textAlign: TextAlign.center,
                   style: AppTypography.bodySmall.copyWith(
-                    color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+                    color: isDark
+                        ? AppColors.darkMutedText
+                        : AppColors.mutedText,
                   ),
                 ),
               ],
@@ -685,15 +767,18 @@ class _LocationVenuePickerSheetState
           )
         else
           ..._cityResults.map((loc) {
-            final isSelected = ref.watch(userLocationProvider).city.toLowerCase() ==
+            final isSelected =
+                ref.watch(userLocationProvider).city.toLowerCase() ==
                 loc.city.toLowerCase();
 
             return Column(
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   leading: Container(
                     width: 40,
                     height: 40,
@@ -701,7 +786,9 @@ class _LocationVenuePickerSheetState
                       color: isDark ? AppColors.darkElevated : AppColors.white,
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.divider,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.divider,
                       ),
                     ),
                     child: const Icon(
@@ -728,28 +815,32 @@ class _LocationVenuePickerSheetState
                     ),
                   ),
                   trailing: isSelected
-                      ? const Icon(Icons.check_circle_rounded,
-                          color: AppColors.mintAccent)
+                      ? const Icon(
+                          Icons.check_circle_rounded,
+                          color: AppColors.mintAccent,
+                        )
                       : (loc.countryCode.isNotEmpty
-                          ? Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 6, vertical: 2),
-                              decoration: BoxDecoration(
-                                color: isDark
-                                    ? AppColors.darkElevated
-                                    : AppColors.sage,
-                                borderRadius: BorderRadius.circular(6),
-                              ),
-                              child: Text(
-                                loc.countryCode,
-                                style: const TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.deepPlum,
+                            ? Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
                                 ),
-                              ),
-                            )
-                          : null),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.darkElevated
+                                      : AppColors.sage,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: Text(
+                                  loc.countryCode,
+                                  style: const TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.deepPlum,
+                                  ),
+                                ),
+                              )
+                            : null),
                   onTap: () {
                     ref.read(userLocationProvider.notifier).setLocation(loc);
                     Navigator.pop(context);
@@ -776,7 +867,10 @@ class _LocationVenuePickerSheetState
       children: [
         // ── Action: + Add Custom Meetup Spot / Store ──
         ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+            vertical: 4,
+          ),
           leading: Container(
             width: 42,
             height: 42,
@@ -785,8 +879,9 @@ class _LocationVenuePickerSheetState
                   .withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
-                color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                    .withValues(alpha: 0.4),
+                color:
+                    (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                        .withValues(alpha: 0.4),
               ),
             ),
             child: Icon(
@@ -820,7 +915,10 @@ class _LocationVenuePickerSheetState
         if (queryText.isNotEmpty) ...[
           const SizedBox(height: 4),
           ListTile(
-            contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+            contentPadding: const EdgeInsets.symmetric(
+              horizontal: 12,
+              vertical: 4,
+            ),
             leading: Container(
               width: 42,
               height: 42,
@@ -893,7 +991,9 @@ class _LocationVenuePickerSheetState
                     'No spots found matching your filter.\nTap "+ Add Custom Meetup Spot" to add any store or shop!',
                     textAlign: TextAlign.center,
                     style: AppTypography.bodyMedium.copyWith(
-                      color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+                      color: isDark
+                          ? AppColors.darkMutedText
+                          : AppColors.mutedText,
                     ),
                   ),
                 ],
@@ -914,8 +1014,10 @@ class _LocationVenuePickerSheetState
               mainAxisSize: MainAxisSize.min,
               children: [
                 ListTile(
-                  contentPadding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 4,
+                  ),
                   leading: Container(
                     width: 42,
                     height: 42,
@@ -923,7 +1025,9 @@ class _LocationVenuePickerSheetState
                       color: isDark ? AppColors.darkElevated : AppColors.white,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: isDark ? AppColors.darkBorder : AppColors.divider,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.divider,
                       ),
                     ),
                     child: Icon(icon, size: 20, color: AppColors.mauve),

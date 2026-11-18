@@ -113,7 +113,9 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
   @override
   Widget build(BuildContext context) {
     final isDark = widget.isDark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -139,7 +141,9 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
                           gradient: RadialGradient(
                             colors: [
                               isDark
-                                  ? AppColors.luminousMauve.withValues(alpha: 0.4)
+                                  ? AppColors.luminousMauve.withValues(
+                                      alpha: 0.4,
+                                    )
                                   : AppColors.softCoral.withValues(alpha: 0.35),
                               Colors.transparent,
                             ],
@@ -177,20 +181,23 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
                   fontSize: 28,
                   shadows: isDark
                       ? [
-                          const Shadow(
-                            color: Colors.white,
-                            blurRadius: 10,
-                          ),
+                          const Shadow(color: Colors.white, blurRadius: 10),
                           Shadow(
-                            color: const Color(0xFFC084FC).withValues(alpha: 0.90),
+                            color: const Color(
+                              0xFFC084FC,
+                            ).withValues(alpha: 0.90),
                             blurRadius: 24,
                           ),
                           Shadow(
-                            color: const Color(0xFFA855F7).withValues(alpha: 0.85),
+                            color: const Color(
+                              0xFFA855F7,
+                            ).withValues(alpha: 0.85),
                             blurRadius: 42,
                           ),
                           Shadow(
-                            color: const Color(0xFF7E22CE).withValues(alpha: 0.70),
+                            color: const Color(
+                              0xFF7E22CE,
+                            ).withValues(alpha: 0.70),
                             blurRadius: 65,
                           ),
                         ]
@@ -215,7 +222,9 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
                       shadows: isDark
                           ? [
                               Shadow(
-                                color: const Color(0xFFA855F7).withValues(alpha: 0.65),
+                                color: const Color(
+                                  0xFFA855F7,
+                                ).withValues(alpha: 0.65),
                                 blurRadius: 16,
                               ),
                             ]
@@ -226,7 +235,9 @@ class _AnimatedMelsavaBrandLogoState extends State<AnimatedMelsavaBrandLogo>
                   Text(
                     'Meet through shared experiences.',
                     style: AppTypography.bodySmall.copyWith(
-                      color: isDark ? const Color(0xFFEDE4FA) : AppColors.mutedText,
+                      color: isDark
+                          ? const Color(0xFFEDE4FA)
+                          : AppColors.mutedText,
                       fontWeight: FontWeight.w500,
                       letterSpacing: 0.3,
                       shadows: isDark
@@ -346,7 +357,10 @@ class _DynamicStrokeMelsavaPainter extends CustomPainter {
 
     // 3. Draw animated center path (with glow)
     if (centerProgress > 0) {
-      final animatedCenter = _extractPartialPath(fullCenterPath, centerProgress);
+      final animatedCenter = _extractPartialPath(
+        fullCenterPath,
+        centerProgress,
+      );
       canvas.drawPath(animatedCenter, glowPaint3);
       canvas.drawPath(animatedCenter, paint3);
     }
@@ -358,21 +372,37 @@ class _DynamicStrokeMelsavaPainter extends CustomPainter {
 
       // Outer glow ring
       final glowPaint = Paint()
-        ..color = color3.withValues(alpha: (0.35 * (1.0 - sparkScale * 0.3)).clamp(0.0, 1.0))
+        ..color = color3.withValues(
+          alpha: (0.35 * (1.0 - sparkScale * 0.3)).clamp(0.0, 1.0),
+        )
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(jewelOffset, strokeWidth * (0.8 + 0.6 * sparkScale), glowPaint);
+      canvas.drawCircle(
+        jewelOffset,
+        strokeWidth * (0.8 + 0.6 * sparkScale),
+        glowPaint,
+      );
 
       // Core connection jewel
       final coreJewelPaint = Paint()
         ..color = color3
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(jewelOffset, strokeWidth * 0.68 * sparkScale, coreJewelPaint);
+      canvas.drawCircle(
+        jewelOffset,
+        strokeWidth * 0.68 * sparkScale,
+        coreJewelPaint,
+      );
 
       // White hot center spark
       final whiteSparkPaint = Paint()
-        ..color = Colors.white.withValues(alpha: (0.9 * sparkScale).clamp(0.0, 1.0))
+        ..color = Colors.white.withValues(
+          alpha: (0.9 * sparkScale).clamp(0.0, 1.0),
+        )
         ..style = PaintingStyle.fill;
-      canvas.drawCircle(jewelOffset, strokeWidth * 0.28 * sparkScale, whiteSparkPaint);
+      canvas.drawCircle(
+        jewelOffset,
+        strokeWidth * 0.28 * sparkScale,
+        whiteSparkPaint,
+      );
     }
   }
 

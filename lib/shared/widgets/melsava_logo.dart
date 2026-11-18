@@ -35,9 +35,13 @@ class MelsavaLogo extends StatelessWidget {
     // Luminous adaptive palette:
     // In Dark Mode: Radiant Lavender-Violet, Vivid Sunset Rose, Glowing Peach-Coral
     // In Light Mode: Deep Plum, Mauve, Soft Coral
-    final c1 = primaryColor ?? (isDark ? const Color(0xFFBA8FFF) : AppColors.deepPlum);
-    final c2 = accentColor ?? (isDark ? const Color(0xFFE8679A) : AppColors.mauve);
-    final c3 = highlightColor ?? (isDark ? const Color(0xFFFF9E73) : AppColors.softCoral);
+    final c1 =
+        primaryColor ?? (isDark ? const Color(0xFFBA8FFF) : AppColors.deepPlum);
+    final c2 =
+        accentColor ?? (isDark ? const Color(0xFFE8679A) : AppColors.mauve);
+    final c3 =
+        highlightColor ??
+        (isDark ? const Color(0xFFFF9E73) : AppColors.softCoral);
     final nodeColor = isDark ? const Color(0xFFFF7A8A) : AppColors.softCoral;
 
     final symbol = Stack(
@@ -52,8 +56,9 @@ class MelsavaLogo extends StatelessWidget {
             shape: BoxShape.circle,
             boxShadow: [
               BoxShadow(
-                color: (isDark ? const Color(0xFFBA8FFF) : AppColors.primaryPurple)
-                    .withValues(alpha: isDark ? 0.38 : 0.16),
+                color:
+                    (isDark ? const Color(0xFFBA8FFF) : AppColors.primaryPurple)
+                        .withValues(alpha: isDark ? 0.38 : 0.16),
                 blurRadius: isDark ? 28 : 20,
                 spreadRadius: isDark ? 4 : 1,
               ),
@@ -91,7 +96,9 @@ class MelsavaLogo extends StatelessWidget {
           AppConstants.appName,
           style: AppTypography.displayMedium.copyWith(
             letterSpacing: 4.8,
-            color: primaryColor ?? (isDark ? const Color(0xFFF7F5FC) : AppColors.deepPlum),
+            color:
+                primaryColor ??
+                (isDark ? const Color(0xFFF7F5FC) : AppColors.deepPlum),
             fontWeight: FontWeight.w900,
             fontSize: (size * 0.34).clamp(18.0, 32.0),
             shadows: isDark

@@ -54,10 +54,7 @@ class Intent3DCardsSection extends StatelessWidget {
         Color(0xFFE2EFFF),
         Color(0xFFCCE4FF),
       ],
-      darkBgGradient: const [
-        Color(0xFF1A273A),
-        Color(0xFF131D2C),
-      ],
+      darkBgGradient: const [Color(0xFF1A273A), Color(0xFF131D2C)],
       accentColor: const Color(0xFF0288D1),
       shadowColor: const Color(0xFF0288D1),
     ),
@@ -71,10 +68,7 @@ class Intent3DCardsSection extends StatelessWidget {
         Color(0xFFFFDFEB),
         Color(0xFFFFCADE),
       ],
-      darkBgGradient: const [
-        Color(0xFF331926),
-        Color(0xFF221019),
-      ],
+      darkBgGradient: const [Color(0xFF331926), Color(0xFF221019)],
       accentColor: const Color(0xFFE91E63),
       shadowColor: const Color(0xFFE91E63),
     ),
@@ -88,10 +82,7 @@ class Intent3DCardsSection extends StatelessWidget {
         Color(0xFFD8FCE5),
         Color(0xFFBDF9D3),
       ],
-      darkBgGradient: const [
-        Color(0xFF152C22),
-        Color(0xFF0E1E17),
-      ],
+      darkBgGradient: const [Color(0xFF152C22), Color(0xFF0E1E17)],
       accentColor: const Color(0xFF00BFA5),
       shadowColor: const Color(0xFF00BFA5),
     ),
@@ -99,16 +90,14 @@ class Intent3DCardsSection extends StatelessWidget {
       name: 'Serious\nRelationship',
       key: 'Serious Relationship',
       shortTag: 'Long Term',
-      iconBuilder: ({double size = 38}) => SeriousRelationship3DIcon(size: size),
+      iconBuilder: ({double size = 38}) =>
+          SeriousRelationship3DIcon(size: size),
       bgGradient: const [
         Color(0xFFFFF9E8),
         Color(0xFFFFEFC7),
         Color(0xFFFFDF9E),
       ],
-      darkBgGradient: const [
-        Color(0xFF332916),
-        Color(0xFF231B0E),
-      ],
+      darkBgGradient: const [Color(0xFF332916), Color(0xFF231B0E)],
       accentColor: const Color(0xFFFF8F00),
       shadowColor: const Color(0xFFFF8F00),
     ),
@@ -117,7 +106,9 @@ class Intent3DCardsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -150,17 +141,25 @@ class Intent3DCardsSection extends StatelessWidget {
                   }
                 },
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: selectedIntent != null
-                        ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.12)
+                        ? (isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple)
+                              .withValues(alpha: 0.12)
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Text(
                     selectedIntent != null ? 'Clear filter ✕' : 'See all →',
                     style: AppTypography.labelSmall.copyWith(
-                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                      color: isDark
+                          ? AppColors.brightViolet
+                          : AppColors.primaryPurple,
                       fontWeight: FontWeight.w700,
                       fontSize: 12,
                     ),
@@ -254,15 +253,17 @@ class _Intent3DCardItemState extends State<_Intent3DCardItem> {
               color: isSelected
                   ? item.accentColor
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.15)
-                      : Colors.white.withValues(alpha: 0.90)),
+                        ? Colors.white.withValues(alpha: 0.15)
+                        : Colors.white.withValues(alpha: 0.90)),
               width: isSelected ? 2.0 : 1.2,
             ),
             boxShadow: [
               // Colored ambient glow shadow
               BoxShadow(
                 color: item.shadowColor.withValues(
-                  alpha: isSelected ? (isDark ? 0.40 : 0.30) : (isDark ? 0.20 : 0.14),
+                  alpha: isSelected
+                      ? (isDark ? 0.40 : 0.30)
+                      : (isDark ? 0.20 : 0.14),
                 ),
                 blurRadius: isSelected ? 12 : 8,
                 offset: Offset(0, isSelected ? 5 : 3),
@@ -286,7 +287,9 @@ class _Intent3DCardItemState extends State<_Intent3DCardItem> {
                 height: 30,
                 child: DecoratedBox(
                   decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(18),
+                    ),
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
                       end: Alignment.bottomCenter,
@@ -328,7 +331,10 @@ class _Intent3DCardItemState extends State<_Intent3DCardItem> {
               // ── Main Content: 3D Volumetric Icon + Bold Typography ────────
               Positioned.fill(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 4,
+                    vertical: 6,
+                  ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.center,
@@ -337,7 +343,11 @@ class _Intent3DCardItemState extends State<_Intent3DCardItem> {
                       Center(
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          transform: Matrix4.translationValues(0, isSelected ? -2 : 0, 0),
+                          transform: Matrix4.translationValues(
+                            0,
+                            isSelected ? -2 : 0,
+                            0,
+                          ),
                           child: item.iconBuilder(size: 38),
                         ),
                       ),
@@ -353,7 +363,9 @@ class _Intent3DCardItemState extends State<_Intent3DCardItem> {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             fontSize: 10.2,
-                            fontWeight: isSelected ? FontWeight.w900 : FontWeight.w800,
+                            fontWeight: isSelected
+                                ? FontWeight.w900
+                                : FontWeight.w800,
                             color: isDark ? Colors.white : item.accentColor,
                             height: 1.12,
                             letterSpacing: -0.2,

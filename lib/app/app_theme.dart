@@ -101,7 +101,9 @@ class AppTheme {
           borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.mutedText),
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.mutedText,
+        ),
         labelStyle: AppTypography.labelMedium,
         errorStyle: AppTypography.bodySmall.copyWith(color: AppColors.error),
       ),
@@ -216,14 +218,21 @@ class AppTheme {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
-          borderSide: const BorderSide(color: AppColors.luminousMauve, width: 2),
+          borderSide: const BorderSide(
+            color: AppColors.luminousMauve,
+            width: 2,
+          ),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
           borderSide: const BorderSide(color: AppColors.error),
         ),
-        hintStyle: AppTypography.bodyMedium.copyWith(color: AppColors.darkMutedText),
-        labelStyle: AppTypography.labelMedium.copyWith(color: AppColors.darkTextPrimary),
+        hintStyle: AppTypography.bodyMedium.copyWith(
+          color: AppColors.darkMutedText,
+        ),
+        labelStyle: AppTypography.labelMedium.copyWith(
+          color: AppColors.darkTextPrimary,
+        ),
         errorStyle: AppTypography.bodySmall.copyWith(color: AppColors.error),
       ),
       dividerTheme: const DividerThemeData(
@@ -234,7 +243,9 @@ class AppTheme {
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkElevated,
         selectedColor: AppColors.mauve,
-        labelStyle: AppTypography.labelMedium.copyWith(color: AppColors.darkTextPrimary),
+        labelStyle: AppTypography.labelMedium.copyWith(
+          color: AppColors.darkTextPrimary,
+        ),
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
           side: const BorderSide(color: AppColors.darkBorder, width: 0.6),

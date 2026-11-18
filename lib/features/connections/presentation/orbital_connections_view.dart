@@ -54,8 +54,12 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Column(
       children: [
@@ -90,14 +94,20 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
 
                 // Orbit configuration: radii & base angles
                 final double orbitRadius = index % 2 == 0 ? 105.0 : 135.0;
-                final double baseAngle = (index * (2 * math.pi / widget.connections.length)) - (math.pi / 4);
+                final double baseAngle =
+                    (index * (2 * math.pi / widget.connections.length)) -
+                    (math.pi / 4);
 
                 return AnimatedBuilder(
                   animation: _rotationController,
                   builder: (context, child) {
-                    final currentAngle = baseAngle + (_rotationController.value * 2 * math.pi * 0.15);
+                    final currentAngle =
+                        baseAngle +
+                        (_rotationController.value * 2 * math.pi * 0.15);
                     final dx = orbitRadius * math.cos(currentAngle);
-                    final dy = (orbitRadius * 0.65) * math.sin(currentAngle); // slight perspective flattening
+                    final dy =
+                        (orbitRadius * 0.65) *
+                        math.sin(currentAngle); // slight perspective flattening
 
                     return Transform.translate(
                       offset: Offset(dx, dy),
@@ -121,7 +131,12 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
 
         // Selected Connection Compatibility Card (Proxima Style)
         if (_selectedConnection != null)
-          _buildCompatibilityCard(_selectedConnection!, isDark, primaryTextColor, mutedTextColor),
+          _buildCompatibilityCard(
+            _selectedConnection!,
+            isDark,
+            primaryTextColor,
+            mutedTextColor,
+          ),
       ],
     );
   }
@@ -295,9 +310,7 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
                 decoration: BoxDecoration(
                   color: badgeColor.withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: badgeColor.withValues(alpha: 0.35),
-                  ),
+                  border: Border.all(color: badgeColor.withValues(alpha: 0.35)),
                 ),
                 child: Text(
                   conn.connectionType,
@@ -371,10 +384,7 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
                   icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
                   label: const Text(
                     'Open Private Chat',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
-                    ),
+                    style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13),
                   ),
                 ),
               ),
@@ -450,10 +460,7 @@ class _OrbitalRingsPainter extends CustomPainter {
   final bool isDark;
   final double rotationAngle;
 
-  _OrbitalRingsPainter({
-    required this.isDark,
-    required this.rotationAngle,
-  });
+  _OrbitalRingsPainter({required this.isDark, required this.rotationAngle});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -461,37 +468,32 @@ class _OrbitalRingsPainter extends CustomPainter {
 
     // Orbit Ring 1 (Inner)
     final ring1Paint = Paint()
-      ..color = (isDark ? AppColors.luminousMauve : AppColors.mauve)
-          .withValues(alpha: isDark ? 0.22 : 0.15)
+      ..color = (isDark ? AppColors.luminousMauve : AppColors.mauve).withValues(
+        alpha: isDark ? 0.22 : 0.15,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.2;
 
     // Draw elliptical orbits for 3D perspective
-    final rect1 = Rect.fromCenter(
-      center: center,
-      width: 210,
-      height: 140,
-    );
+    final rect1 = Rect.fromCenter(center: center, width: 210, height: 140);
     canvas.drawOval(rect1, ring1Paint);
 
     // Orbit Ring 2 (Outer)
     final ring2Paint = Paint()
-      ..color = (isDark ? AppColors.softCoral : AppColors.mauve)
-          .withValues(alpha: isDark ? 0.18 : 0.12)
+      ..color = (isDark ? AppColors.softCoral : AppColors.mauve).withValues(
+        alpha: isDark ? 0.18 : 0.12,
+      )
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1.0;
 
-    final rect2 = Rect.fromCenter(
-      center: center,
-      width: 275,
-      height: 185,
-    );
+    final rect2 = Rect.fromCenter(center: center, width: 275, height: 185);
     canvas.drawOval(rect2, ring2Paint);
 
     // Micro stars / constellation specks
     final starPaint = Paint()
-      ..color = (isDark ? Colors.white : AppColors.mauve)
-          .withValues(alpha: isDark ? 0.35 : 0.18)
+      ..color = (isDark ? Colors.white : AppColors.mauve).withValues(
+        alpha: isDark ? 0.35 : 0.18,
+      )
       ..style = PaintingStyle.fill;
 
     // Fixed background constellation coordinates

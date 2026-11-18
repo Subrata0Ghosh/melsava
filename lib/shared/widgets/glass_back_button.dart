@@ -25,8 +25,9 @@ class _GlassBackButtonState extends State<GlassBackButton> {
 
   @override
   Widget build(BuildContext context) {
-    final defaultColor =
-        widget.isDark ? const Color(0xFFF3EDFC) : const Color(0xFF1D152F);
+    final defaultColor = widget.isDark
+        ? const Color(0xFFF3EDFC)
+        : const Color(0xFF1D152F);
     final color = widget.iconColor ?? defaultColor;
 
     return GestureDetector(
@@ -62,17 +63,15 @@ class _GlassBackButtonState extends State<GlassBackButton> {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: widget.isDark ? 0.28 : 0.06),
+                    color: Colors.black.withValues(
+                      alpha: widget.isDark ? 0.28 : 0.06,
+                    ),
                     blurRadius: 10,
                     offset: const Offset(0, 2),
                   ),
                 ],
               ),
-              child: Icon(
-                Icons.arrow_back_rounded,
-                color: color,
-                size: 20,
-              ),
+              child: Icon(Icons.arrow_back_rounded, color: color, size: 20),
             ),
           ),
         ),

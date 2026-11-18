@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
@@ -9,12 +10,14 @@ import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/activity_radar_map_card.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/explore_all_intents_sheet.dart';
 import '../../../shared/widgets/explore_all_categories_sheet.dart';
 import '../../../shared/widgets/intent_3d_cards_section.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/popular_categories_row.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/stacked_trending_cards_deck.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
@@ -23,13 +26,14 @@ import '../../experiences/presentation/join_experience_sheet.dart';
 
 /// Screen 1: Discover Screen
 ///
-/// High-fidelity experience discovery matching the approved MELSAVA design system:
+/// High-fidelity experience discovery powered by real Supabase data:
 /// - Friendly user greeting & unread notification counter
 /// - Worldwide location pill & live search
-/// - Featured Experience Hero Carousel with slide indicator (1/3) & Join Now CTA
-/// - Explore by Intent pastel cards (Friendship, Activity Partner, Dating, Serious Relationship)
-/// - Popular Experiences with Trending badges & direct Join actions
+/// - Real 3D Stacked Trending Cards Deck
+/// - Explore by Intent pastel cards
+/// - Real published experiences with live spots, venue/online details
 /// - Interactive Live Area Radar mode
+/// - Loading, error with retry, and empty states
 class DiscoverScreen extends ConsumerStatefulWidget {
   const DiscoverScreen({super.key});
 
@@ -41,11 +45,11 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   final TextEditingController _searchController = TextEditingController();
 
   String _searchQuery = '';
-  String? _selectedIntent; // 'Friendship', 'Activity Partner', 'Dating', 'Serious Relationship'
+  String? _selectedIntent;
   String _selectedCategory = 'All';
   int _viewMode = 0; // 0: Curated Feed, 1: Live Radar
 
-  final List<String> _categories = [
+  final List<String> _defaultCategories = [
     'All',
     'Outdoors',
     'Social',
@@ -61,15 +65,30 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     super.dispose();
   }
 
-  void _openJoinFlow(ExperienceModel experience) {
-    JoinExperienceSheet.show(
+  Future<void> _openJoinFlow(ExperienceModel experience) async {
+    if (experience.hasJoined ||
+        experience.isWaitlisted ||
+        experience.isAttended) {
+      ExperienceDetailSheet.show(context, experience: experience);
+      return;
+    }
+
+    await JoinExperienceSheet.show(
       context,
       experience: experience,
-      onConfirmed: () {
-        ref.read(experiencesRepositoryProvider).toggleJoin(experience.id);
-        ref.invalidate(experiencesListProvider);
-      },
+      onConfirmJoin: () => ref
+          .read(experienceActionControllerProvider)
+          .joinExperience(experience.id),
     );
+  }
+
+  void _clearFilters() {
+    _searchController.clear();
+    setState(() {
+      _searchQuery = '';
+      _selectedCategory = 'All';
+      _selectedIntent = null;
+    });
   }
 
   @override
@@ -77,35 +96,65 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final user = ref.watch(currentUserProvider);
     final userLoc = ref.watch(userLocationProvider);
-    final allExperiences = ref.watch(experiencesListProvider);
 
-    // Filter experiences
+    final publishedAsync = ref.watch(publishedExperiencesProvider);
+    final categoriesAsync = ref.watch(activityCategoriesProvider);
+
+    final allExperiences =
+        publishedAsync.valueOrNull ?? const <ExperienceModel>[];
+    final categories = categoriesAsync.valueOrNull ?? _defaultCategories;
+
+    // Filter experiences based on active search, category, and intent
     final filteredExperiences = allExperiences.where((e) {
-      final matchesQuery = _searchQuery.isEmpty ||
+      final matchesQuery =
+          _searchQuery.isEmpty ||
           e.title.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          e.description.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.venueName.toLowerCase().contains(_searchQuery.toLowerCase()) ||
           e.city.toLowerCase().contains(_searchQuery.toLowerCase());
 
-      final matchesCategory = _selectedCategory == 'All' ||
-          e.categoryName.toLowerCase().contains(_selectedCategory.toLowerCase());
+      final matchesCategory =
+          _selectedCategory == 'All' ||
+          e.categoryName.toLowerCase().contains(
+            _selectedCategory.toLowerCase(),
+          );
 
-      final matchesIntent = _selectedIntent == null ||
-          (_selectedIntent == 'Friendship' && (e.categoryName == 'Social' || e.categoryName == 'Outdoors')) ||
-          (_selectedIntent == 'Activity Partner' && (e.categoryName == 'Sports' || e.categoryName == 'Outdoors' || e.categoryName == 'Arts & Culture')) ||
-          (_selectedIntent == 'Dating' && (e.categoryName == 'Social' || e.categoryName == 'Food & Drink')) ||
-          (_selectedIntent == 'Serious Relationship' && (e.categoryName == 'Social' || e.categoryName == 'Wellness'));
+      final matchesIntent =
+          _selectedIntent == null ||
+          (_selectedIntent == 'Friendship' &&
+              (e.categoryName.toLowerCase().contains('social') ||
+                  e.categoryName.toLowerCase().contains('outdoor'))) ||
+          (_selectedIntent == 'Activity Partner' &&
+              (e.categoryName.toLowerCase().contains('sport') ||
+                  e.categoryName.toLowerCase().contains('outdoor') ||
+                  e.categoryName.toLowerCase().contains('art'))) ||
+          (_selectedIntent == 'Dating' &&
+              (e.categoryName.toLowerCase().contains('social') ||
+                  e.categoryName.toLowerCase().contains('food'))) ||
+          (_selectedIntent == 'Serious Relationship' &&
+              (e.categoryName.toLowerCase().contains('social') ||
+                  e.categoryName.toLowerCase().contains('wellness')));
 
       return matchesQuery && matchesCategory && matchesIntent;
     }).toList();
 
-    final heroExperiences = allExperiences.take(5).toList();
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final heroExperiences = filteredExperiences.take(5).toList();
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
-    final displayName = user?.displayName ?? 'Sneha';
+    final displayName = user?.displayName ?? 'Friend';
+    final featuredExp =
+        filteredExperiences.firstOrNull ?? allExperiences.firstOrNull;
+    final dateFormat = DateFormat('EEE, MMM d • h:mm a');
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFFFDF9),
       body: AmbientNatureBackdrop(
         showTopLeaf: true,
         showBottomLeaf: true,
@@ -118,661 +167,788 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
             backgroundColor: isDark ? AppColors.darkSurface : Colors.white,
             onRefresh: () async {
               HapticFeedback.lightImpact();
-              ref.invalidate(experiencesListProvider);
-              await Future.delayed(const Duration(milliseconds: 600));
+              ref.invalidate(publishedExperiencesProvider);
+              ref.invalidate(activityCategoriesProvider);
+              await ref.read(publishedExperiencesProvider.future);
             },
             child: CustomScrollView(
               physics: const AlwaysScrollableScrollPhysics(
                 parent: ClampingScrollPhysics(),
               ),
               slivers: [
-            // ── Top Header: User Greeting, Notifications & Location ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Greeting text
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text.rich(
-                            TextSpan(
-                              text: 'Hello, $displayName ',
-                              style: AppTypography.titleLarge.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: displayName.length > 18
-                                    ? 15.5
-                                    : (displayName.length > 12 ? 17 : 20),
-                                color: primaryTextColor,
-                                height: 1.15,
-                              ),
-                              children: const [
+                // ── Top Header: User Greeting, Notifications & Location ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 14, 20, 8),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        // Greeting text
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text.rich(
                                 TextSpan(
-                                  text: '👋',
-                                  style: TextStyle(
-                                    fontSize: 17,
-                                    fontStyle: FontStyle.normal,
+                                  text: 'Hello, $displayName ',
+                                  style: AppTypography.titleLarge.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: displayName.length > 18
+                                        ? 15.5
+                                        : (displayName.length > 12 ? 17 : 20),
+                                    color: primaryTextColor,
+                                    height: 1.15,
                                   ),
+                                  children: const [
+                                    TextSpan(
+                                      text: '👋',
+                                      style: TextStyle(
+                                        fontSize: 17,
+                                        fontStyle: FontStyle.normal,
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                              ],
-                            ),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
+                                maxLines: 2,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Let\'s explore experiences!',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: mutedTextColor,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                            ],
                           ),
-                          const SizedBox(height: 2),
-                          Text(
-                            'Let\'s explore experiences!',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.bodySmall.copyWith(
-                              color: mutedTextColor,
-                              fontSize: 12.5,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // Worldwide Location Button (Icon only)
-                    GestureDetector(
-                      onTap: () => LocationVenuePickerSheet.show(context),
-                      child: Container(
-                        width: 38,
-                        height: 38,
-                        decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : AppColors.white,
-                          shape: BoxShape.circle,
-                          border: Border.all(
-                            color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.38),
-                            width: 1.0,
-                          ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.12 : 0.06),
-                              blurRadius: 6,
-                              offset: const Offset(0, 1),
-                            ),
-                          ],
                         ),
-                        child: const Icon(
-                          Icons.location_on_rounded,
-                          size: 19,
-                          color: Color(0xFFF59E0B), // Warm Gold Pin
-                        ),
-                      ),
-                    ),
-                    const SizedBox(width: 8),
+                        const SizedBox(width: 8),
 
-                    // Notification Bell with Gold Rim & Unread Dot
-                    GestureDetector(
-                      onTap: () => context.push('/inbox'),
-                      child: Stack(
-                        clipBehavior: Clip.none,
-                        children: [
-                          Container(
+                        // Worldwide Location Button
+                        GestureDetector(
+                          onTap: () => LocationVenuePickerSheet.show(context),
+                          child: Container(
                             width: 38,
                             height: 38,
                             decoration: BoxDecoration(
-                              color: isDark ? AppColors.darkElevated : AppColors.white,
+                              color: isDark
+                                  ? AppColors.darkElevated
+                                  : AppColors.white,
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFD97706)).withValues(alpha: 0.32),
+                                color:
+                                    (isDark
+                                            ? const Color(0xFFF59E0B)
+                                            : const Color(0xFFD97706))
+                                        .withValues(alpha: 0.38),
                                 width: 1.0,
                               ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFF59E0B,
+                                  ).withValues(alpha: isDark ? 0.12 : 0.06),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 1),
+                                ),
+                              ],
                             ),
-                            child: Icon(
-                              Icons.notifications_none_rounded,
-                              size: 20,
-                              color: primaryTextColor,
+                            child: const Icon(
+                              Icons.location_on_rounded,
+                              size: 19,
+                              color: Color(0xFFF59E0B),
                             ),
                           ),
-                          Positioned(
-                            top: 2,
-                            right: 2,
-                            child: Container(
-                              width: 10,
-                              height: 10,
-                              decoration: BoxDecoration(
-                                color: AppColors.error,
-                                shape: BoxShape.circle,
-                                border: Border.all(
-                                  color: const Color(0xFFFFE082), // Gold specular rim on badge
-                                  width: 1.4,
+                        ),
+                        const SizedBox(width: 8),
+
+                        // Notification Bell
+                        GestureDetector(
+                          onTap: () => context.push('/inbox'),
+                          child: Stack(
+                            clipBehavior: Clip.none,
+                            children: [
+                              Container(
+                                width: 38,
+                                height: 38,
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.darkElevated
+                                      : AppColors.white,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color:
+                                        (isDark
+                                                ? const Color(0xFFF59E0B)
+                                                : const Color(0xFFD97706))
+                                            .withValues(alpha: 0.32),
+                                    width: 1.0,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.notifications_none_rounded,
+                                  size: 20,
+                                  color: primaryTextColor,
                                 ),
                               ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-
-                    // User Avatar with Champagne Gold & Violet Jewel Ring
-                    GestureDetector(
-                      onTap: () => context.go('/profile'),
-                      child: Container(
-                        width: 39,
-                        height: 39,
-                        padding: const EdgeInsets.all(1.8),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          gradient: const LinearGradient(
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                            colors: [
-                              Color(0xFFFFD700), // Champagne Gold
-                              Color(0xFFA855F7), // Royal Violet
-                              Color(0xFFF59E0B), // Warm Amber
+                              Positioned(
+                                top: 2,
+                                right: 2,
+                                child: Container(
+                                  width: 10,
+                                  height: 10,
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error,
+                                    shape: BoxShape.circle,
+                                    border: Border.all(
+                                      color: const Color(0xFFFFE082),
+                                      width: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ),
                             ],
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFFF59E0B).withValues(alpha: 0.35),
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
                         ),
-                        child: Container(
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: isDark ? AppColors.darkSurface : Colors.white,
-                          ),
-                          padding: const EdgeInsets.all(1.0),
-                          child: ClipOval(
-                            child: AppSmartImage(
-                              imagePath: user?.avatarUrl,
-                              isAvatar: true,
-                              nameHint: user?.displayName,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ),
+                        const SizedBox(width: 8),
 
-            // ── Search Bar ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
-                child: Container(
-                  height: 48,
-                  decoration: BoxDecoration(
-                    color: isDark ? AppColors.darkElevated : AppColors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: isDark ? AppColors.darkBorder : AppColors.divider,
-                      width: 0.9,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.03),
-                        blurRadius: 10,
-                        offset: const Offset(0, 3),
-                      ),
-                    ],
-                  ),
-                  child: TextField(
-                    controller: _searchController,
-                    onChanged: (val) => setState(() => _searchQuery = val),
-                    style: AppTypography.bodyMedium.copyWith(color: primaryTextColor),
-                    decoration: InputDecoration(
-                      hintText: 'Search activities...',
-                      hintStyle: AppTypography.bodyMedium.copyWith(color: mutedTextColor, fontSize: 13.5),
-                      prefixIcon: Icon(
-                        Icons.search_rounded,
-                        color: isDark ? const Color(0xFFC084FC) : const Color(0xFF8B5CF6),
-                        size: 21,
-                      ),
-                      suffixIcon: _searchQuery.isNotEmpty
-                          ? IconButton(
-                              icon: const Icon(Icons.clear_rounded, size: 18),
-                              color: mutedTextColor,
-                              onPressed: () {
-                                _searchController.clear();
-                                setState(() => _searchQuery = '');
-                              },
-                            )
-                          : Container(
-                              margin: const EdgeInsets.all(8),
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: (isDark ? const Color(0xFFF59E0B) : const Color(0xFFEAB308)).withValues(alpha: 0.14),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Icon(
-                                Icons.tune_rounded,
-                                color: isDark ? const Color(0xFFFBBF24) : const Color(0xFFD97706),
-                                size: 16,
-                              ),
-                            ),
-                      border: InputBorder.none,
-                      enabledBorder: InputBorder.none,
-                      focusedBorder: InputBorder.none,
-                      errorBorder: InputBorder.none,
-                      disabledBorder: InputBorder.none,
-                      filled: false,
-                      contentPadding: const EdgeInsets.symmetric(vertical: 12),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-
-            // ── 3D Stacked Trending Cards Deck (Interactive Swipe & Auto-Play) ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 12),
-                child: StackedTrendingCardsDeck(
-                  experiences: heroExperiences,
-                  onCardTap: (exp) {
-                    ExperienceDetailSheet.show(
-                      context,
-                      experience: exp,
-                      onToggleJoin: () => _openJoinFlow(exp),
-                    );
-                  },
-                  onJoinTap: (exp) => _openJoinFlow(exp),
-                ),
-              ),
-            ),
-
-            // ── Popular Categories (Squircle Icons matching Image 2 & Image 3 Screen 5) ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: PopularCategoriesRow(
-                  selectedCategory: _selectedCategory,
-                  onCategorySelected: (cat) {
-                    setState(() => _selectedCategory = cat);
-                  },
-                  onSeeAllTap: () {
-                    ExploreAllCategoriesSheet.show(
-                      context,
-                      selectedCategory: _selectedCategory,
-                      onSelectCategory: (cat) {
-                        setState(() => _selectedCategory = cat);
-                      },
-                    );
-                  },
-                ),
-              ),
-            ),
-
-            // ── Upcoming Experiences Section (Image 3 Screen 5) ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          'Upcoming Experiences',
-                          style: AppTypography.titleMedium.copyWith(
-                            fontWeight: FontWeight.w800,
-                            fontSize: 16.5,
-                            color: primaryTextColor,
-                          ),
-                        ),
+                        // User Avatar
                         GestureDetector(
-                          onTap: () => context.go('/experiences'),
-                          child: Text(
-                            'See all →',
-                            style: AppTypography.labelSmall.copyWith(
-                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
+                          onTap: () => context.go('/profile'),
+                          child: Container(
+                            width: 39,
+                            height: 39,
+                            padding: const EdgeInsets.all(1.8),
+                            decoration: BoxDecoration(
+                              shape: BoxShape.circle,
+                              gradient: const LinearGradient(
+                                begin: Alignment.topLeft,
+                                end: Alignment.bottomRight,
+                                colors: [
+                                  Color(0xFFFFD700),
+                                  Color(0xFFA855F7),
+                                  Color(0xFFF59E0B),
+                                ],
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFF59E0B,
+                                  ).withValues(alpha: 0.35),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
+                            ),
+                            child: Container(
+                              decoration: BoxDecoration(
+                                shape: BoxShape.circle,
+                                color: isDark
+                                    ? AppColors.darkSurface
+                                    : Colors.white,
+                              ),
+                              padding: const EdgeInsets.all(1.0),
+                              child: ClipOval(
+                                child: AppSmartImage(
+                                  imagePath: user?.avatarUrl,
+                                  isAvatar: true,
+                                  nameHint: user?.displayName,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 10),
+                  ),
+                ),
 
-                    // Upcoming Experience Card (Screen 5)
-                    GestureDetector(
-                      onTap: () {
-                        final trekExp = allExperiences.firstWhere(
-                          (e) => e.id == 'exp-1',
-                          orElse: () => allExperiences.first,
-                        );
-                        ExperienceDetailSheet.show(
-                          context,
-                          experience: trekExp,
-                          onToggleJoin: () => _openJoinFlow(trekExp),
-                        );
-                      },
+                // ── Search Bar ──
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.fromLTRB(20, 10, 20, 14),
+                    child: Container(
+                      height: 48,
+                      decoration: BoxDecoration(
+                        color: isDark
+                            ? AppColors.darkElevated
+                            : AppColors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: isDark
+                              ? AppColors.darkBorder
+                              : AppColors.divider,
+                          width: 0.9,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: isDark
+                                ? Colors.black26
+                                : Colors.black.withValues(alpha: 0.03),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        onChanged: (val) => setState(() => _searchQuery = val),
+                        style: AppTypography.bodyMedium.copyWith(
+                          color: primaryTextColor,
+                        ),
+                        decoration: InputDecoration(
+                          hintText: 'Search experiences, venues...',
+                          hintStyle: AppTypography.bodyMedium.copyWith(
+                            color: mutedTextColor,
+                            fontSize: 13.5,
+                          ),
+                          prefixIcon: Icon(
+                            Icons.search_rounded,
+                            color: isDark
+                                ? const Color(0xFFC084FC)
+                                : const Color(0xFF8B5CF6),
+                            size: 21,
+                          ),
+                          suffixIcon: _searchQuery.isNotEmpty
+                              ? IconButton(
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 18,
+                                  ),
+                                  color: mutedTextColor,
+                                  onPressed: () {
+                                    _searchController.clear();
+                                    setState(() => _searchQuery = '');
+                                  },
+                                )
+                              : Container(
+                                  margin: const EdgeInsets.all(8),
+                                  padding: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    color:
+                                        (isDark
+                                                ? const Color(0xFFF59E0B)
+                                                : const Color(0xFFEAB308))
+                                            .withValues(alpha: 0.14),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: Icon(
+                                    Icons.tune_rounded,
+                                    color: isDark
+                                        ? const Color(0xFFFBBF24)
+                                        : const Color(0xFFD97706),
+                                    size: 16,
+                                  ),
+                                ),
+                          border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          filled: false,
+                          contentPadding: const EdgeInsets.symmetric(
+                            vertical: 12,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+
+                // ── Loading & Error State Banners ──
+                if (publishedAsync.isLoading && allExperiences.isEmpty)
+                  const SliverToBoxAdapter(
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(vertical: 40),
+                      child: Center(child: CircularProgressIndicator()),
+                    ),
+                  )
+                else if (publishedAsync.hasError && allExperiences.isEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 10, 20, 20),
                       child: Container(
-                        padding: const EdgeInsets.all(12),
+                        padding: const EdgeInsets.all(18),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : Colors.white,
+                          color: isDark
+                              ? AppColors.darkSurface
+                              : const Color(0xFFFFF1F2),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
-                            width: 0.9,
+                            color: const Color(
+                              0xFFEF4444,
+                            ).withValues(alpha: 0.4),
                           ),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.035),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
+                        ),
+                        child: Column(
+                          children: [
+                            const Icon(
+                              Icons.wifi_off_rounded,
+                              size: 32,
+                              color: Color(0xFFEF4444),
+                            ),
+                            const SizedBox(height: 8),
+                            Text(
+                              'Unable to load experiences',
+                              style: AppTypography.titleSmall.copyWith(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Please check your network connection and try again.',
+                              textAlign: TextAlign.center,
+                              style: AppTypography.bodySmall.copyWith(
+                                color: mutedTextColor,
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            PrimaryButton(
+                              label: 'Retry',
+                              height: 38,
+                              backgroundColor: isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
+                              onPressed: () =>
+                                  ref.invalidate(publishedExperiencesProvider),
                             ),
                           ],
                         ),
-                        child: Row(
+                      ),
+                    ),
+                  )
+                else ...[
+                  // ── 3D Stacked Trending Cards Deck ──
+                  if (heroExperiences.isNotEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 12),
+                        child: StackedTrendingCardsDeck(
+                          experiences: heroExperiences,
+                          onCardTap: (exp) {
+                            ExperienceDetailSheet.show(
+                              context,
+                              experience: exp,
+                            );
+                          },
+                          onJoinTap: (exp) => _openJoinFlow(exp),
+                        ),
+                      ),
+                    ),
+
+                  // ── Popular Categories ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.only(bottom: 10),
+                      child: PopularCategoriesRow(
+                        selectedCategory: _selectedCategory,
+                        onCategorySelected: (cat) {
+                          setState(() => _selectedCategory = cat);
+                        },
+                        onSeeAllTap: () {
+                          ExploreAllCategoriesSheet.show(
+                            context,
+                            selectedCategory: _selectedCategory,
+                            onSelectCategory: (cat) {
+                              setState(() => _selectedCategory = cat);
+                            },
+                          );
+                        },
+                      ),
+                    ),
+                  ),
+
+                  // ── Featured Upcoming Experience Preview ──
+                  if (featuredExp != null)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 4, 20, 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(14),
-                              child: SizedBox(
-                                width: 66,
-                                height: 66,
-                                child: Image.asset(
-                                  'assets/images/hikers_mountain_trek.png',
-                                  fit: BoxFit.cover,
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  'Upcoming Experiences',
+                                  style: AppTypography.titleMedium.copyWith(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 16.5,
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () => context.go('/experiences'),
+                                  child: Text(
+                                    'See all →',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            GestureDetector(
+                              onTap: () {
+                                ExperienceDetailSheet.show(
+                                  context,
+                                  experience: featuredExp,
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? AppColors.darkElevated
+                                      : Colors.white,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? AppColors.darkBorder
+                                        : const Color(0xFFEDE9FE),
+                                    width: 0.9,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: isDark ? 0.25 : 0.035,
+                                      ),
+                                      blurRadius: 12,
+                                      offset: const Offset(0, 4),
+                                    ),
+                                  ],
+                                ),
+                                child: Row(
+                                  children: [
+                                    ClipRRect(
+                                      borderRadius: BorderRadius.circular(14),
+                                      child: SizedBox(
+                                        width: 66,
+                                        height: 66,
+                                        child: AppSmartImage(
+                                          imagePath: featuredExp.coverImageUrl,
+                                          categoryHint:
+                                              '${featuredExp.title} ${featuredExp.categoryName}',
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 14),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            featuredExp.title,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.titleSmall
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w800,
+                                                  fontSize: 14.5,
+                                                  color: primaryTextColor,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 3),
+                                          Text(
+                                            dateFormat.format(
+                                              featuredExp.startsAt,
+                                            ),
+                                            style: AppTypography.bodySmall
+                                                .copyWith(
+                                                  color: mutedTextColor,
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w500,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 2),
+                                          Text(
+                                            featuredExp.isOnline
+                                                ? 'Online Experience'
+                                                : (featuredExp
+                                                          .venueName
+                                                          .isNotEmpty
+                                                      ? featuredExp.venueName
+                                                      : featuredExp.city),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style: AppTypography.bodySmall
+                                                .copyWith(
+                                                  color: isDark
+                                                      ? AppColors.brightViolet
+                                                      : AppColors.primaryPurple,
+                                                  fontSize: 11.5,
+                                                  fontWeight: FontWeight.w600,
+                                                ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                    const SizedBox(width: 8),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 10,
+                                        vertical: 5,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color:
+                                            (isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple)
+                                                .withValues(alpha: 0.12),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: Text(
+                                        '${featuredExp.currentParticipants} Joined',
+                                        style: TextStyle(
+                                          color: isDark
+                                              ? AppColors.brightViolet
+                                              : AppColors.primaryPurple,
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 11,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
-                            const SizedBox(width: 14),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Weekend Trek',
-                                    style: AppTypography.titleSmall.copyWith(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 14.5,
-                                      color: primaryTextColor,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 3),
-                                  Text(
-                                    'Sat, Nov 15 • 6:00 AM',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: mutedTextColor,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 2),
-                                  Text(
-                                    'Eco Park, Kolkata',
-                                    style: AppTypography.bodySmall.copyWith(
-                                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                                      fontSize: 11.5,
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-
-                            // Stacked Attendees (+24) (Screen 5)
-                            SizedBox(
-                              height: 32,
-                              width: 80,
-                              child: Stack(
-                                alignment: Alignment.centerRight,
-                                children: [
-                                  Positioned(
-                                    right: 28,
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 1.5),
-                                      ),
-                                      child: ClipOval(
-                                        child: Image.asset(
-                                          'assets/images/sneha_avatar.png',
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    right: 14,
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        border: Border.all(color: Colors.white, width: 1.5),
-                                      ),
-                                      child: ClipOval(
-                                        child: Image.asset(
-                                          'assets/images/rohan_avatar.png',
-                                          fit: BoxFit.cover,
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                  Positioned(
-                                    right: 0,
-                                    child: Container(
-                                      width: 26,
-                                      height: 26,
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: AppColors.sunsetCtaGradient,
-                                        border: Border.all(color: Colors.white, width: 1.5),
-                                      ),
-                                      child: const Center(
-                                        child: Text(
-                                          '+24',
-                                          style: TextStyle(
-                                            color: Colors.white,
-                                            fontSize: 9,
-                                            fontWeight: FontWeight.w800,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
                           ],
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
 
-            // ── Section: Explore by Intent (3D Claymorphic) ──
-            SliverToBoxAdapter(
-              child: Intent3DCardsSection(
-                selectedIntent: _selectedIntent,
-                onIntentSelected: (intent) {
-                  setState(() => _selectedIntent = intent);
-                },
-                onSeeAllTap: () {
-                  ExploreAllIntentsSheet.show(
-                    context,
-                    currentIntent: _selectedIntent,
-                    onSelectIntent: (intent) {
-                      setState(() => _selectedIntent = intent);
-                    },
-                  );
-                },
-              ),
-            ),
-
-            // ── Section: Popular Experiences ──
-            SliverToBoxAdapter(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      'Upcoming Experiences',
-                      style: AppTypography.titleMedium.copyWith(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 16.5,
-                        color: primaryTextColor,
-                      ),
-                    ),
-                    // Quick Toggle: Feed vs Live Area Radar
-                    GestureDetector(
-                      onTap: () {
-                        HapticFeedback.selectionClick();
-                        setState(() => _viewMode = _viewMode == 0 ? 1 : 0);
+                  // ── Section: Explore by Intent ──
+                  SliverToBoxAdapter(
+                    child: Intent3DCardsSection(
+                      selectedIntent: _selectedIntent,
+                      onIntentSelected: (intent) {
+                        setState(() => _selectedIntent = intent);
                       },
-                      child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                        decoration: BoxDecoration(
-                          color: _viewMode == 1
-                              ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              : (isDark ? AppColors.darkElevated : AppColors.creamElevated),
-                          borderRadius: BorderRadius.circular(14),
-                        ),
-                        child: Row(
-                          children: [
-                            Icon(
-                              _viewMode == 1 ? Icons.map_rounded : Icons.radar_rounded,
-                              size: 13,
-                              color: _viewMode == 1 ? Colors.white : mutedTextColor,
+                      onSeeAllTap: () {
+                        ExploreAllIntentsSheet.show(
+                          context,
+                          currentIntent: _selectedIntent,
+                          onSelectIntent: (intent) {
+                            setState(() => _selectedIntent = intent);
+                          },
+                        );
+                      },
+                    ),
+                  ),
+
+                  // ── Section: Experiences Header & Radar Toggle ──
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 22, 20, 8),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'All Experiences',
+                            style: AppTypography.titleMedium.copyWith(
+                              fontWeight: FontWeight.w800,
+                              fontSize: 16.5,
+                              color: primaryTextColor,
                             ),
-                            const SizedBox(width: 4),
-                            Text(
-                              _viewMode == 1 ? 'Show Cards' : 'Live Radar',
-                              style: AppTypography.labelSmall.copyWith(
-                                color: _viewMode == 1 ? Colors.white : mutedTextColor,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 11,
+                          ),
+                          GestureDetector(
+                            onTap: () {
+                              HapticFeedback.selectionClick();
+                              setState(
+                                () => _viewMode = _viewMode == 0 ? 1 : 0,
+                              );
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: _viewMode == 1
+                                    ? (isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
+                                    : (isDark
+                                          ? AppColors.darkElevated
+                                          : AppColors.creamElevated),
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                              child: Row(
+                                children: [
+                                  Icon(
+                                    _viewMode == 1
+                                        ? Icons.map_rounded
+                                        : Icons.radar_rounded,
+                                    size: 13,
+                                    color: _viewMode == 1
+                                        ? Colors.white
+                                        : mutedTextColor,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    _viewMode == 1
+                                        ? 'Show Cards'
+                                        : 'Live Radar',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: _viewMode == 1
+                                          ? Colors.white
+                                          : mutedTextColor,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 11,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  // Category Chips (Horizontal Scroll)
+                  if (_viewMode == 0)
+                    SliverToBoxAdapter(
+                      child: SizedBox(
+                        height: 38,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          scrollDirection: Axis.horizontal,
+                          physics: const ClampingScrollPhysics(),
+                          itemCount: categories.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(width: 8),
+                          itemBuilder: (context, index) {
+                            final cat = categories[index];
+                            final isSelected = _selectedCategory == cat;
+
+                            return GestureDetector(
+                              onTap: () {
+                                HapticFeedback.selectionClick();
+                                setState(() => _selectedCategory = cat);
+                              },
+                              child: AnimatedContainer(
+                                duration: const Duration(milliseconds: 180),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 14,
+                                  vertical: 8,
+                                ),
+                                decoration: BoxDecoration(
+                                  gradient: isSelected
+                                      ? AppColors.purpleGradient
+                                      : null,
+                                  color: isSelected
+                                      ? null
+                                      : (isDark
+                                            ? AppColors.darkElevated
+                                            : AppColors.white),
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: isSelected
+                                        ? Colors.transparent
+                                        : (isDark
+                                              ? AppColors.darkBorder
+                                              : AppColors.divider),
+                                    width: 0.9,
+                                  ),
+                                ),
+                                child: Text(
+                                  cat,
+                                  style: AppTypography.labelSmall.copyWith(
+                                    color: isSelected
+                                        ? Colors.white
+                                        : (isDark
+                                              ? AppColors.darkTextPrimary
+                                              : AppColors.deepPlum),
+                                    fontWeight: isSelected
+                                        ? FontWeight.w700
+                                        : FontWeight.w600,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ),
+                            );
+                          },
                         ),
                       ),
                     ),
-                  ],
-                ),
-              ),
-            ),
 
-            // Category Chips (Horizontal Scroll)
-            if (_viewMode == 0)
-              SliverToBoxAdapter(
-                child: SizedBox(
-                  height: 38,
-                  child: ListView.separated(
-                    padding: const EdgeInsets.symmetric(horizontal: 20),
-                    scrollDirection: Axis.horizontal,
-                    physics: const ClampingScrollPhysics(),
-                    itemCount: _categories.length,
-                    separatorBuilder: (context, index) => const SizedBox(width: 8),
-                    itemBuilder: (context, index) {
-                      final cat = _categories[index];
-                      final isSelected = _selectedCategory == cat;
-
-                      return GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedCategory = cat);
-                        },
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                          decoration: BoxDecoration(
-                            gradient: isSelected ? AppColors.purpleGradient : null,
-                            color: isSelected
-                                ? null
-                                : (isDark ? AppColors.darkElevated : AppColors.white),
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected
-                                  ? Colors.transparent
-                                  : (isDark ? AppColors.darkBorder : AppColors.divider),
-                              width: 0.9,
-                            ),
-                          ),
-                          child: Text(
-                            cat,
-                            style: AppTypography.labelSmall.copyWith(
-                              color: isSelected
-                                  ? Colors.white
-                                  : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-                              fontSize: 11.5,
-                            ),
-                          ),
+                  // ── Experiences List or Live Radar ──
+                  if (_viewMode == 1)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+                        child: ActivityRadarMapCard(
+                          location: userLoc,
+                          onVenueSelected: (venue) {
+                            final match = allExperiences.firstWhere(
+                              (e) => e.venueName.toLowerCase().contains(
+                                venue.name.toLowerCase(),
+                              ),
+                              orElse: () => allExperiences.first,
+                            );
+                            ExperienceDetailSheet.show(
+                              context,
+                              experience: match,
+                            );
+                          },
                         ),
-                      );
-                    },
-                  ),
-                ),
-              ),
-
-            // ── Experiences List or Live Radar ──
-            if (_viewMode == 1)
-              SliverToBoxAdapter(
-                child: Padding(
-                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
-                  child: ActivityRadarMapCard(
-                    location: userLoc,
-                    onVenueSelected: (venue) {
-                      final match = allExperiences.firstWhere(
-                        (e) => e.venueName.toLowerCase().contains(venue.name.toLowerCase()),
-                        orElse: () => allExperiences.first,
-                      );
-                      ExperienceDetailSheet.show(
-                        context,
-                        experience: match,
-                        onToggleJoin: () => _openJoinFlow(match),
-                      );
-                    },
-                  ),
-                ),
-              )
-            else
-              SliverPadding(
-                padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
-                sliver: SliverList(
-                  delegate: SliverChildBuilderDelegate(
-                    (context, index) {
-                      final exp = filteredExperiences[index];
-                      return ExperienceCard(
-                        experience: exp,
-                        onTap: () => ExperienceDetailSheet.show(
-                          context,
-                          experience: exp,
-                          onToggleJoin: () => _openJoinFlow(exp),
+                      ),
+                    )
+                  else if (filteredExperiences.isEmpty)
+                    SliverToBoxAdapter(
+                      child: Padding(
+                        padding: const EdgeInsets.fromLTRB(20, 30, 20, 30),
+                        child: EmptyStateWidget(
+                          icon: Icons.explore_off_outlined,
+                          title: 'No experiences found yet.',
+                          message:
+                              'Try another category or clear filters to see more upcoming activities.',
+                          actionLabel: 'Clear Filters',
+                          onActionPressed: _clearFilters,
                         ),
-                        onJoinTap: () => _openJoinFlow(exp),
-                      );
-                    },
-                    childCount: filteredExperiences.length,
-                  ),
-                ),
-              ),
+                      ),
+                    )
+                  else
+                    SliverPadding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 12),
+                      sliver: SliverList(
+                        delegate: SliverChildBuilderDelegate((context, index) {
+                          final exp = filteredExperiences[index];
+                          return ExperienceCard(
+                            experience: exp,
+                            onTap: () => ExperienceDetailSheet.show(
+                              context,
+                              experience: exp,
+                            ),
+                            onJoinTap: () => _openJoinFlow(exp),
+                          );
+                        }, childCount: filteredExperiences.length),
+                      ),
+                    ),
+                ],
 
-            // ── CRITICAL: 120dp bottom clearance so no button is ever overlapped by bottom nav ──
-            const SliverToBoxAdapter(
-              child: SizedBox(height: 120),
+                // ── 120dp bottom clearance for floating navbar ──
+                const SliverToBoxAdapter(child: SizedBox(height: 120)),
+              ],
             ),
-          ],
+          ),
         ),
       ),
-    ),
-  ),
-);
+    );
   }
 }

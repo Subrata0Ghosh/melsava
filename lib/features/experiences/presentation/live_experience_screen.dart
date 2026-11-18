@@ -74,14 +74,36 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
       builder: (context) {
         final attendees = [
           {'name': exp.hostName, 'role': 'Host', 'avatar': exp.hostAvatar},
-          {'name': 'Sneha Roy', 'role': 'Attendee', 'avatar': 'assets/images/sneha_avatar.png'},
-          {'name': 'Rohan Sen', 'role': 'Attendee', 'avatar': 'assets/images/rohan_avatar.png'},
-          {'name': 'Aditi Sharma', 'role': 'Attendee', 'avatar': 'assets/images/aditi_avatar.png'},
-          {'name': 'Priya Patel', 'role': 'Attendee', 'avatar': 'assets/images/priya_avatar.png'},
-          {'name': 'Vikram Joshi', 'role': 'Attendee', 'avatar': 'assets/images/vikram_avatar.png'},
+          {
+            'name': 'Sneha Roy',
+            'role': 'Attendee',
+            'avatar': 'assets/images/sneha_avatar.png',
+          },
+          {
+            'name': 'Rohan Sen',
+            'role': 'Attendee',
+            'avatar': 'assets/images/rohan_avatar.png',
+          },
+          {
+            'name': 'Aditi Sharma',
+            'role': 'Attendee',
+            'avatar': 'assets/images/aditi_avatar.png',
+          },
+          {
+            'name': 'Priya Patel',
+            'role': 'Attendee',
+            'avatar': 'assets/images/priya_avatar.png',
+          },
+          {
+            'name': 'Vikram Joshi',
+            'role': 'Attendee',
+            'avatar': 'assets/images/vikram_avatar.png',
+          },
         ];
 
-        final totalCount = exp.currentParticipants > 0 ? exp.currentParticipants : 12;
+        final totalCount = exp.currentParticipants > 0
+            ? exp.currentParticipants
+            : 12;
 
         return Container(
           padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
@@ -136,7 +158,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                     ],
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4.5),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 4.5,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF10B981).withValues(alpha: 0.2),
                       borderRadius: BorderRadius.circular(12),
@@ -164,77 +189,89 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                 ],
               ),
               const SizedBox(height: 18),
-              ...attendees.map((attendee) => Container(
-                    margin: const EdgeInsets.only(bottom: 10),
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withValues(alpha: 0.06),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(
-                        color: Colors.white.withValues(alpha: 0.08),
+              ...attendees.map(
+                (attendee) => Container(
+                  margin: const EdgeInsets.only(bottom: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.06),
+                    borderRadius: BorderRadius.circular(14),
+                    border: Border.all(
+                      color: Colors.white.withValues(alpha: 0.08),
+                    ),
+                  ),
+                  child: Row(
+                    children: [
+                      SizedBox(
+                        width: 38,
+                        height: 38,
+                        child: ClipOval(
+                          child: AppSmartImage(
+                            imagePath: attendee['avatar'],
+                            isAvatar: true,
+                            nameHint: attendee['name'],
+                            fit: BoxFit.cover,
+                          ),
+                        ),
                       ),
-                    ),
-                    child: Row(
-                      children: [
-                        SizedBox(
-                          width: 38,
-                          height: 38,
-                          child: ClipOval(
-                            child: AppSmartImage(
-                              imagePath: attendee['avatar'],
-                              isAvatar: true,
-                              nameHint: attendee['name'],
-                              fit: BoxFit.cover,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                attendee['name']!,
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 14,
-                                ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              attendee['name']!,
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 14,
                               ),
-                              Text(
-                                attendee['role']!,
-                                style: TextStyle(
-                                  color: attendee['role'] == 'Host'
-                                      ? const Color(0xFFFBBF24)
-                                      : Colors.white60,
-                                  fontWeight: FontWeight.w500,
-                                  fontSize: 11.5,
-                                ),
+                            ),
+                            Text(
+                              attendee['role']!,
+                              style: TextStyle(
+                                color: attendee['role'] == 'Host'
+                                    ? const Color(0xFFFBBF24)
+                                    : Colors.white60,
+                                fontWeight: FontWeight.w500,
+                                fontSize: 11.5,
                               ),
-                            ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF8B5CF6,
+                          ).withValues(alpha: 0.25),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF8B5CF6,
+                            ).withValues(alpha: 0.5),
                           ),
                         ),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF8B5CF6).withValues(alpha: 0.25),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: const Color(0xFF8B5CF6).withValues(alpha: 0.5),
-                            ),
-                          ),
-                          child: const Text(
-                            'Say Hi 👋',
-                            style: TextStyle(
-                              color: Color(0xFFDDD6FE),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                            ),
+                        child: const Text(
+                          'Say Hi 👋',
+                          style: TextStyle(
+                            color: Color(0xFFDDD6FE),
+                            fontSize: 11,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ],
-                    ),
-                  )),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ],
           ),
         );
@@ -275,7 +312,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                     height: avatarSize,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      border: Border.all(color: const Color(0xFF161C19), width: 1.8),
+                      border: Border.all(
+                        color: const Color(0xFF161C19),
+                        width: 1.8,
+                      ),
                       boxShadow: [
                         BoxShadow(
                           color: Colors.black.withValues(alpha: 0.35),
@@ -305,7 +345,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
-                    border: Border.all(color: const Color(0xFF161C19), width: 1.8),
+                    border: Border.all(
+                      color: const Color(0xFF161C19),
+                      width: 1.8,
+                    ),
                     boxShadow: [
                       BoxShadow(
                         color: const Color(0xFF8B5CF6).withValues(alpha: 0.45),
@@ -344,7 +387,9 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
   @override
   Widget build(BuildContext context) {
     final exp = widget.experience;
-    final totalParticipants = exp.currentParticipants > 0 ? exp.currentParticipants : 12;
+    final totalParticipants = exp.currentParticipants > 0
+        ? exp.currentParticipants
+        : 12;
 
     return Scaffold(
       backgroundColor: const Color(0xFF161C19),
@@ -364,9 +409,7 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
           Positioned.fill(
             child: BackdropFilter(
               filter: ImageFilter.blur(sigmaX: 24, sigmaY: 24),
-              child: Container(
-                color: Colors.black.withValues(alpha: 0.65),
-              ),
+              child: Container(color: Colors.black.withValues(alpha: 0.65)),
             ),
           ),
 
@@ -412,7 +455,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
               children: [
                 // ── Top Navigation Bar & Attendee Stack ──────────────────
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 10,
+                  ),
                   child: Row(
                     children: [
                       GestureDetector(
@@ -478,9 +524,15 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
 
                 // ── Themed Event Info Pill Bar ──
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 4,
+                  ),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.black.withValues(alpha: 0.35),
                       borderRadius: BorderRadius.circular(16),
@@ -505,7 +557,9 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: Text(
-                            exp.categoryIcon.isNotEmpty ? exp.categoryIcon : '✨',
+                            exp.categoryIcon.isNotEmpty
+                                ? exp.categoryIcon
+                                : '✨',
                             style: const TextStyle(fontSize: 14),
                           ),
                         ),
@@ -532,7 +586,9 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                                   Text(
                                     'Small group circle',
                                     style: TextStyle(
-                                      color: Colors.white.withValues(alpha: 0.70),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.70,
+                                      ),
                                       fontSize: 11,
                                       fontWeight: FontWeight.w500,
                                     ),
@@ -543,7 +599,9 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                                     height: 3,
                                     decoration: BoxDecoration(
                                       shape: BoxShape.circle,
-                                      color: Colors.white.withValues(alpha: 0.5),
+                                      color: Colors.white.withValues(
+                                        alpha: 0.5,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(width: 6),
@@ -561,12 +619,19 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                           ),
                         ),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3.5),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3.5,
+                          ),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.20),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.20),
                             borderRadius: BorderRadius.circular(10),
                             border: Border.all(
-                              color: const Color(0xFF10B981).withValues(alpha: 0.45),
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.45),
                               width: 1,
                             ),
                           ),
@@ -595,7 +660,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                     child: BackdropFilter(
                       filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 24,
+                          vertical: 32,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.12),
                           borderRadius: BorderRadius.circular(28),
@@ -620,7 +688,10 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                               height: 72,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2.5),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2.5,
+                                ),
                                 boxShadow: [
                                   BoxShadow(
                                     color: Colors.black.withValues(alpha: 0.3),
@@ -667,13 +738,17 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                               onTap: () => _showParticipantsSheet(context, exp),
                               child: Container(
                                 height: 48,
-                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 24,
+                                ),
                                 decoration: BoxDecoration(
                                   gradient: AppColors.sunsetCtaGradient,
                                   borderRadius: BorderRadius.circular(24),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.brightViolet.withValues(alpha: 0.4),
+                                      color: AppColors.brightViolet.withValues(
+                                        alpha: 0.4,
+                                      ),
                                       blurRadius: 14,
                                       offset: const Offset(0, 4),
                                     ),
@@ -726,7 +801,9 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
               animation: emojiItem.controller,
               builder: (context, child) {
                 final progress = emojiItem.controller.value;
-                final dy = MediaQuery.of(context).size.height * 0.85 - (progress * 380);
+                final dy =
+                    MediaQuery.of(context).size.height * 0.85 -
+                    (progress * 380);
                 final opacity = (1.0 - progress).clamp(0.0, 1.0);
                 final scale = 0.8 + (progress * 0.6);
 
@@ -772,9 +849,7 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
             ),
           ],
         ),
-        child: Center(
-          child: Text(emoji, style: const TextStyle(fontSize: 24)),
-        ),
+        child: Center(child: Text(emoji, style: const TextStyle(fontSize: 24))),
       ),
     );
   }

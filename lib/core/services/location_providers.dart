@@ -1,7 +1,9 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'worldwide_location_service.dart';
 
-final worldwideLocationServiceProvider = Provider<WorldwideLocationService>((ref) {
+final worldwideLocationServiceProvider = Provider<WorldwideLocationService>((
+  ref,
+) {
   return WorldwideLocationService();
 });
 
@@ -25,6 +27,6 @@ class UserLocationNotifier extends StateNotifier<WorldLocation> {
 
 final userLocationProvider =
     StateNotifierProvider<UserLocationNotifier, WorldLocation>((ref) {
-  final service = ref.watch(worldwideLocationServiceProvider);
-  return UserLocationNotifier(service);
-});
+      final service = ref.watch(worldwideLocationServiceProvider);
+      return UserLocationNotifier(service);
+    });

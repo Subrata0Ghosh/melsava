@@ -31,11 +31,7 @@ class FluidWaveRibbon extends StatelessWidget {
       wave = Opacity(opacity: opacity, child: wave);
     }
 
-    return SizedBox(
-      height: height,
-      width: double.infinity,
-      child: wave,
-    );
+    return SizedBox(height: height, width: double.infinity, child: wave);
   }
 }
 
@@ -58,11 +54,7 @@ class _FluidWavePainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF8A2BE2),
-          Color(0xFF4B1A7C),
-          Color(0xFF280B45),
-        ],
+        colors: [Color(0xFF8A2BE2), Color(0xFF4B1A7C), Color(0xFF280B45)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path1, paint1);
 
@@ -79,11 +71,7 @@ class _FluidWavePainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
-        colors: [
-          Color(0xFFFF3366),
-          Color(0xFFE040FB),
-          Color(0xFF7C4DFF),
-        ],
+        colors: [Color(0xFFFF3366), Color(0xFFE040FB), Color(0xFF7C4DFF)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path2, paint2);
 
@@ -100,11 +88,7 @@ class _FluidWavePainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          Color(0xFFFFB300),
-          Color(0xFFFF5722),
-          Color(0xFFFF1744),
-        ],
+        colors: [Color(0xFFFFB300), Color(0xFFFF5722), Color(0xFFFF1744)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path3, paint3);
   }

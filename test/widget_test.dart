@@ -4,7 +4,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:melsava/app/melsava_app.dart';
 
 void main() {
-  testWidgets('MELSAVA app smoke test & onboarding flow', (WidgetTester tester) async {
+  testWidgets('MELSAVA app smoke test & onboarding flow', (
+    WidgetTester tester,
+  ) async {
     SharedPreferences.setMockInitialValues({});
     await tester.pumpWidget(const ProviderScope(child: MelsavaApp()));
 

@@ -1,105 +1,312 @@
-Work on my existing MELSAVA Flutter project. First inspect the existing code before making changes.
+# MELSAVA — PHASE 2: LIVE EXPERIENCE DISCOVERY, JOINING & MY CIRCLES
 
-Repository/project: MELSAVA
+## Main Objective
 
-IMPORTANT: Do not rebuild the application from scratch. Do not replace the current UI with another template. I want to preserve and continue the existing MELSAVA design exactly.
+Implement a fully working, Supabase-powered experience discovery and joining system.
 
-### Existing architecture
+Users must be able to discover real published experiences, view their details, join or join a waitlist, cancel participation, and manage their upcoming and past experiences.
 
-- Flutter and Dart
-- Riverpod state management
-- GoRouter navigation
-- Supabase Authentication and PostgreSQL
-- Supabase Storage
-- Existing feature-first folder structure
-- Light and Dark themes
+**Keep the current MELSAVA UI, design system, navigation structure and existing architecture. Do not rebuild the app.**
 
-Read these files first:
+This phase should turn the existing Discover and Experiences screens from demo/local-data screens into real, working features.
+
+---
+
+## 1. First Inspect the Existing Project
+
+Before changing anything, inspect:
+
 - README.md
 - APP_WORKFLOW.md
-- DESIGN_SYSTEM.md
 - DEVELOPMENT_ROADMAP.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
+- Existing experience models and repositories
+- Discover and Experiences screens
+- Experience details screen and join confirmation sheet
+- Supabase migrations, tables, indexes, RLS policies and database functions
+- Riverpod providers and GoRouter configuration
+- Existing design tokens and reusable widgets
+- Current tests
 
-Inspect the existing authentication, onboarding, router, theme, providers, widgets and Supabase service files before implementation.
+Understand the existing implementation before writing code.
 
-### Existing UI — preserve it
+Do not assume table columns, enum values, relationships or function signatures. Read the actual migrations and models first.
 
-Maintain:
-- Warm Ivory background (#F7F3EF)
-- Deep Plum (#292332)
-- Mauve (#795B91)
-- Soft Coral (#E9A18B)
-- Sage (#DCE8DF)
-- Manrope headings and Inter body text
-- Botanical/natural illustrations
-- Rounded cards and buttons
-- Existing logo
-- Existing light and dark themes
-- Existing reusable widgets and screen transitions
+## 2. Fix the Small Remaining Phase 1 Data-Integrity Issue
 
-Reuse AppColors, AppTypography, AppTheme, PrimaryButton, CustomTextField and existing decoration widgets.
+Before starting Phase 2, check the profile onboarding completion logic.
 
-Do not introduce a new design system or unrelated visual effects. All new screens must look like they belong to the existing MELSAVA application.
+Currently, failures while saving profile interests or intentions may be caught and logged without preventing onboarding from being marked complete.
 
-### PHASE 1 — Fix authentication and complete onboarding
+Fix this carefully:
 
-Implement this phase only.
+- Required profile data must be saved successfully before onboarding is marked complete.
+- Do not silently ignore failed interest or intention saves.
+- Display a useful error and allow the user to retry.
+- Avoid creating duplicate interests or intentions on retry.
+- Do not send users to Discover if required onboarding data is missing.
+- Use a database transaction/RPC if appropriate for the existing schema. Otherwise, only set the completion flag after every required save succeeds.
 
-1. Remove hard-coded demo email/password values from the sign-in screen.
-2. Make mock authentication explicitly debug-only. It must never authenticate users in release builds.
-3. Use the actual Supabase session as the source of authentication truth. Do not restore a fake authenticated user from SharedPreferences.
-4. Add proper authentication-aware GoRouter redirects.
-5. Connect signup to email verification.
-6. After email verification, show the adult eligibility flow.
-7. Collect date of birth and prevent users under 18 from continuing. Never expose date of birth publicly.
-8. Implement the actual profile onboarding wizard:
-   - Display name
-   - Profile photo upload
-   - City or broad location
-   - Short bio
-   - Interests
-   - Activity preferences
-   - Connection intentions
-   - Availability and discovery preferences
-   - Community guidelines acceptance
-9. Save profile information to the existing Supabase schema.
-10. Store uploaded profile photos in Supabase Storage.
-11. After successful onboarding, update the profile completion status and navigate to Discover.
-12. For login, check the actual profile completion state. Navigate incomplete users to onboarding and completed users to Discover.
-13. Make forgot password and email verification functional.
-14. Keep logout functional. After logout, clear the authenticated session and return to Welcome.
+Do not redesign or rebuild onboarding.
 
-### Important implementation rules
+## 3. Connect Discover to Real Supabase Data
 
-- Reuse existing database migrations and models where suitable.
-- Do not create duplicate tables without explaining why.
-- Use repository and provider layers instead of putting Supabase queries directly in UI widgets.
-- Add input validation and clear loading, error, success and retry states.
-- Do not expose Supabase service-role keys.
-- Do not silently bypass email verification or adult eligibility.
-- Preserve all existing screens and their visual styling.
-- Do not modify Discover, Experiences, Connections or Chat designs in this phase.
+Replace the local sample experience repository with a real Supabase-backed repository.
 
-### Testing and completion
+Requirements:
 
-After implementation:
+- Fetch only published experiences.
+- Exclude cancelled, draft and already-passed experiences from the upcoming discovery feed.
+- Load real experience titles, descriptions, categories, cover images, dates, times, city, venue or online status, host information and available capacity, according to the existing schema.
+- Show the current user's actual membership status.
+- Use proper pagination or a sensible query limit.
+- Avoid loading unnecessary data.
+- Handle missing images and optional fields gracefully.
+- Use the existing Riverpod provider/repository architecture.
+
+Both Discover and Experiences must use the same source of real experience data.
+
+Do not leave fake sample data as a production fallback.
+
+Development seed data is acceptable for local testing, but keep it clearly separated from real production content.
+
+## 4. Implement Useful Discovery Filters
+
+Use simple, understandable filters that work with the real database:
+
+- Search by experience title or description.
+- Category.
+- City.
+- Upcoming date.
+- Online or in-person.
+- Experiences with available places.
+
+Use the city and interests already saved in the user's profile where appropriate.
+
+Recommendations should be simple and inexpensive:
+
+- Give priority to experiences matching the user's saved interests and city.
+- Show other upcoming experiences when there are no direct matches.
+- Never hide all experiences just because there is no exact match.
+- No paid AI API, external recommendation service, GPS service or map API.
+
+Do not add complicated filters or redesign the Discover UI.
+
+## 5. Experience Details
+
+Make the existing experience details screen display real Supabase information.
+
+Show the fields available in the actual schema:
+
+- Experience name and description.
+- Category.
+- Date and time.
+- Duration, when available.
+- City and venue, or online status.
+- Host information.
+- Participant count and available places.
+- Cancellation information.
+- Clear Join or Waitlist action.
+
+The displayed capacity and membership status must reflect the latest database state, not a hard-coded number.
+
+Use the existing design components and maintain the current visual style.
+
+## 6. Real Join and Capacity Management
+
+Replace local `toggleJoin()` behaviour and simulated success delays with real database operations.
+
+Joining must be handled securely on the server.
+
+Inspect the existing migrations and implement a new migration for an atomic database join operation if one does not already exist.
+
+The join operation must:
+
+- Require an authenticated user.
+- Confirm that the user's profile and adult eligibility are complete.
+- Confirm the experience is published and still eligible for joining.
+- Prevent duplicate membership.
+- Check capacity using the current database state.
+- Add the user as joined when a place is available.
+- Add the user as waitlisted when the experience is full, if waitlisting is supported by the existing schema.
+- Return a clear result to the app.
+
+Capacity checks must be atomic and safe when multiple users try to join at the same time. Do not depend only on a client-side participant count.
+
+Use the existing `experience_members` statuses and database design where possible.
+
+If the existing waitlist model supports it, implement FIFO waitlist promotion when a joined member cancels.
+
+Cancellation and waitlist promotion must be handled safely on the server to avoid duplicate promotions or overbooking.
+
+Tighten RLS so users cannot bypass the capacity rules by directly inserting or changing membership records from the client.
+
+Use a new numbered migration based on the latest existing migration. Never edit migrations that may already have been applied.
+
+Do not use a Supabase service-role key in Flutter.
+
+## 7. Improve the Join Confirmation Flow
+
+Reuse the current join confirmation sheet and preserve its design.
+
+- Show the selected experience clearly.
+- Confirm the action before joining.
+- Show actual joining progress.
+- Show success only after Supabase confirms the operation.
+- Show a clear error and retry option if it fails.
+- Display the correct Joined or Waitlisted result.
+- Prevent repeated taps while the operation is processing.
+
+Inspect the existing “Your Intent” selection. Do not show a choice that is not actually saved or used. If the current schema does not support an experience-specific intention, keep the join confirmation simple and rely on the user's saved profile intentions. Do not default users to a romantic or dating intention.
+
+## 8. Make My Experiences / My Circles Functional
+
+Turn the existing screen into the user's real experience-management area.
+
+Use actual membership records from Supabase.
+
+Organize the screen into simple sections or tabs:
+
+- Upcoming: experiences the user has joined.
+- Waitlisted: experiences where the user is waiting for a place.
+- Attended: completed experiences the user attended.
+- Past: relevant completed or expired experiences.
+
+Show useful status labels and allow the user to open the corresponding details.
+
+Allow cancellation of upcoming participation with confirmation.
+
+Do not display hard-coded participants or fake membership records.
+
+Keep the experience-management UI simple and consistent with the existing app.
+
+## 9. Loading, Empty and Error States
+
+Every database-powered screen must support:
+
+- Loading state.
+- Empty state.
+- Error state.
+- Retry.
+- Successful action feedback.
+- No internet or connection failure.
+
+Use natural, friendly messages.
+
+Examples:
+
+- "No experiences found yet."
+- "Try another category or check back soon."
+- "You have joined this experience."
+- "You're on the waitlist."
+- "We couldn't complete that action. Please try again."
+
+Do not use fake success messages.
+
+Avoid unnecessary animations and expensive dependencies.
+
+## 10. Security and Database Requirements
+
+Review all relevant RLS policies before implementing the features.
+
+Ensure:
+
+- Users can only manage their own memberships.
+- Users cannot create memberships for another user.
+- Users cannot directly change their own membership to attended.
+- Capacity cannot be bypassed.
+- Only eligible users can join.
+- Only published experiences can be joined.
+- Waitlist order is preserved if implemented.
+- Public experience details do not expose private user information.
+- Database functions have appropriate permissions.
+- No service-role key or secret is included in the Flutter app.
+
+Reuse existing tables and functions where possible.
+
+Create only the migrations and indexes genuinely needed for this phase.
+
+## 11. Keep the Existing UI and App Architecture
+
+Preserve:
+
+- Warm Ivory background.
+- Deep Plum typography and surfaces.
+- Mauve and Soft Coral accents.
+- Sage secondary surfaces.
+- Manrope and Inter typography.
+- Existing light and dark themes.
+- Current bottom navigation and routing.
+- Existing reusable buttons, cards, chips, sheets and components.
+
+No complete UI redesign.
+
+No new paid service.
+
+No paid AI API.
+
+No maps, video calls, complex animations or unnecessary packages.
+
+Keep the code clean and suitable for a solo developer to maintain.
+
+## 12. Testing and Acceptance Criteria
+
+Before declaring Phase 2 complete:
+
 - Run dart format.
 - Run flutter analyze.
 - Run flutter test.
-- Test signup, email verification, age eligibility, profile onboarding, login, session restoration and logout.
-- Check both Light and Dark themes.
-- Test navigation with incomplete and completed profiles.
-- Fix errors before reporting completion.
+- Add repository and provider tests for real experience loading, filtering and membership state.
+- Test join success.
+- Test duplicate join prevention.
+- Test full-capacity waitlist behaviour.
+- Test cancellation.
+- Test waitlist promotion if implemented.
+- Test database permission and capacity rules.
+- Test loading, empty and error states.
+- Check both light and dark themes.
+- Check that Discover and Experiences no longer rely on local demo data in production.
 
-Update DEVELOPMENT_ROADMAP.md to reflect only work actually completed.
+Also manually verify using two different authenticated test accounts:
 
-Finally, provide:
-1. Files changed.
-2. Features completed.
-3. Supabase configuration or migration steps still required.
-4. Test results.
-5. Any remaining issues.
+1. Account A discovers and joins an available experience.
+2. Account B sees the updated participant count.
+3. Account B cannot overbook the experience.
+4. Account B is waitlisted when the experience is full.
+5. Account A cancels.
+6. The correct waitlisted user is promoted, if waitlisting is enabled.
+7. Both accounts see the correct membership status.
 
-Stop after Phase 1. Do not start another phase automatically.
+Do not claim that a test passed unless it was actually executed.
+
+## 13. Update Project Documentation
+
+After implementation:
+
+- Update APP_WORKFLOW.md.
+- Update DATABASE_SCHEMA.md.
+- Update SECURITY_AND_RLS.md.
+- Update DEVELOPMENT_ROADMAP.md.
+- Reconcile phase numbering in README.md and DEVELOPMENT_ROADMAP.md.
+
+Clearly record what is implemented, what is tested, and what remains incomplete.
+
+Do not mark a feature complete merely because its UI exists.
+
+---
+
+## Important Scope Limit
+
+This phase is ONLY for:
+
+1. Fixing the remaining onboarding data-integrity issue.
+2. Live experience discovery.
+3. Experience details.
+4. Secure joining and waitlisting.
+5. Cancellation.
+6. My Experiences / My Circles.
+
+Do not start one-to-one chat, post-experience mutual matching, advanced social features, payments, subscriptions, AI matching or an admin panel in this phase.
+
+**Work in the existing project. Implement this phase, run the checks, report changed files and migration instructions, and STOP. Do not continue to Phase 3 automatically.**

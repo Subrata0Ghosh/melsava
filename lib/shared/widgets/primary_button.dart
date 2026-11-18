@@ -59,10 +59,11 @@ class PrimaryButton extends StatelessWidget {
           boxShadow: isEnabled
               ? [
                   BoxShadow(
-                    color: (effectiveGradient != null
-                            ? AppColors.primaryPurple
-                            : (backgroundColor ?? AppColors.primaryPurple))
-                        .withValues(alpha: 0.38),
+                    color:
+                        (effectiveGradient != null
+                                ? AppColors.primaryPurple
+                                : (backgroundColor ?? AppColors.primaryPurple))
+                            .withValues(alpha: 0.38),
                     blurRadius: 14,
                     offset: const Offset(0, 5),
                   ),
@@ -92,13 +93,17 @@ class PrimaryButton extends StatelessWidget {
                           Icon(icon, size: 20, color: fg),
                           const SizedBox(width: AppConstants.spacingSM),
                         ],
-                        Text(
-                          label,
-                          style: AppTypography.labelLarge.copyWith(
-                            color: fg,
-                            fontWeight: FontWeight.w700,
-                            fontSize: 15,
-                            letterSpacing: 0.2,
+                        Flexible(
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.labelLarge.copyWith(
+                              color: fg,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 15,
+                              letterSpacing: 0.2,
+                            ),
                           ),
                         ),
                       ],

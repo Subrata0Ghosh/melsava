@@ -47,13 +47,7 @@ class TrendingBadge extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Text(
-            '🔥',
-            style: TextStyle(
-              fontSize: fontSize + 1.5,
-              height: 1.1,
-            ),
-          ),
+          Text('🔥', style: TextStyle(fontSize: fontSize + 1.5, height: 1.1)),
           const SizedBox(width: 4.5),
           Text(
             'Trending',

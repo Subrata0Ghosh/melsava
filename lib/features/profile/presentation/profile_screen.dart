@@ -12,7 +12,6 @@ import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
-import '../../experiences/presentation/join_experience_sheet.dart';
 import 'edit_profile_sheet.dart';
 
 /// Screen 12 & 13 (Image 7): Profile & Settings Screen
@@ -1028,8 +1027,43 @@ class ProfileScreen extends ConsumerWidget {
     Color cardBg,
     Color borderColor,
   ) {
-    final experiences = ref.watch(experiencesListProvider);
-    final displayExperiences = experiences.take(3).toList();
+    final myAsync = ref.watch(myExperiencesProvider);
+    final myBundle = myAsync.valueOrNull ?? const MyExperiencesBundle();
+    final displayExperiences = [
+      ...myBundle.upcoming,
+      ...myBundle.waitlisted,
+      ...myBundle.attended,
+    ].take(5).toList();
+
+    if (displayExperiences.isEmpty) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+        decoration: BoxDecoration(
+          color: cardBg,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: 0.9),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              Icons.calendar_today_outlined,
+              size: 20,
+              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text(
+                'No upcoming experiences joined yet. Explore activities to find your next micro-group!',
+                style: AppTypography.bodySmall.copyWith(
+                  color: mutedTextColor,
+                  fontSize: 12,
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
     return SizedBox(
       height: 132,
@@ -1040,24 +1074,16 @@ class ProfileScreen extends ConsumerWidget {
         separatorBuilder: (context, index) => const SizedBox(width: 12),
         itemBuilder: (context, index) {
           final exp = displayExperiences[index];
+          final badgeLabel = exp.isAttended
+              ? 'Attended ✓'
+              : (exp.isWaitlisted ? 'Waitlisted' : 'Joined • Upcoming');
+          final badgeColor = exp.isWaitlisted
+              ? const Color(0xFF8B5CF6)
+              : const Color(0xFF10B981);
+
           return GestureDetector(
             onTap: () {
-              ExperienceDetailSheet.show(
-                context,
-                experience: exp,
-                onToggleJoin: () {
-                  JoinExperienceSheet.show(
-                    context,
-                    experience: exp,
-                    onConfirmed: () {
-                      ref
-                          .read(experiencesRepositoryProvider)
-                          .toggleJoin(exp.id);
-                      ref.invalidate(experiencesListProvider);
-                    },
-                  );
-                },
-              );
+              ExperienceDetailSheet.show(context, experience: exp);
             },
             child: Container(
               width: 260,
@@ -1100,15 +1126,13 @@ class ProfileScreen extends ConsumerWidget {
                             vertical: 2.5,
                           ),
                           decoration: BoxDecoration(
-                            color: const Color(
-                              0xFF10B981,
-                            ).withValues(alpha: 0.15),
+                            color: badgeColor.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(6),
                           ),
-                          child: const Text(
-                            'Joined • Upcoming',
+                          child: Text(
+                            badgeLabel,
                             style: TextStyle(
-                              color: Color(0xFF10B981),
+                              color: badgeColor,
                               fontSize: 9.5,
                               fontWeight: FontWeight.w700,
                             ),

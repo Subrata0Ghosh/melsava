@@ -326,59 +326,106 @@ class SupabaseOnboardingRepository implements OnboardingRepository {
       );
     }
 
+    if (draft.interests.isEmpty) {
+      throw Exception('Please select at least one interest before continuing.');
+    }
+
+    final allIntentions = <String>{
+      if (draft.primaryIntention.isNotEmpty) draft.primaryIntention,
+      ...draft.intentions,
+    }.toList();
+
+    if (allIntentions.isEmpty) {
+      throw Exception(
+        'Please select at least one connection intention before continuing.',
+      );
+    }
+
     final nowIso = DateTime.now().toUtc().toIso8601String();
     final trimmedName = draft.displayName.trim();
     final trimmedCity = draft.city.trim();
     final trimmedBio = draft.bio.trim();
+    final discoveryPrefsMap = <String, dynamic>{
+      'min_age': draft.discoveryMinAge,
+      'max_age': draft.discoveryMaxAge,
+      'max_distance_km': draft.discoveryMaxDistanceKm,
+      'format': draft.discoveryFormat,
+    };
 
     if (_hasLiveSupabase) {
       final client = SupabaseService.client!;
+      bool rpcSucceeded = false;
 
-      // 1. Upsert public.profiles (never includes date_of_birth)
-      await client.from('profiles').upsert({
-        'id': draft.userId,
-        'display_name': trimmedName,
-        if (draft.avatarUrl != null && draft.avatarUrl!.isNotEmpty)
-          'avatar_url': draft.avatarUrl,
-        'bio': trimmedBio,
-        'city': trimmedCity,
-        'onboarding_completed': true,
-        'updated_at': nowIso,
-      }, onConflict: 'id');
-
-      // 2. Upsert public.profile_private compliance timestamps
-      await client.from('profile_private').upsert({
-        'user_id': draft.userId,
-        'email': draft.email,
-        'age_verified': true,
-        'terms_accepted_at': nowIso,
-        'guidelines_accepted_at': nowIso,
-      }, onConflict: 'user_id');
-
-      // 2b. Save extended preferences to profile_private (migration 005)
-      final discoveryPrefsMap = <String, dynamic>{
-        'min_age': draft.discoveryMinAge,
-        'max_age': draft.discoveryMaxAge,
-        'max_distance_km': draft.discoveryMaxDistanceKm,
-        'format': draft.discoveryFormat,
-      };
-
+      // Preferred atomic path: single server-side PostgreSQL transaction via RPC
       try {
-        await client
-            .from('profile_private')
-            .update({
-              'preferred_activity_categories':
-                  draft.preferredActivityCategories,
-              'availability_preferences': draft.availability,
-              'discovery_preferences': discoveryPrefsMap,
-            })
-            .eq('user_id', draft.userId);
-      } catch (e) {
-        // Graceful fallback if migration 005 hasn't been applied to remote Supabase yet
-        debugPrint(
-          '[OnboardingRepository] Extended preference columns unavailable, saving to auth metadata: $e',
+        await client.rpc(
+          'complete_profile_onboarding',
+          params: {
+            'p_display_name': trimmedName,
+            'p_avatar_url': draft.avatarUrl ?? '',
+            'p_city': trimmedCity,
+            'p_bio': trimmedBio,
+            'p_interest_names': draft.interests,
+            'p_activity_categories': draft.preferredActivityCategories,
+            'p_primary_intention': draft.primaryIntention,
+            'p_intention_names': allIntentions,
+            'p_availability': draft.availability,
+            'p_discovery_preferences': discoveryPrefsMap,
+            'p_guidelines_accepted': draft.guidelinesAccepted,
+          },
         );
+        rpcSucceeded = true;
+      } on PostgrestException catch (e) {
+        final isMissingRpc =
+            e.code == '42883' ||
+            e.code == 'PGRST202' ||
+            e.message.toLowerCase().contains('could not find the function');
+        if (!isMissingRpc) {
+          rethrow;
+        }
+      }
+
+      // Ordered, fail-fast fallback if migration 006 RPC is not yet deployed:
+      // NEVER sets onboarding_completed = true until ALL required writes succeed.
+      if (!rpcSucceeded) {
+        // 1. Upsert public.profiles with onboarding_completed kept FALSE until step 5
+        await client.from('profiles').upsert({
+          'id': draft.userId,
+          'display_name': trimmedName,
+          if (draft.avatarUrl != null && draft.avatarUrl!.isNotEmpty)
+            'avatar_url': draft.avatarUrl,
+          'bio': trimmedBio,
+          'city': trimmedCity,
+          'onboarding_completed': false,
+          'updated_at': nowIso,
+        }, onConflict: 'id');
+
+        // 2. Save required compliance timestamps in profile_private
+        await client.from('profile_private').upsert({
+          'user_id': draft.userId,
+          'email': draft.email,
+          'age_verified': true,
+          'terms_accepted_at': nowIso,
+          'guidelines_accepted_at': nowIso,
+        }, onConflict: 'user_id');
+
+        // 2b. Save extended preferences (columns from migration 005 or auth metadata fallback)
         try {
+          await client
+              .from('profile_private')
+              .update({
+                'preferred_activity_categories':
+                    draft.preferredActivityCategories,
+                'availability_preferences': draft.availability,
+                'discovery_preferences': discoveryPrefsMap,
+              })
+              .eq('user_id', draft.userId);
+        } on PostgrestException catch (e) {
+          final isMissingColumn =
+              e.code == '42703' ||
+              e.code == 'PGRST204' ||
+              e.message.toLowerCase().contains('column');
+          if (!isMissingColumn) rethrow;
           await client.auth.updateUser(
             UserAttributes(
               data: {
@@ -390,82 +437,81 @@ class SupabaseOnboardingRepository implements OnboardingRepository {
               },
             ),
           );
-        } catch (_) {}
-      }
+        }
 
-      // 3. Replace profile_interests rows
-      if (draft.interests.isNotEmpty) {
-        try {
-          final dbInterests = await client
-              .from('interests')
-              .select('id, name')
-              .inFilter('name', draft.interests);
-          final interestIds = (dbInterests as List)
-              .map((r) => r['id']?.toString())
-              .whereType<String>()
-              .toList();
+        // 3. Save profile_interests — must succeed without duplicates on retry
+        final dbInterests = await client
+            .from('interests')
+            .select('id, name')
+            .inFilter('name', draft.interests);
+        final interestIds = (dbInterests as List)
+            .map((r) => r['id']?.toString())
+            .whereType<String>()
+            .toSet()
+            .toList();
 
-          await client
-              .from('profile_interests')
-              .delete()
-              .eq('profile_id', draft.userId);
-
-          if (interestIds.isNotEmpty) {
-            await client
-                .from('profile_interests')
-                .insert(
-                  interestIds
-                      .map(
-                        (id) => {'profile_id': draft.userId, 'interest_id': id},
-                      )
-                      .toList(),
-                );
-          }
-        } catch (e) {
-          debugPrint(
-            '[OnboardingRepository] Failed saving profile_interests: $e',
+        if (interestIds.isEmpty) {
+          throw Exception(
+            'Could not save your selected interests. Please retry or check that reference interests are seeded.',
           );
         }
-      }
 
-      // 4. Replace profile_intentions rows
-      final allIntentions = <String>{
-        if (draft.primaryIntention.isNotEmpty) draft.primaryIntention,
-        ...draft.intentions,
-      }.toList();
+        await client
+            .from('profile_interests')
+            .delete()
+            .eq('profile_id', draft.userId);
 
-      if (allIntentions.isNotEmpty) {
-        try {
-          final dbIntentions = await client
-              .from('intentions')
-              .select('id, name')
-              .inFilter('name', allIntentions);
+        await client
+            .from('profile_interests')
+            .upsert(
+              interestIds
+                  .map((id) => {'profile_id': draft.userId, 'interest_id': id})
+                  .toList(),
+              onConflict: 'profile_id,interest_id',
+            );
 
-          final rowsToInsert = <Map<String, dynamic>>[];
-          for (final row in (dbIntentions as List)) {
-            final id = row['id']?.toString();
-            final name = row['name']?.toString();
-            if (id == null || name == null) continue;
-            rowsToInsert.add({
-              'profile_id': draft.userId,
-              'intention_id': id,
-              'is_primary': name == draft.primaryIntention,
-            });
-          }
+        // 4. Save profile_intentions — must succeed without duplicates on retry
+        final dbIntentions = await client
+            .from('intentions')
+            .select('id, name')
+            .inFilter('name', allIntentions);
 
-          await client
-              .from('profile_intentions')
-              .delete()
-              .eq('profile_id', draft.userId);
+        final intentionRows = <Map<String, dynamic>>[];
+        final seenIntentionIds = <String>{};
+        for (final row in (dbIntentions as List)) {
+          final id = row['id']?.toString();
+          final name = row['name']?.toString();
+          if (id == null || name == null || !seenIntentionIds.add(id)) continue;
+          intentionRows.add({
+            'profile_id': draft.userId,
+            'intention_id': id,
+            'is_primary': name == draft.primaryIntention,
+          });
+        }
 
-          if (rowsToInsert.isNotEmpty) {
-            await client.from('profile_intentions').insert(rowsToInsert);
-          }
-        } catch (e) {
-          debugPrint(
-            '[OnboardingRepository] Failed saving profile_intentions: $e',
+        if (intentionRows.isEmpty) {
+          throw Exception(
+            'Could not save your selected connection intentions. Please retry or check that reference intentions are seeded.',
           );
         }
+
+        await client
+            .from('profile_intentions')
+            .delete()
+            .eq('profile_id', draft.userId);
+
+        await client
+            .from('profile_intentions')
+            .upsert(intentionRows, onConflict: 'profile_id,intention_id');
+
+        // 5. Mark onboarding complete ONLY after every required save succeeded
+        await client
+            .from('profiles')
+            .update({
+              'onboarding_completed': true,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', draft.userId);
       }
     } else if (_isDebugMockAllowed) {
       await Future.delayed(const Duration(milliseconds: 300));

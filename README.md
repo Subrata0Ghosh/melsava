@@ -81,6 +81,8 @@ supabase/migrations/001_initial_schema.sql
 supabase/migrations/002_rls_policies.sql
 supabase/migrations/003_functions.sql
 supabase/migrations/004_seed_data.sql
+supabase/migrations/005_storage_bucket.sql
+supabase/migrations/006_phase2_experiences_rls_and_rpc.sql
 ```
 
 ### 5. Run the App
@@ -127,14 +129,13 @@ supabase/
 
 | Phase | Focus | Status |
 |---|---|---|
-| 1 | Foundation — Project setup, theme, navigation, auth UI | 🔄 In Progress |
-| 2 | Onboarding — Adult eligibility, profile creation, interests | ⬜ Planned |
-| 3 | Experience Discovery — Browse, detail, RSVP, capacity | ⬜ Planned |
-| 4 | Post-Experience Connection — Mutual selection, connection creation | ⬜ Planned |
-| 5 | Messaging — Conversations, real-time chat, blocking | ⬜ Planned |
-| 6 | Safety — Reporting, moderation, account deletion, privacy | ⬜ Planned |
-| 7 | Testing — Security, RLS, navigation, multi-account, performance | ⬜ Planned |
-| 8 | Closed Beta — One-city launch, seed content, feedback | ⬜ Planned |
+| 1 | Foundation, Authentication & Hardened Onboarding | ✅ Completed |
+| 2 | Live Experience Discovery, Joining & My Circles | ✅ Completed |
+| 3 | Post-Experience Mutual Choice System | ⬜ Planned |
+| 4 | Connections & Realtime Messaging | ⬜ Planned |
+| 5 | Safety, Moderation & Account Settings | ⬜ Planned |
+| 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
+| 7 | Closed Beta & Production Launch | ⬜ Planned |
 
 See [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) for detailed checklists.
 

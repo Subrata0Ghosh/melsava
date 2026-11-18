@@ -11,11 +11,7 @@ class Category3DIcon extends StatelessWidget {
   final String categoryKey;
   final double size;
 
-  const Category3DIcon({
-    super.key,
-    required this.categoryKey,
-    this.size = 32,
-  });
+  const Category3DIcon({super.key, required this.categoryKey, this.size = 32});
 
   @override
   Widget build(BuildContext context) {
@@ -69,7 +65,11 @@ class _Social3DPainter extends CustomPainter {
       ..color = const Color(0x330055AA)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.90), width: w * 0.75, height: h * 0.18),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.90),
+        width: w * 0.75,
+        height: h * 0.18,
+      ),
       shadowPaint,
     );
 
@@ -91,7 +91,9 @@ class _Social3DPainter extends CustomPainter {
     final rightHeadCenter = Offset(w * 0.68, h * 0.38);
     final rightHeadRadius = w * 0.16;
     final rightHeadPaint = Paint()
-      ..shader = bgGradient.createShader(Rect.fromCircle(center: rightHeadCenter, radius: rightHeadRadius));
+      ..shader = bgGradient.createShader(
+        Rect.fromCircle(center: rightHeadCenter, radius: rightHeadRadius),
+      );
     canvas.drawCircle(rightHeadCenter, rightHeadRadius, rightHeadPaint);
 
     // Draw Right Torso
@@ -106,14 +108,20 @@ class _Social3DPainter extends CustomPainter {
     final leftHeadCenter = Offset(w * 0.38, h * 0.32);
     final leftHeadRadius = w * 0.19;
     final leftHeadPaint = Paint()
-      ..shader = fgGradient.createShader(Rect.fromCircle(center: leftHeadCenter, radius: leftHeadRadius));
+      ..shader = fgGradient.createShader(
+        Rect.fromCircle(center: leftHeadCenter, radius: leftHeadRadius),
+      );
     canvas.drawCircle(leftHeadCenter, leftHeadRadius, leftHeadPaint);
 
     // Left Head Specular 3D Highlight
     final specularPaint = Paint()
       ..color = Colors.white.withValues(alpha: 0.65)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 1.2);
-    canvas.drawCircle(Offset(w * 0.33, h * 0.27), leftHeadRadius * 0.35, specularPaint);
+    canvas.drawCircle(
+      Offset(w * 0.33, h * 0.27),
+      leftHeadRadius * 0.35,
+      specularPaint,
+    );
 
     // Draw Left Torso (Foreground dome)
     final leftTorsoPath = Path()
@@ -151,7 +159,11 @@ class _Sports3DPainter extends CustomPainter {
       ..color = const Color(0x33D94600)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.8);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.88), width: w * 0.70, height: h * 0.16),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.88),
+        width: w * 0.70,
+        height: h * 0.16,
+      ),
       shadowPaint,
     );
 
@@ -163,7 +175,11 @@ class _Sports3DPainter extends CustomPainter {
         colors: [Color(0xFFFDBA74), Color(0xFFC2410C)],
       ).createShader(Rect.fromLTWH(w * 0.40, h * 0.60, w * 0.20, h * 0.32));
     final handleRRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w * 0.32, h * 0.74), width: w * 0.14, height: h * 0.30),
+      Rect.fromCenter(
+        center: Offset(w * 0.32, h * 0.74),
+        width: w * 0.14,
+        height: h * 0.30,
+      ),
       const Radius.circular(5),
     );
     canvas.save();
@@ -207,7 +223,11 @@ class _Sports3DPainter extends CustomPainter {
     canvas.drawCircle(ballCenter, ballRadius, ballPaint);
 
     final ballSpecular = Paint()..color = Colors.white;
-    canvas.drawCircle(Offset(w * 0.73, h * 0.63), ballRadius * 0.3, ballSpecular);
+    canvas.drawCircle(
+      Offset(w * 0.73, h * 0.63),
+      ballRadius * 0.3,
+      ballSpecular,
+    );
   }
 
   @override
@@ -226,7 +246,11 @@ class _Travel3DPainter extends CustomPainter {
       ..color = const Color(0x33D97706)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.88), width: w * 0.70, height: h * 0.18),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.88),
+        width: w * 0.70,
+        height: h * 0.18,
+      ),
       shadowPaint,
     );
 
@@ -255,7 +279,11 @@ class _Travel3DPainter extends CustomPainter {
       ..strokeWidth = 2.4
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.22), width: w * 0.24, height: h * 0.16),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.22),
+        width: w * 0.24,
+        height: h * 0.16,
+      ),
       math.pi,
       math.pi,
       false,
@@ -270,7 +298,11 @@ class _Travel3DPainter extends CustomPainter {
         colors: [Color(0xFFFEF3C7), Color(0xFFFBBF24)],
       ).createShader(Rect.fromLTWH(w * 0.32, h * 0.52, w * 0.36, h * 0.22));
     final pocketRRect = RRect.fromRectAndRadius(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.62), width: w * 0.36, height: h * 0.22),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.62),
+        width: w * 0.36,
+        height: h * 0.22,
+      ),
       const Radius.circular(6),
     );
     canvas.drawRRect(pocketRRect, pocketPaint);
@@ -282,7 +314,10 @@ class _Travel3DPainter extends CustomPainter {
       ..strokeWidth = 2.0
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(
-      Rect.fromCircle(center: Offset(w * 0.5, h * 0.45), radius: bodyRadius * 0.8),
+      Rect.fromCircle(
+        center: Offset(w * 0.5, h * 0.45),
+        radius: bodyRadius * 0.8,
+      ),
       -math.pi * 0.75,
       math.pi * 0.4,
       false,
@@ -306,7 +341,11 @@ class _Arts3DPainter extends CustomPainter {
       ..color = const Color(0x33A21CAF)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.88), width: w * 0.75, height: h * 0.18),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.88),
+        width: w * 0.75,
+        height: h * 0.18,
+      ),
       shadowPaint,
     );
 
@@ -333,7 +372,11 @@ class _Arts3DPainter extends CustomPainter {
       ..strokeWidth = 1.8
       ..strokeCap = StrokeCap.round;
     canvas.drawArc(
-      Rect.fromCenter(center: Offset(w * 0.48, h * 0.36), width: w * 0.55, height: h * 0.32),
+      Rect.fromCenter(
+        center: Offset(w * 0.48, h * 0.36),
+        width: w * 0.55,
+        height: h * 0.32,
+      ),
       -math.pi * 0.9,
       math.pi * 0.65,
       false,
@@ -348,12 +391,28 @@ class _Arts3DPainter extends CustomPainter {
           colors: [col1, col2],
         ).createShader(Rect.fromCircle(center: center, radius: 4));
       canvas.drawCircle(center, 3.8, p);
-      canvas.drawCircle(center - const Offset(1, 1), 1.2, Paint()..color = Colors.white.withValues(alpha: 0.8));
+      canvas.drawCircle(
+        center - const Offset(1, 1),
+        1.2,
+        Paint()..color = Colors.white.withValues(alpha: 0.8),
+      );
     }
 
-    drawPaintDot(Offset(w * 0.40, h * 0.34), const Color(0xFFFEF08A), const Color(0xFFEAB308));
-    drawPaintDot(Offset(w * 0.60, h * 0.32), const Color(0xFFBAE6FD), const Color(0xFF0284C7));
-    drawPaintDot(Offset(w * 0.72, h * 0.48), const Color(0xFFFED7AA), const Color(0xFFEA580C));
+    drawPaintDot(
+      Offset(w * 0.40, h * 0.34),
+      const Color(0xFFFEF08A),
+      const Color(0xFFEAB308),
+    );
+    drawPaintDot(
+      Offset(w * 0.60, h * 0.32),
+      const Color(0xFFBAE6FD),
+      const Color(0xFF0284C7),
+    );
+    drawPaintDot(
+      Offset(w * 0.72, h * 0.48),
+      const Color(0xFFFED7AA),
+      const Color(0xFFEA580C),
+    );
 
     // Thumb hole
     final holePaint = Paint()..color = const Color(0xFF4A044E);
@@ -376,7 +435,11 @@ class _Wellness3DPainter extends CustomPainter {
       ..color = const Color(0x33581C87)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 2.5);
     canvas.drawOval(
-      Rect.fromCenter(center: Offset(w * 0.5, h * 0.88), width: w * 0.70, height: h * 0.16),
+      Rect.fromCenter(
+        center: Offset(w * 0.5, h * 0.88),
+        width: w * 0.70,
+        height: h * 0.16,
+      ),
       shadowPaint,
     );
 
@@ -426,7 +489,11 @@ class _Wellness3DPainter extends CustomPainter {
       ..strokeWidth = 1.5
       ..style = PaintingStyle.stroke
       ..strokeCap = StrokeCap.round;
-    canvas.drawLine(Offset(w * 0.50, h * 0.24), Offset(w * 0.50, h * 0.55), spinePaint);
+    canvas.drawLine(
+      Offset(w * 0.50, h * 0.24),
+      Offset(w * 0.50, h * 0.55),
+      spinePaint,
+    );
 
     // Glowing Golden Heart Seed Bead
     final seedCenter = Offset(w * 0.50, h * 0.70);

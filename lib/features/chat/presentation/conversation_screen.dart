@@ -62,8 +62,12 @@ class _ConversationScreenState extends State<ConversationScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
@@ -81,13 +85,16 @@ class _ConversationScreenState extends State<ConversationScreen> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.all(
-                  color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                  color: isDark
+                      ? AppColors.brightViolet
+                      : AppColors.primaryPurple,
                   width: 1.5,
                 ),
               ),
               child: ClipOval(
                 child: AppSmartImage(
-                  imagePath: widget.participantName.toLowerCase().contains('rohan')
+                  imagePath:
+                      widget.participantName.toLowerCase().contains('rohan')
                       ? 'assets/images/rohan_avatar.png'
                       : 'assets/images/sneha_avatar.png',
                   fit: BoxFit.cover,
@@ -166,7 +173,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       color: primaryTextColor,
                     ),
                     const SizedBox(width: 8),
-                    Text('Report Conversation', style: TextStyle(color: primaryTextColor)),
+                    Text(
+                      'Report Conversation',
+                      style: TextStyle(color: primaryTextColor),
+                    ),
                   ],
                 ),
               ),
@@ -199,7 +209,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
             decoration: BoxDecoration(
               color: (isDark ? AppColors.darkElevated : AppColors.sage)
                   .withValues(alpha: 0.4),
-              border: Border(bottom: BorderSide(color: borderColor, width: 0.8)),
+              border: Border(
+                bottom: BorderSide(color: borderColor, width: 0.8),
+              ),
             ),
             child: Row(
               children: [
@@ -261,7 +273,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                       BoxShadow(
                         color: msg.isMe
                             ? AppColors.primaryPurple.withValues(alpha: 0.25)
-                            : (isDark ? Colors.black26 : Colors.black.withValues(alpha: 0.04)),
+                            : (isDark
+                                  ? Colors.black26
+                                  : Colors.black.withValues(alpha: 0.04)),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -308,10 +322,7 @@ class _ConversationScreenState extends State<ConversationScreen> {
                 );
 
                 if (msg.isMe) {
-                  return Align(
-                    alignment: Alignment.centerRight,
-                    child: bubble,
-                  );
+                  return Align(alignment: Alignment.centerRight, child: bubble);
                 } else {
                   return Padding(
                     padding: const EdgeInsets.only(bottom: 2),
@@ -327,7 +338,10 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           ),
                           child: ClipOval(
                             child: AppSmartImage(
-                              imagePath: widget.participantName.toLowerCase().contains('rohan')
+                              imagePath:
+                                  widget.participantName.toLowerCase().contains(
+                                    'rohan',
+                                  )
                                   ? 'assets/images/rohan_avatar.png'
                                   : 'assets/images/sneha_avatar.png',
                               fit: BoxFit.cover,
@@ -367,7 +381,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                           fontSize: 14,
                         ),
                         filled: true,
-                        fillColor: isDark ? AppColors.darkElevated : AppColors.warmIvory,
+                        fillColor: isDark
+                            ? AppColors.darkElevated
+                            : AppColors.warmIvory,
                         contentPadding: const EdgeInsets.symmetric(
                           horizontal: 18,
                           vertical: 11,
@@ -391,7 +407,9 @@ class _ConversationScreenState extends State<ConversationScreen> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                            color: AppColors.primaryPurple.withValues(
+                              alpha: 0.35,
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, 3),
                           ),

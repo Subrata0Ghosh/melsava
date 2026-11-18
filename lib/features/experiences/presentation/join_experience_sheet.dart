@@ -1,96 +1,118 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/experiences_repository.dart';
 
-/// Screen 7 (Image 6): Join Experience Flow
+/// Join / Waitlist Confirmation Bottom Sheet
 ///
-/// Features:
-/// - Soft luxury watercolor ambient gradient background (cyan/amber/violet)
-/// - Botanical leaves peeking from card edges
-/// - Top bar with back arrow and title "Join Experience"
-/// - Mini event summary card with photo, date, and venue
-/// - "Your Intent" selection with stadium/pill chips
-/// - Vibrant gradient selected state for active intent
-/// - Full-width glowing gradient [ Confirm Join → ] button
-/// - Subtle footer note "You can change your choice later"
-class JoinExperienceSheet extends StatefulWidget {
+/// Preserves the MELSAVA watercolor ambient gradient, botanical foliage accents,
+/// and rounded summary card while executing real server-side atomic joining:
+/// - Displays the selected experience and live capacity status clearly
+/// - Relies on the user's saved profile intentions (never defaults to Dating)
+/// - Prevents duplicate taps while submitting
+/// - Shows success only after Supabase confirms Joined or Waitlisted status
+/// - Displays a clear error and Retry action on failure
+class JoinExperienceSheet extends ConsumerStatefulWidget {
   final ExperienceModel experience;
-  final VoidCallback onConfirmed;
+  final Future<JoinExperienceResult> Function() onConfirmJoin;
 
   const JoinExperienceSheet({
     super.key,
     required this.experience,
-    required this.onConfirmed,
+    required this.onConfirmJoin,
   });
 
-  static Future<void> show(
+  static Future<JoinExperienceResult?> show(
     BuildContext context, {
     required ExperienceModel experience,
-    required VoidCallback onConfirmed,
+    required Future<JoinExperienceResult> Function() onConfirmJoin,
   }) {
-    return showModalBottomSheet(
+    return showModalBottomSheet<JoinExperienceResult>(
       context: context,
       useRootNavigator: true,
       isScrollControlled: true,
       backgroundColor: Colors.transparent,
       builder: (context) => JoinExperienceSheet(
         experience: experience,
-        onConfirmed: onConfirmed,
+        onConfirmJoin: onConfirmJoin,
       ),
     );
   }
 
   @override
-  State<JoinExperienceSheet> createState() => _JoinExperienceSheetState();
+  ConsumerState<JoinExperienceSheet> createState() =>
+      _JoinExperienceSheetState();
 }
 
-class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
-  final Set<String> _selectedIntents = {'Dating'};
+class _JoinExperienceSheetState extends ConsumerState<JoinExperienceSheet> {
   bool _isSubmitting = false;
-  bool _isSuccess = false;
+  JoinExperienceResult? _result;
+  String? _errorMessage;
 
-  final List<Map<String, dynamic>> _intentOptions = [
-    {'name': 'Friendship', 'icon': Icons.people_alt_rounded},
-    {'name': 'Activity Partner', 'icon': Icons.extension_rounded},
-    {'name': 'Dating', 'icon': Icons.favorite_rounded},
-    {'name': 'Serious Relationship', 'icon': Icons.auto_awesome_rounded},
-    {'name': 'Marriage Minded', 'icon': Icons.diamond_rounded},
-    {'name': 'Just Exploring', 'icon': Icons.explore_rounded},
-  ];
-
-  void _handleConfirm() async {
+  Future<void> _handleConfirm() async {
+    if (_isSubmitting) return;
     HapticFeedback.mediumImpact();
-    setState(() => _isSubmitting = true);
-
-    await Future.delayed(const Duration(milliseconds: 600));
-    if (!mounted) return;
-
-    widget.onConfirmed();
     setState(() {
-      _isSubmitting = false;
-      _isSuccess = true;
+      _isSubmitting = true;
+      _errorMessage = null;
     });
 
-    await Future.delayed(const Duration(milliseconds: 1000));
-    if (!mounted) return;
-    Navigator.of(context).pop();
+    try {
+      final res = await widget.onConfirmJoin();
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _result = res;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      final cleanMsg = e.toString().replaceAll('Exception: ', '').trim();
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = cleanMsg.isNotEmpty
+            ? cleanMsg
+            : 'We couldn\'t complete that action. Please try again.';
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final exp = widget.experience;
+    final user = ref.watch(currentUserProvider);
     final dateFormat = DateFormat('EEE, MMM d • h:mm a');
 
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
     final cardBg = isDark ? const Color(0xFF1F1A2C) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF332A45) : const Color(0xFFEDE9FE);
+    final borderColor = isDark
+        ? const Color(0xFF332A45)
+        : const Color(0xFFEDE9FE);
+
+    final isWaitlistAction = exp.isFull;
+    final locationLabel = exp.isOnline
+        ? 'Online Experience'
+        : (exp.venueName.isNotEmpty
+              ? '${exp.venueName}${exp.city.isNotEmpty ? ' · ${exp.city}' : ''}'
+              : (exp.city.isNotEmpty ? exp.city : 'Public Venue'));
+
+    final savedIntentions = <String>[
+      if (user?.primaryIntent != null && user!.primaryIntent!.isNotEmpty)
+        user.primaryIntent!,
+      ...(user?.secondaryIntents ?? const <String>[]),
+    ];
 
     return Container(
       decoration: BoxDecoration(
@@ -108,7 +130,7 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
         borderRadius: const BorderRadius.vertical(top: Radius.circular(32)),
         child: Stack(
           children: [
-            // Ambient Watercolor Gradient Glow (matches Image 6)
+            // Ambient Watercolor Gradient Glow
             Positioned(
               top: -40,
               left: -40,
@@ -119,7 +141,9 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF7DD3FC).withValues(alpha: isDark ? 0.15 : 0.28),
+                      const Color(
+                        0xFF7DD3FC,
+                      ).withValues(alpha: isDark ? 0.15 : 0.28),
                       Colors.transparent,
                     ],
                   ),
@@ -136,7 +160,9 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFFDE047).withValues(alpha: isDark ? 0.12 : 0.30),
+                      const Color(
+                        0xFFFDE047,
+                      ).withValues(alpha: isDark ? 0.12 : 0.30),
                       Colors.transparent,
                     ],
                   ),
@@ -153,7 +179,9 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFFDDD6FE).withValues(alpha: isDark ? 0.10 : 0.35),
+                      const Color(
+                        0xFFDDD6FE,
+                      ).withValues(alpha: isDark ? 0.10 : 0.35),
                       Colors.transparent,
                     ],
                   ),
@@ -161,7 +189,7 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
               ),
             ),
 
-            // Botanical foliage accents peeking from borders (Image 6)
+            // Botanical foliage accents peeking from borders
             const Positioned(
               top: 10,
               left: -12,
@@ -185,22 +213,31 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
               ),
             ),
             const Positioned(
-              top: 250,
+              top: 220,
               right: -16,
               child: BotanicalLeafDecoration(
                 style: BotanicalLeafStyle.monstera,
                 width: 60,
                 height: 105,
                 rotation: -0.20,
-                opacity: 0.95,
+                opacity: 0.90,
               ),
             ),
 
             // Content
-            if (_isSuccess)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 40),
-                child: _buildSuccessView(isDark, exp, primaryTextColor, mutedTextColor),
+            if (_result != null)
+              SafeArea(
+                top: false,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 36),
+                  child: _buildResultView(
+                    isDark,
+                    exp,
+                    _result!,
+                    primaryTextColor,
+                    mutedTextColor,
+                  ),
+                ),
               )
             else
               SafeArea(
@@ -219,13 +256,15 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                           width: 44,
                           height: 4.5,
                           decoration: BoxDecoration(
-                            color: isDark ? Colors.white24 : const Color(0xFFDDD6FE),
+                            color: isDark
+                                ? Colors.white24
+                                : const Color(0xFFDDD6FE),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         ),
                       ),
 
-                      // Top Bar with back arrow & title (Image 6)
+                      // Top Bar with back arrow & title
                       Row(
                         children: [
                           IconButton(
@@ -234,11 +273,15 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                               color: primaryTextColor,
                               size: 24,
                             ),
-                            onPressed: () => Navigator.of(context).pop(),
+                            onPressed: _isSubmitting
+                                ? null
+                                : () => Navigator.of(context).pop(),
                           ),
                           Expanded(
                             child: Text(
-                              'Join Experience',
+                              isWaitlistAction
+                                  ? 'Join Waitlist'
+                                  : 'Join Experience',
                               textAlign: TextAlign.center,
                               style: AppTypography.titleLarge.copyWith(
                                 fontWeight: FontWeight.w800,
@@ -247,336 +290,422 @@ class _JoinExperienceSheetState extends State<JoinExperienceSheet> {
                               ),
                             ),
                           ),
-                          const SizedBox(width: 48), // balance back button
+                          const SizedBox(width: 48),
                         ],
                       ),
-                      const SizedBox(height: 10),
 
-                      // Mini summary card (Image 6)
-                            Container(
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(color: borderColor, width: 1.0),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.04),
-                                    blurRadius: 16,
-                                    offset: const Offset(0, 4),
-                                  ),
-                                ],
+                      const SizedBox(height: 14),
+
+                      // Mini Event Summary Card
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(color: borderColor),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withValues(
+                                alpha: isDark ? 0.28 : 0.05,
                               ),
-                              child: Row(
+                              blurRadius: 16,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: Row(
+                          children: [
+                            ClipRRect(
+                              borderRadius: BorderRadius.circular(14),
+                              child: SizedBox(
+                                width: 68,
+                                height: 68,
+                                child: AppSmartImage(
+                                  imagePath: exp.coverImageUrl,
+                                  categoryHint: '${exp.title} ${exp.categoryName}',
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 14),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  ClipRRect(
-                                    borderRadius: BorderRadius.circular(16),
-                                    child: SizedBox(
-                                      width: 68,
-                                      height: 68,
-                                      child: AppSmartImage(
-                                        imagePath: exp.coverImageUrl,
-                                        categoryHint: exp.categoryName,
-                                        fit: BoxFit.cover,
-                                      ),
+                                  Text(
+                                    exp.title,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.titleMedium.copyWith(
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                      color: primaryTextColor,
                                     ),
                                   ),
-                                  const SizedBox(width: 14),
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Text(
-                                          exp.title,
+                                  const SizedBox(height: 5),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 13,
+                                        color: isDark
+                                            ? AppColors.luminousMauve
+                                            : AppColors.mauve,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          dateFormat.format(exp.startsAt),
                                           maxLines: 1,
                                           overflow: TextOverflow.ellipsis,
-                                          style: AppTypography.titleSmall.copyWith(
-                                            color: primaryTextColor,
-                                            fontWeight: FontWeight.w800,
-                                            fontSize: 14.5,
-                                          ),
-                                        ),
-                                        const SizedBox(height: 5),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.calendar_month_rounded,
-                                              size: 14,
-                                              color: Color(0xFF8B5CF6),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Expanded(
-                                              child: Text(
-                                                dateFormat.format(exp.startsAt),
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AppTypography.bodySmall.copyWith(
-                                                  color: mutedTextColor,
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
-                                                ),
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                                color: mutedTextColor,
+                                                fontSize: 12,
                                               ),
-                                            ),
-                                          ],
                                         ),
-                                        const SizedBox(height: 3),
-                                        Row(
-                                          children: [
-                                            const Icon(
-                                              Icons.location_on_rounded,
-                                              size: 14,
-                                              color: Color(0xFF8B5CF6),
-                                            ),
-                                            const SizedBox(width: 5),
-                                            Expanded(
-                                              child: Text(
-                                                exp.venueName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AppTypography.bodySmall.copyWith(
-                                                  color: const Color(0xFF8B5CF6),
-                                                  fontWeight: FontWeight.w600,
-                                                  fontSize: 12,
-                                                ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        exp.isOnline
+                                            ? Icons.videocam_outlined
+                                            : Icons.place_rounded,
+                                        size: 13.5,
+                                        color: isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple,
+                                      ),
+                                      const SizedBox(width: 5),
+                                      Expanded(
+                                        child: Text(
+                                          locationLabel,
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                                color: isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple,
+                                                fontWeight: FontWeight.w600,
+                                                fontSize: 12,
                                               ),
-                                            ),
-                                          ],
                                         ),
-                                      ],
-                                    ),
+                                      ),
+                                    ],
                                   ),
                                 ],
                               ),
                             ),
-
-                            const SizedBox(height: 22),
-
-                            // Section: Your Intent
-                            Text(
-                              'Your Intent',
-                              style: AppTypography.titleSmall.copyWith(
-                                fontWeight: FontWeight.w800,
-                                fontSize: 16.5,
-                                color: primaryTextColor,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Select one or more (Primary first)',
-                              style: AppTypography.bodySmall.copyWith(
-                                color: mutedTextColor,
-                                fontSize: 12.5,
-                              ),
-                            ),
-                            const SizedBox(height: 16),
-
-                            // Intent Stadium Chips Grid (Image 6)
-                            GridView.builder(
-                              shrinkWrap: true,
-                              physics: const NeverScrollableScrollPhysics(),
-                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                                crossAxisCount: 2,
-                                childAspectRatio: 2.85,
-                                crossAxisSpacing: 10,
-                                mainAxisSpacing: 10,
-                              ),
-                              itemCount: _intentOptions.length,
-                              itemBuilder: (context, index) {
-                                final opt = _intentOptions[index];
-                                final name = opt['name'] as String;
-                                final isSelected = _selectedIntents.contains(name);
-
-                                return GestureDetector(
-                                  onTap: () {
-                                    HapticFeedback.selectionClick();
-                                    setState(() {
-                                      if (isSelected) {
-                                        if (_selectedIntents.length > 1) {
-                                          _selectedIntents.remove(name);
-                                        }
-                                      } else {
-                                        _selectedIntents.add(name);
-                                      }
-                                    });
-                                  },
-                                  child: AnimatedContainer(
-                                    duration: const Duration(milliseconds: 200),
-                                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                                    decoration: BoxDecoration(
-                                      gradient: isSelected ? AppColors.sunsetCtaGradient : null,
-                                      color: isSelected ? null : cardBg,
-                                      borderRadius: BorderRadius.circular(24),
-                                      border: isSelected
-                                          ? null
-                                          : Border.all(
-                                              color: borderColor,
-                                              width: 1.1,
-                                            ),
-                                      boxShadow: isSelected
-                                          ? [
-                                              BoxShadow(
-                                                color: const Color(0xFFFF5A78).withValues(alpha: 0.38),
-                                                blurRadius: 14,
-                                                offset: const Offset(0, 4),
-                                              ),
-                                            ]
-                                          : [
-                                              BoxShadow(
-                                                color: Colors.black.withValues(alpha: 0.025),
-                                                blurRadius: 6,
-                                                offset: const Offset(0, 2),
-                                              ),
-                                            ],
-                                    ),
-                                    child: Row(
-                                      mainAxisAlignment: MainAxisAlignment.center,
-                                      children: [
-                                        Icon(
-                                          opt['icon'] as IconData,
-                                          size: 18,
-                                          color: isSelected
-                                              ? Colors.white
-                                              : const Color(0xFF8B5CF6),
-                                        ),
-                                        const SizedBox(width: 8),
-                                        Flexible(
-                                          child: Text(
-                                            name,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style: TextStyle(
-                                              fontSize: 12.5,
-                                              fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
-                                              color: isSelected ? Colors.white : primaryTextColor,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                  ),
-                                );
-                              },
-                            ),
-
-                            const SizedBox(height: 36),
-
-                            // Confirm Join Button (Image 6)
-                            GestureDetector(
-                              onTap: _isSubmitting ? null : _handleConfirm,
-                              child: Container(
-                                height: 54,
-                                alignment: Alignment.center,
-                                decoration: BoxDecoration(
-                                  gradient: AppColors.sunsetCtaGradient,
-                                  borderRadius: BorderRadius.circular(28),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFFFF5A78).withValues(alpha: 0.42),
-                                      blurRadius: 20,
-                                      offset: const Offset(0, 6),
-                                    ),
-                                  ],
-                                ),
-                                child: _isSubmitting
-                                    ? const SizedBox(
-                                        width: 22,
-                                        height: 22,
-                                        child: CircularProgressIndicator(
-                                          strokeWidth: 2.5,
-                                          color: Colors.white,
-                                        ),
-                                      )
-                                    : Row(
-                                        mainAxisAlignment: MainAxisAlignment.center,
-                                        children: [
-                                          Text(
-                                            'Confirm Join',
-                                            style: AppTypography.labelLarge.copyWith(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 16,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 6),
-                                          const Icon(
-                                            Icons.arrow_forward_rounded,
-                                            color: Colors.white,
-                                            size: 19,
-                                          ),
-                                        ],
-                                      ),
-                              ),
-                            ),
-
-                            const SizedBox(height: 14),
-                            Center(
-                              child: Text(
-                                'You can change your choice later',
-                                style: AppTypography.bodySmall.copyWith(
-                                  color: mutedTextColor,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
                           ],
                         ),
                       ),
-                    ),
+
+                      const SizedBox(height: 16),
+
+                      // Live Capacity & Status Info Card
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color:
+                              (isWaitlistAction
+                                      ? AppColors.softCoral
+                                      : AppColors.sage)
+                                  .withValues(alpha: isDark ? 0.16 : 0.42),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: borderColor),
+                        ),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(
+                              isWaitlistAction
+                                  ? Icons.hourglass_top_rounded
+                                  : Icons.people_outline_rounded,
+                              size: 20,
+                              color: isWaitlistAction
+                                  ? (isDark
+                                        ? AppColors.softCoral
+                                        : const Color(0xFFB45309))
+                                  : (isDark
+                                        ? AppColors.luminousMauve
+                                        : AppColors.deepPlum),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isWaitlistAction
+                                        ? 'Currently Full — Waitlist Open'
+                                        : (exp.hasUnlimitedCapacity
+                                              ? '${exp.currentParticipants} joined · Open spots available'
+                                              : '${exp.spotsLeft} ${exp.spotsLeft == 1 ? 'spot' : 'spots'} available (${exp.currentParticipants}/${exp.maxParticipants})'),
+                                    style: AppTypography.titleSmall.copyWith(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 3),
+                                  Text(
+                                    isWaitlistAction
+                                        ? 'We\'ll place you in the FIFO waitlist queue and promote you automatically if a spot opens up.'
+                                        : 'Your spot is confirmed directly with the server and you can cancel anytime from My Circles.',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: mutedTextColor,
+                                      fontSize: 12,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      // Read-only summary of user's saved profile intentions (never defaults to Dating)
+                      if (savedIntentions.isNotEmpty) ...[
+                        const SizedBox(height: 16),
+                        Text(
+                          'Using your saved profile intentions',
+                          style: AppTypography.labelMedium.copyWith(
+                            color: mutedTextColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 8,
+                          runSpacing: 8,
+                          children: savedIntentions.map((intent) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                              decoration: BoxDecoration(
+                                color: cardBg,
+                                borderRadius: BorderRadius.circular(18),
+                                border: Border.all(color: borderColor),
+                              ),
+                              child: Text(
+                                intent,
+                                style: AppTypography.labelSmall.copyWith(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            );
+                          }).toList(),
+                        ),
+                      ],
+
+                      if (_errorMessage != null) ...[
+                        const SizedBox(height: 16),
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: AppColors.error.withValues(alpha: 0.10),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(
+                              color: AppColors.error.withValues(alpha: 0.40),
+                            ),
+                          ),
+                          child: Row(
+                            children: [
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                color: AppColors.error,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  _errorMessage!,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+
+                      const SizedBox(height: 24),
+
+                      // Confirm Join / Waitlist / Retry CTA Button
+                      GestureDetector(
+                        onTap: _isSubmitting ? null : _handleConfirm,
+                        child: Container(
+                          height: 54,
+                          alignment: Alignment.center,
+                          decoration: BoxDecoration(
+                            gradient: AppColors.sunsetCtaGradient,
+                            borderRadius: BorderRadius.circular(28),
+                            boxShadow: [
+                              BoxShadow(
+                                color: const Color(
+                                  0xFFFF5A78,
+                                ).withValues(alpha: 0.38),
+                                blurRadius: 20,
+                                offset: const Offset(0, 6),
+                              ),
+                            ],
+                          ),
+                          child: _isSubmitting
+                              ? const SizedBox(
+                                  width: 22,
+                                  height: 22,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2.5,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      _errorMessage != null
+                                          ? 'Try Again'
+                                          : (isWaitlistAction
+                                                ? 'Confirm Waitlist'
+                                                : 'Confirm Join'),
+                                      style: AppTypography.labelLarge.copyWith(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 16,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.arrow_forward_rounded,
+                                      color: Colors.white,
+                                      size: 19,
+                                    ),
+                                  ],
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 12),
+                      Center(
+                        child: Text(
+                          exp.cancellationPolicy != null &&
+                                  exp.cancellationPolicy!.isNotEmpty
+                              ? exp.cancellationPolicy!
+                              : 'You can cancel your reservation anytime in My Circles.',
+                          textAlign: TextAlign.center,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: mutedTextColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                    ],
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildSuccessView(
+  Widget _buildResultView(
     bool isDark,
     ExperienceModel exp,
+    JoinExperienceResult result,
     Color primaryTextColor,
     Color mutedTextColor,
   ) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 32),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 84,
-              height: 84,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: AppColors.purpleGradient,
-                boxShadow: [
-                  BoxShadow(
-                    color: AppColors.primaryPurple.withValues(alpha: 0.45),
-                    blurRadius: 28,
-                    offset: const Offset(0, 8),
-                  ),
-                ],
-              ),
-              child: const Icon(Icons.check_rounded, color: Colors.white, size: 48),
+    final isWaitlisted = result.isWaitlisted;
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 28),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 82,
+            height: 82,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              gradient: isWaitlisted
+                  ? const LinearGradient(
+                      colors: [Color(0xFFF59E0B), Color(0xFFEA580C)],
+                    )
+                  : AppColors.purpleGradient,
+              boxShadow: [
+                BoxShadow(
+                  color:
+                      (isWaitlisted
+                              ? const Color(0xFFF59E0B)
+                              : AppColors.primaryPurple)
+                          .withValues(alpha: 0.40),
+                  blurRadius: 24,
+                  offset: const Offset(0, 8),
+                ),
+              ],
             ),
-            const SizedBox(height: 24),
-            Text(
-              'You\'re In!',
-              style: AppTypography.headlineMedium.copyWith(
-                color: primaryTextColor,
-                fontWeight: FontWeight.w800,
+            child: Icon(
+              isWaitlisted ? Icons.hourglass_top_rounded : Icons.check_rounded,
+              color: Colors.white,
+              size: 44,
+            ),
+          ),
+          const SizedBox(height: 22),
+          Text(
+            result.userMessage,
+            textAlign: TextAlign.center,
+            style: AppTypography.headlineMedium.copyWith(
+              color: primaryTextColor,
+              fontWeight: FontWeight.w800,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            isWaitlisted
+                ? 'We\'ve added you to the waitlist for "${exp.title}". If a spot opens, you\'ll be promoted automatically in order.'
+                : 'Your spot for "${exp.title}" is confirmed. Manage your reservation anytime in My Circles.',
+            textAlign: TextAlign.center,
+            style: AppTypography.bodyMedium.copyWith(
+              color: mutedTextColor,
+              fontSize: 14,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(result),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: isDark
+                    ? AppColors.luminousMauve
+                    : AppColors.deepPlum,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(26),
+                ),
+              ),
+              child: const Text(
+                'Done',
+                style: TextStyle(fontWeight: FontWeight.w800, fontSize: 15),
               ),
             ),
-            const SizedBox(height: 10),
-            Text(
-              'Your RSVP for "${exp.title}" is confirmed. Enjoy the meetup!',
-              textAlign: TextAlign.center,
-              style: AppTypography.bodyMedium.copyWith(
-                color: mutedTextColor,
-                fontSize: 14,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

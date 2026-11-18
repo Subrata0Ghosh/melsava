@@ -3,7 +3,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:melsava/features/profile/presentation/settings_screen.dart';
 
 void main() {
-  testWidgets('FaqAccordion expands tapped item and auto-collapses others', (tester) async {
+  testWidgets('FaqAccordion expands tapped item and auto-collapses others', (
+    tester,
+  ) async {
     final testFaqs = [
       {'q': 'Question 1', 'a': 'Answer 1'},
       {'q': 'Question 2', 'a': 'Answer 2'},

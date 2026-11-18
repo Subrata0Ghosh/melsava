@@ -9,14 +9,16 @@ import 'package:flutter/material.dart';
 /// activities, and user profile avatars to guarantee that broken image icons
 /// or empty boxes never appear anywhere in the app.
 class AppFallbackAssets {
-  static const String defaultExperienceCover = 'assets/images/live_meetup_cafe_bg.png';
+  static const String defaultExperienceCover =
+      'assets/images/live_meetup_cafe_bg.png';
   static const String defaultProfileAvatar = 'assets/images/sneha_avatar.png';
   static const String sportsCover = 'assets/images/badminton_court_play.png';
   static const String outdoorsCover = 'assets/images/hikers_mountain_trek.png';
   static const String coffeeCover = 'assets/images/coffee_latte_art.png';
   static const String foodCover = 'assets/images/sourdough_bread_art.png';
   static const String wellnessCover = 'assets/images/morning_yoga_zen.png';
-  static const String musicCultureCover = 'assets/images/concert_party_crowd.png';
+  static const String musicCultureCover =
+      'assets/images/concert_party_crowd.png';
 
   static const List<String> avatarPool = [
     'assets/images/sneha_avatar.png',
@@ -32,6 +34,36 @@ class AppFallbackAssets {
       return defaultExperienceCover;
     }
     final lower = categoryOrTitle.toLowerCase();
+
+    // 1. High-specificity activity themes: Meditation & Wellness
+    if (lower.contains('well') ||
+        lower.contains('yoga') ||
+        lower.contains('zen') ||
+        lower.contains('mindful') ||
+        lower.contains('meditat') ||
+        lower.contains('sound bath')) {
+      return wellnessCover;
+    }
+
+    // 2. High-specificity: Photography & Scenic Walks
+    if (lower.contains('photo') ||
+        lower.contains('camera') ||
+        lower.contains('sunset') ||
+        lower.contains('scenic')) {
+      return 'assets/images/splash_scenic_backdrop.png';
+    }
+
+    // 3. High-specificity: Outdoors & Nature
+    if (lower.contains('outdoor') ||
+        lower.contains('trek') ||
+        lower.contains('hike') ||
+        lower.contains('camp') ||
+        lower.contains('mountain') ||
+        lower.contains('nature')) {
+      return outdoorsCover;
+    }
+
+    // 4. Sports & Fitness
     if (lower.contains('sport') ||
         lower.contains('cycl') ||
         lower.contains('bike') ||
@@ -42,22 +74,8 @@ class AppFallbackAssets {
         lower.contains('gym')) {
       return sportsCover;
     }
-    if (lower.contains('outdoor') ||
-        lower.contains('trek') ||
-        lower.contains('hike') ||
-        lower.contains('camp') ||
-        lower.contains('mountain') ||
-        lower.contains('nature')) {
-      return outdoorsCover;
-    }
-    if (lower.contains('coffee') ||
-        lower.contains('cafe') ||
-        lower.contains('social') ||
-        lower.contains('tea') ||
-        lower.contains('chat') ||
-        lower.contains('book')) {
-      return coffeeCover;
-    }
+
+    // 5. Food & Baking
     if (lower.contains('food') ||
         lower.contains('baking') ||
         lower.contains('bake') ||
@@ -65,16 +83,21 @@ class AppFallbackAssets {
         lower.contains('culinary') ||
         lower.contains('dine') ||
         lower.contains('dinner') ||
-        lower.contains('drink')) {
+        lower.contains('sourdough')) {
       return foodCover;
     }
-    if (lower.contains('well') ||
-        lower.contains('yoga') ||
-        lower.contains('zen') ||
-        lower.contains('mindful') ||
-        lower.contains('meditat')) {
-      return wellnessCover;
+
+    // 6. Coffee, Cafes & Tasting
+    if (lower.contains('coffee') ||
+        lower.contains('cafe') ||
+        lower.contains('tea') ||
+        lower.contains('latte') ||
+        lower.contains('roaster') ||
+        lower.contains('tasting')) {
+      return coffeeCover;
     }
+
+    // 7. Art & Music
     if (lower.contains('art') ||
         lower.contains('music') ||
         lower.contains('concert') ||
@@ -84,6 +107,14 @@ class AppFallbackAssets {
         lower.contains('open mic')) {
       return musicCultureCover;
     }
+
+    // 8. General social / reading
+    if (lower.contains('social') ||
+        lower.contains('chat') ||
+        lower.contains('book')) {
+      return coffeeCover;
+    }
+
     return defaultExperienceCover;
   }
 
@@ -166,7 +197,10 @@ class AppSmartImage extends StatelessWidget {
           isAvatar ? Icons.person_rounded : Icons.image_rounded,
           color: const Color(0xFF6E32EC),
           size: (width != null && height != null)
-              ? (width! < height! ? width! * 0.45 : height! * 0.45).clamp(16.0, 48.0)
+              ? (width! < height! ? width! * 0.45 : height! * 0.45).clamp(
+                  16.0,
+                  48.0,
+                )
               : 24.0,
         ),
       ),
@@ -185,12 +219,9 @@ class AppSmartImage extends StatelessWidget {
   Widget build(BuildContext context) {
     final effectiveFallback = _resolveEffectiveFallback();
 
-    final fallbackPlaceholder = placeholder ??
-        Container(
-          width: width,
-          height: height,
-          color: const Color(0xFFF3EDF8),
-        );
+    final fallbackPlaceholder =
+        placeholder ??
+        Container(width: width, height: height, color: const Color(0xFFF3EDF8));
 
     Widget content;
     final path = imagePath?.trim();
@@ -213,12 +244,12 @@ class AppSmartImage extends StatelessWidget {
         height: height,
         fit: fit,
         placeholder: (context, url) => fallbackPlaceholder,
-        errorWidget: (context, url, error) =>
-            _buildFallback(effectiveFallback),
+        errorWidget: (context, url, error) => _buildFallback(effectiveFallback),
       );
     } else if (_isLocalFilePath(path)) {
-      final cleanPath =
-          path.startsWith('file://') ? path.replaceFirst('file://', '') : path;
+      final cleanPath = path.startsWith('file://')
+          ? path.replaceFirst('file://', '')
+          : path;
       final file = File(cleanPath);
       if (file.existsSync()) {
         content = Image.file(
@@ -237,10 +268,7 @@ class AppSmartImage extends StatelessWidget {
     }
 
     if (borderRadius != null) {
-      return ClipRRect(
-        borderRadius: borderRadius!,
-        child: content,
-      );
+      return ClipRRect(borderRadius: borderRadius!, child: content);
     }
 
     return content;

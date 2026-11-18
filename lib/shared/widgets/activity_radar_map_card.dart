@@ -35,9 +35,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
   bool _isLoading = true;
 
   LatLng get _cityCenter => LatLng(
-        widget.location.lat != 0.0 ? widget.location.lat : 19.0760,
-        widget.location.lon != 0.0 ? widget.location.lon : 72.8777,
-      );
+    widget.location.lat != 0.0 ? widget.location.lat : 19.0760,
+    widget.location.lon != 0.0 ? widget.location.lon : 72.8777,
+  );
 
   @override
   void initState() {
@@ -107,7 +107,8 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
   Future<void> _recenter() async {
     HapticFeedback.lightImpact();
     _mapController.move(_cityCenter, 14.5);
-    final gpsLoc = await WorldwideLocationService.instance.getCurrentGpsLocation();
+    final gpsLoc = await WorldwideLocationService.instance
+        .getCurrentGpsLocation();
     if (mounted && gpsLoc != null) {
       _mapController.move(LatLng(gpsLoc.lat, gpsLoc.lon), 15.0);
     }
@@ -120,8 +121,12 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
         ? _venues[_selectedVenueIndex.clamp(0, _venues.length - 1)]
         : null;
 
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     // OpenStreetMap official tiles: 100% Free, Zero Sign-In, Zero API key required, Zero watermarks!
     const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
@@ -158,7 +163,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                   // Ambient baseline canvas background (matching theme while tiles load)
                   Positioned.fill(
                     child: ColoredBox(
-                      color: isDark ? const Color(0xFF130E1F) : const Color(0xFFF3EFEA),
+                      color: isDark
+                          ? const Color(0xFF130E1F)
+                          : const Color(0xFFF3EFEA),
                     ),
                   ),
 
@@ -171,7 +178,8 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                       minZoom: 11.0,
                       maxZoom: 18.0,
                       interactionOptions: const InteractionOptions(
-                        flags: InteractiveFlag.pinchZoom |
+                        flags:
+                            InteractiveFlag.pinchZoom |
                             InteractiveFlag.drag |
                             InteractiveFlag.doubleTapZoom,
                       ),
@@ -192,7 +200,7 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                 -0.22, -0.45, -0.10, 0.0, 220.0,
                                 -0.22, -0.45, -0.10, 0.0, 210.0,
                                 -0.15, -0.35, -0.10, 0.0, 238.0,
-                                 0.00,  0.00,  0.00, 1.0,   0.0,
+                                0.00, 0.00, 0.00, 1.0, 0.0,
                               ]),
                               child: tileWidget,
                             );
@@ -205,8 +213,10 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                       AnimatedBuilder(
                         animation: _pulseController,
                         builder: (context, child) {
-                          final pulseRadius = 180.0 + (_pulseController.value * 280.0);
-                          final pulseAlpha = (1.0 - _pulseController.value) * 0.22;
+                          final pulseRadius =
+                              180.0 + (_pulseController.value * 280.0);
+                          final pulseAlpha =
+                              (1.0 - _pulseController.value) * 0.22;
 
                           return CircleLayer(
                             circles: [
@@ -215,14 +225,16 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                 point: _cityCenter,
                                 radius: 260,
                                 useRadiusInMeter: true,
-                                color: (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
-                                    .withValues(alpha: 0.06),
-                                borderColor: (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
-                                    .withValues(alpha: 0.25),
+                                color:
+                                    (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: 0.06),
+                                borderColor:
+                                    (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: 0.25),
                                 borderStrokeWidth: 1.2,
                               ),
                               // Expanding pulse ripple
@@ -230,14 +242,16 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                 point: _cityCenter,
                                 radius: pulseRadius,
                                 useRadiusInMeter: true,
-                                color: (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
-                                    .withValues(alpha: pulseAlpha),
-                                borderColor: (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
-                                    .withValues(alpha: pulseAlpha * 1.5),
+                                color:
+                                    (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: pulseAlpha),
+                                borderColor:
+                                    (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: pulseAlpha * 1.5),
                                 borderStrokeWidth: 1.5,
                               ),
                             ],
@@ -251,8 +265,12 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                           markers: List.generate(_venues.length, (index) {
                             final venue = _venues[index];
                             final pos = LatLng(
-                              venue.lat != 0.0 ? venue.lat : _cityCenter.latitude,
-                              venue.lon != 0.0 ? venue.lon : _cityCenter.longitude,
+                              venue.lat != 0.0
+                                  ? venue.lat
+                                  : _cityCenter.latitude,
+                              venue.lon != 0.0
+                                  ? venue.lon
+                                  : _cityCenter.longitude,
                             );
 
                             return Marker(
@@ -288,8 +306,11 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                 vertical: 6,
                               ),
                               decoration: BoxDecoration(
-                                color: (isDark ? const Color(0xFF130F1F) : Colors.white)
-                                    .withValues(alpha: 0.88),
+                                color:
+                                    (isDark
+                                            ? const Color(0xFF130F1F)
+                                            : Colors.white)
+                                        .withValues(alpha: 0.88),
                                 borderRadius: BorderRadius.circular(16),
                                 border: Border.all(
                                   color: isDark
@@ -340,16 +361,18 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                   vertical: 6,
                                 ),
                                 decoration: BoxDecoration(
-                                  color: (isDark
-                                          ? AppColors.brightViolet
-                                          : AppColors.primaryPurple)
-                                      .withValues(alpha: 0.20),
+                                  color:
+                                      (isDark
+                                              ? AppColors.brightViolet
+                                              : AppColors.primaryPurple)
+                                          .withValues(alpha: 0.20),
                                   borderRadius: BorderRadius.circular(16),
                                   border: Border.all(
-                                    color: (isDark
-                                            ? AppColors.brightViolet
-                                            : AppColors.primaryPurple)
-                                        .withValues(alpha: 0.40),
+                                    color:
+                                        (isDark
+                                                ? AppColors.brightViolet
+                                                : AppColors.primaryPurple)
+                                            .withValues(alpha: 0.40),
                                   ),
                                 ),
                                 child: Row(
@@ -424,7 +447,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                   // Loading indicator
                   if (_isLoading)
                     Container(
-                      color: (isDark ? Colors.black : Colors.white).withValues(alpha: 0.4),
+                      color: (isDark ? Colors.black : Colors.white).withValues(
+                        alpha: 0.4,
+                      ),
                       child: const Center(
                         child: CircularProgressIndicator(
                           strokeWidth: 2.5,
@@ -445,12 +470,19 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                 },
                 child: Container(
                   height: 84,
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
-                    color: isDark ? const Color(0xFF1E182D) : const Color(0xFFFAF7F2),
+                    color: isDark
+                        ? const Color(0xFF1E182D)
+                        : const Color(0xFFFAF7F2),
                     border: Border(
                       top: BorderSide(
-                        color: isDark ? AppColors.darkBorder : AppColors.divider,
+                        color: isDark
+                            ? AppColors.darkBorder
+                            : AppColors.divider,
                         width: 0.8,
                       ),
                     ),
@@ -464,7 +496,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
-                              isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
                               AppColors.vividCoral,
                             ],
                             begin: Alignment.topLeft,
@@ -473,7 +507,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                           borderRadius: BorderRadius.circular(14),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                              color: AppColors.primaryPurple.withValues(
+                                alpha: 0.3,
+                              ),
                               blurRadius: 8,
                               offset: const Offset(0, 3),
                             ),
@@ -515,8 +551,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                                     vertical: 2,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.mintAccent
-                                        .withValues(alpha: 0.15),
+                                    color: AppColors.mintAccent.withValues(
+                                      alpha: 0.15,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -630,8 +667,11 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                     height: 44,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                          .withValues(alpha: 0.35 * pulseAlpha),
+                      color:
+                          (isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple)
+                              .withValues(alpha: 0.35 * pulseAlpha),
                     ),
                   ),
                 ),
@@ -643,18 +683,24 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                 height: isSelected ? 40 : 34,
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? (isDark ? const Color(0xFF281E38) : const Color(0xFF2A1C3E))
+                      ? (isDark
+                            ? const Color(0xFF281E38)
+                            : const Color(0xFF2A1C3E))
                       : (isDark ? const Color(0xFF282038) : Colors.white),
                   shape: BoxShape.circle,
                   border: Border.all(
                     color: isSelected
                         ? Colors.white
-                        : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                        : (isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple),
                     width: isSelected ? 2.2 : 1.4,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isSelected ? 0.40 : 0.22),
+                      color: Colors.black.withValues(
+                        alpha: isSelected ? 0.40 : 0.22,
+                      ),
                       blurRadius: isSelected ? 10 : 6,
                       offset: const Offset(0, 3),
                     ),
@@ -671,7 +717,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                     size: isSelected ? 19 : 16,
                     color: isSelected
                         ? Colors.white
-                        : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                        : (isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple),
                   ),
                 ),
               ),
@@ -701,7 +749,9 @@ class _ActivityRadarMapCardState extends State<ActivityRadarMapCard>
                   .withValues(alpha: 0.88),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(
-                color: isDark ? Colors.white.withValues(alpha: 0.15) : AppColors.divider,
+                color: isDark
+                    ? Colors.white.withValues(alpha: 0.15)
+                    : AppColors.divider,
                 width: 0.8,
               ),
               boxShadow: [

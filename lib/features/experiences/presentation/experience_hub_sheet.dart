@@ -59,10 +59,12 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
     final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
 
     final sheetBg = isDark ? const Color(0xFF130F1E) : AppColors.white;
-    final primaryTextColor =
-        isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor =
-        isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.warmIvory;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
@@ -72,8 +74,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
     final String countdownLabel = difference.inDays > 0
         ? 'In ${difference.inDays} ${difference.inDays == 1 ? "day" : "days"}'
         : (difference.inHours > 0
-            ? 'In ${difference.inHours} hrs'
-            : 'Starting Soon');
+              ? 'In ${difference.inHours} hrs'
+              : 'Starting Soon');
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.90,
@@ -102,8 +104,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFFEF3C7)
-                        .withValues(alpha: isDark ? 0.08 : 0.45),
+                    const Color(
+                      0xFFFEF3C7,
+                    ).withValues(alpha: isDark ? 0.08 : 0.45),
                     Colors.transparent,
                   ],
                 ),
@@ -120,8 +123,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFDDD6FE)
-                        .withValues(alpha: isDark ? 0.10 : 0.35),
+                    const Color(
+                      0xFFDDD6FE,
+                    ).withValues(alpha: isDark ? 0.10 : 0.35),
                     Colors.transparent,
                   ],
                 ),
@@ -138,8 +142,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                 shape: BoxShape.circle,
                 gradient: RadialGradient(
                   colors: [
-                    const Color(0xFFD1FAE5)
-                        .withValues(alpha: isDark ? 0.08 : 0.32),
+                    const Color(
+                      0xFFD1FAE5,
+                    ).withValues(alpha: isDark ? 0.08 : 0.32),
                     Colors.transparent,
                   ],
                 ),
@@ -220,10 +225,11 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.mauve)
-                                  .withValues(alpha: 0.15),
+                              color:
+                                  (isDark
+                                          ? AppColors.luminousMauve
+                                          : AppColors.mauve)
+                                      .withValues(alpha: 0.15),
                               shape: BoxShape.circle,
                             ),
                             child: Icon(
@@ -300,11 +306,11 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                             colors: isDark
                                 ? [
                                     const Color(0xFF281E38),
-                                    const Color(0xFF191325)
+                                    const Color(0xFF191325),
                                   ]
                                 : [
                                     AppColors.creamElevated,
-                                    AppColors.warmIvory
+                                    AppColors.warmIvory,
                                   ],
                             begin: Alignment.topLeft,
                             end: Alignment.bottomRight,
@@ -318,7 +324,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(
-                                  alpha: isDark ? 0.35 : 0.05),
+                                alpha: isDark ? 0.35 : 0.05,
+                              ),
                               blurRadius: 16,
                               offset: const Offset(0, 4),
                             ),
@@ -331,10 +338,13 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                               children: [
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 9, vertical: 4),
+                                    horizontal: 9,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.mintAccent
-                                        .withValues(alpha: 0.2),
+                                    color: AppColors.mintAccent.withValues(
+                                      alpha: 0.2,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
@@ -349,12 +359,15 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                 const SizedBox(width: 8),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 8, vertical: 4),
+                                    horizontal: 8,
+                                    vertical: 4,
+                                  ),
                                   decoration: BoxDecoration(
-                                    color: (isDark
-                                            ? AppColors.softCoral
-                                            : AppColors.vividCoral)
-                                        .withValues(alpha: 0.15),
+                                    color:
+                                        (isDark
+                                                ? AppColors.softCoral
+                                                : AppColors.vividCoral)
+                                            .withValues(alpha: 0.15),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Row(
@@ -370,14 +383,14 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                       const SizedBox(width: 4),
                                       Text(
                                         countdownLabel,
-                                        style:
-                                            AppTypography.labelSmall.copyWith(
-                                          color: isDark
-                                              ? AppColors.softCoral
-                                              : AppColors.vividCoral,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 10,
-                                        ),
+                                        style: AppTypography.labelSmall
+                                            .copyWith(
+                                              color: isDark
+                                                  ? AppColors.softCoral
+                                                  : AppColors.vividCoral,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 10,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -436,41 +449,51 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                   onTap: () {
                                     HapticFeedback.lightImpact();
                                     _showVenueMapDialog(
-                                        context, exp, isDark, primaryTextColor);
+                                      context,
+                                      exp,
+                                      isDark,
+                                      primaryTextColor,
+                                    );
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 8, vertical: 4),
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: (isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple)
-                                          .withValues(alpha: 0.12),
+                                      color:
+                                          (isDark
+                                                  ? AppColors.brightViolet
+                                                  : AppColors.primaryPurple)
+                                              .withValues(alpha: 0.12),
                                       borderRadius: BorderRadius.circular(8),
                                       border: Border.all(
-                                        color: (isDark
-                                                ? AppColors.brightViolet
-                                                : AppColors.primaryPurple)
-                                            .withValues(alpha: 0.35),
+                                        color:
+                                            (isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple)
+                                                .withValues(alpha: 0.35),
                                         width: 0.8,
                                       ),
                                     ),
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text('🗺️',
-                                            style: TextStyle(fontSize: 11)),
+                                        const Text(
+                                          '🗺️',
+                                          style: TextStyle(fontSize: 11),
+                                        ),
                                         const SizedBox(width: 4),
                                         Text(
                                           'Spot Map',
                                           style: AppTypography.labelSmall
                                               .copyWith(
-                                            color: isDark
-                                                ? AppColors.brightViolet
-                                                : AppColors.primaryPurple,
-                                            fontWeight: FontWeight.w700,
-                                            fontSize: 10.5,
-                                          ),
+                                                color: isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple,
+                                                fontWeight: FontWeight.w700,
+                                                fontSize: 10.5,
+                                              ),
                                         ),
                                       ],
                                     ),
@@ -499,7 +522,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                        'Event added to calendar: ${exp.title}'),
+                                      'Event added to calendar: ${exp.title}',
+                                    ),
                                     duration: const Duration(seconds: 2),
                                     behavior: SnackBarBehavior.floating,
                                   ),
@@ -526,7 +550,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text(
-                                        'Meetup invitation link copied to clipboard!'),
+                                      'Meetup invitation link copied to clipboard!',
+                                    ),
                                     duration: Duration(seconds: 2),
                                     behavior: SnackBarBehavior.floating,
                                   ),
@@ -549,8 +574,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.w800,
                               fontSize: 11,
-                              color:
-                                  isDark ? AppColors.softCoral : AppColors.mauve,
+                              color: isDark
+                                  ? AppColors.softCoral
+                                  : AppColors.mauve,
                             ),
                           ),
                           Text(
@@ -573,7 +599,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                           boxShadow: [
                             BoxShadow(
                               color: Colors.black.withValues(
-                                  alpha: isDark ? 0.30 : 0.04),
+                                alpha: isDark ? 0.30 : 0.04,
+                              ),
                               blurRadius: 12,
                               offset: const Offset(0, 3),
                             ),
@@ -599,15 +626,17 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                             Divider(height: 20, color: borderColor),
 
                             // Attendee rows
-                            for (int i = 0;
-                                i < exp.attendeeAvatars.length;
-                                i++) ...[
+                            for (
+                              int i = 0;
+                              i < exp.attendeeAvatars.length;
+                              i++
+                            ) ...[
                               _buildParticipantRow(
                                 name: i == 0
                                     ? 'Rhea Sen'
                                     : (i == 1
-                                        ? 'Aarav Mehta'
-                                        : 'You (Confirmed)'),
+                                          ? 'Aarav Mehta'
+                                          : 'You (Confirmed)'),
                                 avatarUrl: exp.attendeeAvatars[i],
                                 tag: i == 2 ? 'You' : 'Attendee',
                                 tagColor: i == 2
@@ -616,8 +645,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                 bio: i == 0
                                     ? 'Graphic designer who loves weekend treks, filter coffee, and acoustic guitar.'
                                     : (i == 1
-                                        ? 'Software engineer & amateur landscape photographer.'
-                                        : 'You! Attending in-person with confirmed reservation.'),
+                                          ? 'Software engineer & amateur landscape photographer.'
+                                          : 'You! Attending in-person with confirmed reservation.'),
                                 isHost: false,
                                 isDark: isDark,
                                 primaryTextColor: primaryTextColor,
@@ -642,24 +671,27 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.w800,
                               fontSize: 11,
-                              color:
-                                  isDark ? AppColors.softCoral : AppColors.mauve,
+                              color: isDark
+                                  ? AppColors.softCoral
+                                  : AppColors.mauve,
                             ),
                           ),
                           GestureDetector(
                             onTap: () {
                               HapticFeedback.lightImpact();
                               setState(() {
-                                _selectedPromptIndex = (_selectedPromptIndex +
-                                        1) %
+                                _selectedPromptIndex =
+                                    (_selectedPromptIndex + 1) %
                                     _icebreakerPrompts.length;
                               });
                             },
                             child: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Text('🎲',
-                                    style: TextStyle(fontSize: 11)),
+                                const Text(
+                                  '🎲',
+                                  style: TextStyle(fontSize: 11),
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   'Shuffle Next',
@@ -699,26 +731,27 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                             decoration: BoxDecoration(
                               color: isSelected
                                   ? (isDark
-                                      ? AppColors.luminousMauve
-                                      : AppColors.mauve)
-                                      .withValues(alpha: isDark ? 0.20 : 0.10)
+                                            ? AppColors.luminousMauve
+                                            : AppColors.mauve)
+                                        .withValues(alpha: isDark ? 0.20 : 0.10)
                                   : cardBg,
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
                                 color: isSelected
                                     ? (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
                                     : borderColor,
                                 width: isSelected ? 1.6 : 0.8,
                               ),
                               boxShadow: isSelected
                                   ? [
                                       BoxShadow(
-                                        color: (isDark
-                                                ? AppColors.brightViolet
-                                                : AppColors.primaryPurple)
-                                            .withValues(alpha: 0.18),
+                                        color:
+                                            (isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple)
+                                                .withValues(alpha: 0.18),
                                         blurRadius: 10,
                                         offset: const Offset(0, 3),
                                       ),
@@ -732,8 +765,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                   size: 19,
                                   color: isSelected
                                       ? (isDark
-                                          ? AppColors.brightViolet
-                                          : AppColors.primaryPurple)
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
                                       : mutedTextColor,
                                 ),
                                 const SizedBox(width: 12),
@@ -754,13 +787,18 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                                   GestureDetector(
                                     onTap: () {
                                       HapticFeedback.lightImpact();
-                                      Clipboard.setData(ClipboardData(
-                                          text: _icebreakerPrompts[index]));
-                                      ScaffoldMessenger.of(context)
-                                          .showSnackBar(
+                                      Clipboard.setData(
+                                        ClipboardData(
+                                          text: _icebreakerPrompts[index],
+                                        ),
+                                      );
+                                      ScaffoldMessenger.of(
+                                        context,
+                                      ).showSnackBar(
                                         const SnackBar(
                                           content: Text(
-                                              'Icebreaker copied to clipboard!'),
+                                            'Icebreaker copied to clipboard!',
+                                          ),
                                           duration: Duration(seconds: 2),
                                           behavior: SnackBarBehavior.floating,
                                         ),
@@ -789,10 +827,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                       Container(
                         padding: const EdgeInsets.all(14),
                         decoration: BoxDecoration(
-                          color: (isDark
-                                  ? AppColors.darkSurface
-                                  : AppColors.sage)
-                              .withValues(alpha: 0.35),
+                          color:
+                              (isDark ? AppColors.darkSurface : AppColors.sage)
+                                  .withValues(alpha: 0.35),
                           borderRadius: BorderRadius.circular(16),
                           border: Border.all(color: borderColor),
                         ),
@@ -882,9 +919,7 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
             Text(
               label,
               style: AppTypography.labelSmall.copyWith(
-                color: isDark
-                    ? AppColors.darkTextPrimary
-                    : AppColors.deepPlum,
+                color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
                 fontWeight: FontWeight.w600,
                 fontSize: 11,
               ),
@@ -1165,14 +1200,18 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                    .withValues(alpha: 0.1),
+                color:
+                    (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                        .withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.check_circle_rounded,
-                      size: 16, color: Color(0xFF10B981)),
+                  const Icon(
+                    Icons.check_circle_rounded,
+                    size: 16,
+                    color: Color(0xFF10B981),
+                  ),
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
@@ -1196,16 +1235,19 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor:
-                  isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+              backgroundColor: isDark
+                  ? AppColors.brightViolet
+                  : AppColors.primaryPurple,
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               Navigator.pop(ctx);
-              Clipboard.setData(ClipboardData(
-                  text: '${exp.venueName}, ${exp.venueAddress}'));
+              Clipboard.setData(
+                ClipboardData(text: '${exp.venueName}, ${exp.venueAddress}'),
+              );
               ScaffoldMessenger.of(context).showSnackBar(
                 const SnackBar(
                   content: Text('Venue address copied to clipboard!'),
@@ -1229,7 +1271,11 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            const Icon(Icons.shield_rounded, color: Color(0xFF10B981), size: 24),
+            const Icon(
+              Icons.shield_rounded,
+              color: Color(0xFF10B981),
+              size: 24,
+            ),
             const SizedBox(width: 8),
             Text(
               'Safety & Guidelines',
@@ -1259,7 +1305,8 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
               backgroundColor: const Color(0xFF10B981),
               foregroundColor: Colors.white,
               shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12)),
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () => Navigator.pop(ctx),
             child: const Text('Understood'),

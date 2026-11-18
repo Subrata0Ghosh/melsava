@@ -62,10 +62,26 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   ];
 
   static const List<Map<String, dynamic>> _intentOptions = [
-    {'name': 'Friend', 'icon': Icons.people_alt_rounded, 'color': Color(0xFF6366F1)},
-    {'name': 'Dating', 'icon': Icons.favorite_rounded, 'color': Color(0xFFEC4899)},
-    {'name': 'Activity Partner', 'icon': Icons.extension_rounded, 'color': Color(0xFFF97316)},
-    {'name': 'Serious Relationship', 'icon': Icons.auto_awesome_rounded, 'color': Color(0xFF8B5CF6)},
+    {
+      'name': 'Friend',
+      'icon': Icons.people_alt_rounded,
+      'color': Color(0xFF6366F1),
+    },
+    {
+      'name': 'Dating',
+      'icon': Icons.favorite_rounded,
+      'color': Color(0xFFEC4899),
+    },
+    {
+      'name': 'Activity Partner',
+      'icon': Icons.extension_rounded,
+      'color': Color(0xFFF97316),
+    },
+    {
+      'name': 'Serious Relationship',
+      'icon': Icons.auto_awesome_rounded,
+      'color': Color(0xFF8B5CF6),
+    },
   ];
 
   static const List<String> _availableInterests = [
@@ -96,7 +112,8 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     _selectedIntent = user?.primaryIntent ?? 'Friend';
 
     _selectedInterests.addAll(
-      user?.interests ?? ['Specialty Coffee', 'Weekend Trekking', 'Morning Yoga'],
+      user?.interests ??
+          ['Specialty Coffee', 'Weekend Trekking', 'Morning Yoga'],
     );
   }
 
@@ -111,7 +128,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     HapticFeedback.lightImpact();
     try {
       final picker = ImagePicker();
-      final picked = await picker.pickImage(source: ImageSource.gallery, maxWidth: 600);
+      final picked = await picker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 600,
+      );
       if (picked != null) {
         setState(() => _selectedAvatar = picked.path);
       }
@@ -133,19 +153,16 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     setState(() => _isSaving = true);
 
     final currentUser = ref.read(currentUserProvider);
-    final updatedUser = (currentUser ??
-            AppUser(
-              id: 'user-local',
-              email: 'admin@melsava.com',
-            ))
-        .copyWith(
-      displayName: name,
-      avatarUrl: _selectedAvatar,
-      city: _selectedCity,
-      bio: _bioController.text.trim(),
-      primaryIntent: _selectedIntent,
-      interests: _selectedInterests.toList(),
-    );
+    final updatedUser =
+        (currentUser ?? AppUser(id: 'user-local', email: 'admin@melsava.com'))
+            .copyWith(
+              displayName: name,
+              avatarUrl: _selectedAvatar,
+              city: _selectedCity,
+              bio: _bioController.text.trim(),
+              primaryIntent: _selectedIntent,
+              interests: _selectedInterests.toList(),
+            );
 
     // Persist via Auth Repository & SharedPreferences
     await ref.read(authRepositoryProvider).updateProfile(updatedUser);
@@ -181,7 +198,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
             SizedBox(width: 10),
             Text(
               'Profile updated successfully! ✨',
-              style: TextStyle(fontWeight: FontWeight.w700, color: Colors.white),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: Colors.white,
+              ),
             ),
           ],
         ),
@@ -192,11 +212,17 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
     final sheetBg = isDark ? const Color(0xFF1A1329) : Colors.white;
     final cardBg = isDark ? const Color(0xFF241C38) : const Color(0xFFF8F6FD);
-    final borderColor = isDark ? const Color(0xFF382F4D) : const Color(0xFFE9E4F5);
+    final borderColor = isDark
+        ? const Color(0xFF382F4D)
+        : const Color(0xFFE9E4F5);
 
     return Container(
       height: MediaQuery.of(context).size.height * 0.88,
@@ -252,7 +278,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                 GestureDetector(
                   onTap: _isSaving ? null : _saveProfile,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 7),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 7,
+                    ),
                     decoration: BoxDecoration(
                       gradient: AppColors.sunsetCtaGradient,
                       borderRadius: BorderRadius.circular(18),
@@ -301,13 +330,18 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             border: Border.all(
-                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              color: isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
                               width: 3.0,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                                    .withValues(alpha: 0.25),
+                                color:
+                                    (isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple)
+                                        .withValues(alpha: 0.25),
                                 blurRadius: 18,
                                 offset: const Offset(0, 4),
                               ),
@@ -333,7 +367,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                               decoration: BoxDecoration(
                                 gradient: AppColors.purpleGradient,
                                 shape: BoxShape.circle,
-                                border: Border.all(color: Colors.white, width: 2),
+                                border: Border.all(
+                                  color: Colors.white,
+                                  width: 2,
+                                ),
                                 boxShadow: const [
                                   BoxShadow(
                                     color: Colors.black26,
@@ -383,13 +420,18 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                             shape: BoxShape.circle,
                             border: Border.all(
                               color: isSelected
-                                  ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                                  ? (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
                                   : Colors.transparent,
                               width: 2.5,
                             ),
                           ),
                           child: ClipOval(
-                            child: AppSmartImage(imagePath: path, fit: BoxFit.cover),
+                            child: AppSmartImage(
+                              imagePath: path,
+                              fit: BoxFit.cover,
+                            ),
                           ),
                         ),
                       );
@@ -416,7 +458,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                   _buildSectionHeader('CITY LOCATION', isDark),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: cardBg,
                       borderRadius: BorderRadius.circular(16),
@@ -427,7 +472,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                         value: _selectedCity,
                         isExpanded: true,
                         dropdownColor: cardBg,
-                        icon: Icon(Icons.keyboard_arrow_down_rounded, color: primaryTextColor),
+                        icon: Icon(
+                          Icons.keyboard_arrow_down_rounded,
+                          color: primaryTextColor,
+                        ),
                         style: TextStyle(
                           color: primaryTextColor,
                           fontWeight: FontWeight.w600,
@@ -479,7 +527,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 9),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 9,
+                          ),
                           decoration: BoxDecoration(
                             color: isSelected ? color : cardBg,
                             borderRadius: BorderRadius.circular(20),
@@ -509,8 +560,12 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                               Text(
                                 name,
                                 style: TextStyle(
-                                  color: isSelected ? Colors.white : primaryTextColor,
-                                  fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : primaryTextColor,
+                                  fontWeight: isSelected
+                                      ? FontWeight.w800
+                                      : FontWeight.w600,
                                   fontSize: 12.5,
                                 ),
                               ),
@@ -527,7 +582,10 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                   _buildSectionHeader('BIO & PHILOSOPHY', isDark),
                   const SizedBox(height: 8),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: cardBg,
                       borderRadius: BorderRadius.circular(16),
@@ -544,8 +602,12 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                       ),
                       decoration: InputDecoration(
                         isDense: true,
-                        hintText: 'Share a little about who you are and what moments you love...',
-                        hintStyle: TextStyle(color: mutedTextColor, fontSize: 13),
+                        hintText:
+                            'Share a little about who you are and what moments you love...',
+                        hintStyle: TextStyle(
+                          color: mutedTextColor,
+                          fontSize: 13,
+                        ),
                         border: InputBorder.none,
                       ),
                     ),
@@ -575,14 +637,21 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 180),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 8,
+                          ),
                           decoration: BoxDecoration(
-                            gradient: isSelected ? AppColors.purpleGradient : null,
+                            gradient: isSelected
+                                ? AppColors.purpleGradient
+                                : null,
                             color: isSelected ? null : cardBg,
                             borderRadius: BorderRadius.circular(18),
                             border: Border.all(
                               color: isSelected
-                                  ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                                  ? (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
                                   : borderColor,
                               width: 1.0,
                             ),
@@ -590,8 +659,12 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                           child: Text(
                             interest,
                             style: TextStyle(
-                              color: isSelected ? Colors.white : primaryTextColor,
-                              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                              color: isSelected
+                                  ? Colors.white
+                                  : primaryTextColor,
+                              fontWeight: isSelected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
                               fontSize: 12,
                             ),
                           ),
@@ -613,7 +686,9 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                         borderRadius: BorderRadius.circular(26),
                         boxShadow: [
                           BoxShadow(
-                            color: const Color(0xFFFF5E7E).withValues(alpha: 0.35),
+                            color: const Color(
+                              0xFFFF5E7E,
+                            ).withValues(alpha: 0.35),
                             blurRadius: 16,
                             offset: const Offset(0, 5),
                           ),

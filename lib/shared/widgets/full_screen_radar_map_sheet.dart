@@ -63,9 +63,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
   String _selectedCategory = 'all';
 
   LatLng get _mapCenter => LatLng(
-        _currentLocation.lat != 0.0 ? _currentLocation.lat : 19.0760,
-        _currentLocation.lon != 0.0 ? _currentLocation.lon : 72.8777,
-      );
+    _currentLocation.lat != 0.0 ? _currentLocation.lat : 19.0760,
+    _currentLocation.lon != 0.0 ? _currentLocation.lon : 72.8777,
+  );
 
   @override
   void initState() {
@@ -108,7 +108,8 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
   Future<void> _locateWithGps() async {
     HapticFeedback.lightImpact();
     setState(() => _isGpsLocating = true);
-    final gpsLoc = await WorldwideLocationService.instance.getCurrentGpsLocation();
+    final gpsLoc = await WorldwideLocationService.instance
+        .getCurrentGpsLocation();
     if (mounted) {
       setState(() => _isGpsLocating = false);
       if (gpsLoc != null) {
@@ -126,7 +127,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
       } else {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            content: Text('GPS access unavailable. Please check location permissions.'),
+            content: Text(
+              'GPS access unavailable. Please check location permissions.',
+            ),
             duration: Duration(seconds: 3),
           ),
         );
@@ -139,7 +142,8 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
     final customVenue = MeetupVenue(
       name: 'Custom Meetup Pin',
       category: 'shop',
-      address: 'Pinned at (${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)})',
+      address:
+          'Pinned at (${latLng.latitude.toStringAsFixed(4)}, ${latLng.longitude.toStringAsFixed(4)})',
       city: _currentLocation.city,
       country: _currentLocation.country,
       lat: latLng.latitude,
@@ -180,20 +184,28 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
           children: [
             TextField(
               controller: nameCtrl,
-              style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.deepPlum,
+              ),
               decoration: InputDecoration(
                 labelText: 'Store / Shop / Spot Name',
-                labelStyle: TextStyle(color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText),
+                labelStyle: TextStyle(
+                  color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText,
+                ),
                 hintText: 'e.g. Royal Bakery & Cafe',
               ),
             ),
             const SizedBox(height: 12),
             TextField(
               controller: addressCtrl,
-              style: TextStyle(color: isDark ? Colors.white : AppColors.deepPlum),
+              style: TextStyle(
+                color: isDark ? Colors.white : AppColors.deepPlum,
+              ),
               decoration: InputDecoration(
                 labelText: 'Area / Street Address',
-                labelStyle: TextStyle(color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText),
+                labelStyle: TextStyle(
+                  color: isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText,
+                ),
                 hintText: 'e.g. Near Station Gate 2',
               ),
             ),
@@ -251,15 +263,15 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
             color: isSelected
                 ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
                 : (isDark
-                    ? const Color(0xFF1D162C).withValues(alpha: 0.85)
-                    : Colors.white.withValues(alpha: 0.90)),
+                      ? const Color(0xFF1D162C).withValues(alpha: 0.85)
+                      : Colors.white.withValues(alpha: 0.90)),
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: isSelected
                   ? Colors.transparent
                   : (isDark
-                      ? Colors.white.withValues(alpha: 0.14)
-                      : const Color(0xFFE5DEED)),
+                        ? Colors.white.withValues(alpha: 0.14)
+                        : const Color(0xFFE5DEED)),
             ),
           ),
           child: Text(
@@ -283,7 +295,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
     const tileUrl = 'https://tile.openstreetmap.org/{z}/{x}/{y}.png';
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF100B1A) : const Color(0xFFFBF8F5),
+      backgroundColor: isDark
+          ? const Color(0xFF100B1A)
+          : const Color(0xFFFBF8F5),
       body: Stack(
         children: [
           // ── 1. Full-Screen Interactive OpenStreetMap Canvas ─────────────────
@@ -297,7 +311,8 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                 maxZoom: 18.0,
                 onTap: _onMapTap,
                 interactionOptions: const InteractionOptions(
-                  flags: InteractiveFlag.pinchZoom |
+                  flags:
+                      InteractiveFlag.pinchZoom |
                       InteractiveFlag.drag |
                       InteractiveFlag.doubleTapZoom,
                 ),
@@ -311,10 +326,26 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                     if (isDark) {
                       return ColorFiltered(
                         colorFilter: const ColorFilter.matrix(<double>[
-                          -0.22, -0.45, -0.10, 0.0, 220.0,
-                          -0.22, -0.45, -0.10, 0.0, 210.0,
-                          -0.15, -0.35, -0.10, 0.0, 238.0,
-                           0.00,  0.00,  0.00, 1.0,   0.0,
+                          -0.22,
+                          -0.45,
+                          -0.10,
+                          0.0,
+                          220.0,
+                          -0.22,
+                          -0.45,
+                          -0.10,
+                          0.0,
+                          210.0,
+                          -0.15,
+                          -0.35,
+                          -0.10,
+                          0.0,
+                          238.0,
+                          0.00,
+                          0.00,
+                          0.00,
+                          1.0,
+                          0.0,
                         ]),
                         child: tileWidget,
                       );
@@ -327,7 +358,8 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                 AnimatedBuilder(
                   animation: _pulseController,
                   builder: (context, child) {
-                    final pulseRadius = 200.0 + (_pulseController.value * 350.0);
+                    final pulseRadius =
+                        200.0 + (_pulseController.value * 350.0);
                     final pulseAlpha = (1.0 - _pulseController.value) * 0.22;
 
                     return CircleLayer(
@@ -336,20 +368,32 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                           point: _mapCenter,
                           radius: 300,
                           useRadiusInMeter: true,
-                          color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              .withValues(alpha: 0.06),
-                          borderColor: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              .withValues(alpha: 0.25),
+                          color:
+                              (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: 0.06),
+                          borderColor:
+                              (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: 0.25),
                           borderStrokeWidth: 1.2,
                         ),
                         CircleMarker(
                           point: _mapCenter,
                           radius: pulseRadius,
                           useRadiusInMeter: true,
-                          color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              .withValues(alpha: pulseAlpha),
-                          borderColor: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                              .withValues(alpha: pulseAlpha * 1.5),
+                          color:
+                              (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: pulseAlpha),
+                          borderColor:
+                              (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: pulseAlpha * 1.5),
                           borderStrokeWidth: 1.5,
                         ),
                       ],
@@ -370,25 +414,37 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                         onTap: () {
                           HapticFeedback.lightImpact();
                           setState(() => _selectedVenue = venue);
-                          _mapController.move(LatLng(venue.lat, venue.lon), 15.5);
+                          _mapController.move(
+                            LatLng(venue.lat, venue.lon),
+                            15.5,
+                          );
                         },
                         child: AnimatedContainer(
                           duration: const Duration(milliseconds: 200),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isSelected
-                                ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                                : (isDark ? const Color(0xFF2A213D) : Colors.white),
+                                ? (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple)
+                                : (isDark
+                                      ? const Color(0xFF2A213D)
+                                      : Colors.white),
                             border: Border.all(
                               color: isSelected
                                   ? Colors.white
-                                  : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                                  : (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple),
                               width: isSelected ? 2.2 : 1.5,
                             ),
                             boxShadow: [
                               BoxShadow(
-                                color: (isSelected ? AppColors.brightViolet : Colors.black)
-                                    .withValues(alpha: 0.35),
+                                color:
+                                    (isSelected
+                                            ? AppColors.brightViolet
+                                            : Colors.black)
+                                        .withValues(alpha: 0.35),
                                 blurRadius: isSelected ? 12 : 6,
                                 offset: const Offset(0, 3),
                               ),
@@ -399,7 +455,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                             size: isSelected ? 22 : 18,
                             color: isSelected
                                 ? Colors.white
-                                : (isDark ? AppColors.brightViolet : AppColors.primaryPurple),
+                                : (isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple),
                           ),
                         ),
                       ),
@@ -417,7 +475,10 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
             right: 0,
             child: SafeArea(
               child: Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 child: Column(
                   children: [
                     Row(
@@ -485,8 +546,10 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                 ),
                                 suffixIcon: _searchController.text.isNotEmpty
                                     ? IconButton(
-                                        icon: const Icon(Icons.clear_rounded,
-                                            size: 18),
+                                        icon: const Icon(
+                                          Icons.clear_rounded,
+                                          size: 18,
+                                        ),
                                         color: isDark
                                             ? AppColors.darkMutedText
                                             : AppColors.mutedText,
@@ -503,8 +566,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                 errorBorder: InputBorder.none,
                                 disabledBorder: InputBorder.none,
                                 filled: false,
-                                contentPadding:
-                                    const EdgeInsets.symmetric(vertical: 12),
+                                contentPadding: const EdgeInsets.symmetric(
+                                  vertical: 12,
+                                ),
                               ),
                             ),
                           ),
@@ -648,7 +712,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.35 : 0.08,
+                          ),
                           blurRadius: 20,
                           offset: const Offset(0, 6),
                         ),
@@ -667,7 +733,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                 decoration: BoxDecoration(
                                   gradient: LinearGradient(
                                     colors: [
-                                      isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                      isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple,
                                       AppColors.vividCoral,
                                     ],
                                     begin: Alignment.topLeft,
@@ -689,20 +757,30 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                     Row(
                                       children: [
                                         Text(
-                                          _selectedVenue!.category.toUpperCase(),
-                                          style: AppTypography.labelSmall.copyWith(
-                                            fontSize: 10,
-                                            letterSpacing: 1.2,
-                                            fontWeight: FontWeight.w700,
-                                            color: isDark ? AppColors.vividCoral : AppColors.primaryPurple,
-                                          ),
+                                          _selectedVenue!.category
+                                              .toUpperCase(),
+                                          style: AppTypography.labelSmall
+                                              .copyWith(
+                                                fontSize: 10,
+                                                letterSpacing: 1.2,
+                                                fontWeight: FontWeight.w700,
+                                                color: isDark
+                                                    ? AppColors.vividCoral
+                                                    : AppColors.primaryPurple,
+                                              ),
                                         ),
                                         const SizedBox(width: 6),
                                         Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 6,
+                                            vertical: 2,
+                                          ),
                                           decoration: BoxDecoration(
-                                            color: AppColors.mintAccent.withValues(alpha: 0.15),
-                                            borderRadius: BorderRadius.circular(8),
+                                            color: AppColors.mintAccent
+                                                .withValues(alpha: 0.15),
+                                            borderRadius: BorderRadius.circular(
+                                              8,
+                                            ),
                                           ),
                                           child: const Text(
                                             'Vetted Spot',
@@ -723,7 +801,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                       style: TextStyle(
                                         fontWeight: FontWeight.w800,
                                         fontSize: 15,
-                                        color: isDark ? Colors.white : AppColors.deepPlum,
+                                        color: isDark
+                                            ? Colors.white
+                                            : AppColors.deepPlum,
                                       ),
                                     ),
                                     const SizedBox(height: 2),
@@ -733,7 +813,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                                       overflow: TextOverflow.ellipsis,
                                       style: TextStyle(
                                         fontSize: 11.5,
-                                        color: isDark ? const Color(0xFFA69EB8) : AppColors.mutedText,
+                                        color: isDark
+                                            ? const Color(0xFFA69EB8)
+                                            : AppColors.mutedText,
                                       ),
                                     ),
                                   ],
@@ -745,20 +827,31 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
                           // Confirm Meetup Button
                           ElevatedButton(
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              backgroundColor: isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
                               foregroundColor: Colors.white,
                               padding: const EdgeInsets.symmetric(vertical: 12),
-                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
                             ),
-                            onPressed: () => _confirmMeetupSpot(_selectedVenue!),
+                            onPressed: () =>
+                                _confirmMeetupSpot(_selectedVenue!),
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.check_circle_outline_rounded, size: 18),
+                                Icon(
+                                  Icons.check_circle_outline_rounded,
+                                  size: 18,
+                                ),
                                 SizedBox(width: 6),
                                 Text(
                                   'Set as Meetup Spot ✓',
-                                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 13.5),
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 13.5,
+                                  ),
                                 ),
                               ],
                             ),
@@ -802,7 +895,9 @@ class _FullScreenRadarMapSheetState extends State<FullScreenRadarMapSheet>
               : Colors.white.withValues(alpha: 0.92),
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
-            color: isDark ? Colors.white.withValues(alpha: 0.12) : const Color(0xFFE5DEED),
+            color: isDark
+                ? Colors.white.withValues(alpha: 0.12)
+                : const Color(0xFFE5DEED),
           ),
           boxShadow: [
             BoxShadow(

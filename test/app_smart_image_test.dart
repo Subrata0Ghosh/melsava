@@ -72,14 +72,13 @@ void main() {
   });
 
   group('AppSmartImage Widget Tests', () {
-    testWidgets('renders fallback Image.asset when imagePath is null', (tester) async {
+    testWidgets('renders fallback Image.asset when imagePath is null', (
+      tester,
+    ) async {
       await tester.pumpWidget(
         const MaterialApp(
           home: Scaffold(
-            body: AppSmartImage(
-              imagePath: null,
-              categoryHint: 'Sports',
-            ),
+            body: AppSmartImage(imagePath: null, categoryHint: 'Sports'),
           ),
         ),
       );
@@ -88,21 +87,24 @@ void main() {
       expect(imageFinder, findsOneWidget);
     });
 
-    testWidgets('renders avatar fallback when isAvatar is true and imagePath is empty', (tester) async {
-      await tester.pumpWidget(
-        const MaterialApp(
-          home: Scaffold(
-            body: AppSmartImage(
-              imagePath: '',
-              isAvatar: true,
-              nameHint: 'Rohan',
+    testWidgets(
+      'renders avatar fallback when isAvatar is true and imagePath is empty',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(
+            home: Scaffold(
+              body: AppSmartImage(
+                imagePath: '',
+                isAvatar: true,
+                nameHint: 'Rohan',
+              ),
             ),
           ),
-        ),
-      );
+        );
 
-      final imageFinder = find.byType(Image);
-      expect(imageFinder, findsOneWidget);
-    });
+        final imageFinder = find.byType(Image);
+        expect(imageFinder, findsOneWidget);
+      },
+    );
   });
 }

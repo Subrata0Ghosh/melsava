@@ -38,7 +38,8 @@ class PostExperienceChoiceScreen extends StatefulWidget {
     HapticFeedback.mediumImpact();
     return Navigator.of(context, rootNavigator: true).push(
       MaterialPageRoute(
-        builder: (context) => PostExperienceChoiceScreen(experience: experience),
+        builder: (context) =>
+            PostExperienceChoiceScreen(experience: experience),
       ),
     );
   }
@@ -97,8 +98,8 @@ class _PostExperienceChoiceScreenState
       final intentionLabel = selectedMatch.selectedOption == 'dating'
           ? 'Exploring Dating'
           : selectedMatch.selectedOption == 'friendship'
-              ? 'Friendship'
-              : 'Activity Partner';
+          ? 'Friendship'
+          : 'Activity Partner';
 
       await MutualMatchCelebrationDialog.show(
         context,
@@ -137,7 +138,9 @@ class _PostExperienceChoiceScreenState
             PrimaryButton(
               label: 'View Connections',
               height: 44,
-              backgroundColor: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
+              backgroundColor: isDark
+                  ? AppColors.luminousMauve
+                  : AppColors.deepPlum,
               onPressed: () {
                 Navigator.of(context).pop();
                 context.go('/connections');
@@ -152,8 +155,12 @@ class _PostExperienceChoiceScreenState
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
@@ -188,10 +195,15 @@ class _PostExperienceChoiceScreenState
                         decoration: BoxDecoration(
                           shape: BoxShape.circle,
                           color: AppColors.mintAccent.withValues(alpha: 0.15),
-                          border: Border.all(color: AppColors.mintAccent, width: 2.5),
+                          border: Border.all(
+                            color: AppColors.mintAccent,
+                            width: 2.5,
+                          ),
                           boxShadow: [
                             BoxShadow(
-                              color: AppColors.mintAccent.withValues(alpha: 0.35),
+                              color: AppColors.mintAccent.withValues(
+                                alpha: 0.35,
+                              ),
                               blurRadius: 20,
                               offset: const Offset(0, 4),
                             ),
@@ -265,15 +277,17 @@ class _PostExperienceChoiceScreenState
                                 const SizedBox(width: 14),
                                 Expanded(
                                   child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Text(
                                         attendee.name,
-                                        style: AppTypography.titleMedium.copyWith(
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 15,
-                                          color: primaryTextColor,
-                                        ),
+                                        style: AppTypography.titleMedium
+                                            .copyWith(
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 15,
+                                              color: primaryTextColor,
+                                            ),
                                       ),
                                       const SizedBox(height: 2),
                                       Text(
@@ -295,7 +309,9 @@ class _PostExperienceChoiceScreenState
                             Text(
                               'How would you like to stay in touch?',
                               style: AppTypography.labelSmall.copyWith(
-                                color: isDark ? AppColors.softCoral : AppColors.mauve,
+                                color: isDark
+                                    ? AppColors.softCoral
+                                    : AppColors.mauve,
                                 fontWeight: FontWeight.w700,
                                 fontSize: 11.5,
                               ),
@@ -349,7 +365,10 @@ class _PostExperienceChoiceScreenState
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 20, sigmaY: 20),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       begin: Alignment.topCenter,
@@ -375,64 +394,66 @@ class _PostExperienceChoiceScreenState
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                  GestureDetector(
-                    onTap: _isSubmitting ? null : _handleSubmit,
-                    child: Container(
-                      height: 54,
-                      alignment: Alignment.center,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.sunsetCtaGradient,
-                        borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.25),
-                          width: 1.0,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFFFF5A78).withValues(alpha: 0.40),
-                            blurRadius: 16,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: _isSubmitting
-                          ? const SizedBox(
-                              width: 22,
-                              height: 22,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2.5,
-                                color: Colors.white,
+                        GestureDetector(
+                          onTap: _isSubmitting ? null : _handleSubmit,
+                          child: Container(
+                            height: 54,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              gradient: AppColors.sunsetCtaGradient,
+                              borderRadius: BorderRadius.circular(28),
+                              border: Border.all(
+                                color: Colors.white.withValues(alpha: 0.25),
+                                width: 1.0,
                               ),
-                            )
-                          : Text(
-                              'Make My Choices',
-                              style: AppTypography.labelLarge.copyWith(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 15,
-                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: const Color(
+                                    0xFFFF5A78,
+                                  ).withValues(alpha: 0.40),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 5),
+                                ),
+                              ],
                             ),
+                            child: _isSubmitting
+                                ? const SizedBox(
+                                    width: 22,
+                                    height: 22,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : Text(
+                                    'Make My Choices',
+                                    style: AppTypography.labelLarge.copyWith(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w800,
+                                      fontSize: 15,
+                                    ),
+                                  ),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        TextButton(
+                          onPressed: () => Navigator.of(context).pop(),
+                          child: Text(
+                            'Skip for now',
+                            style: TextStyle(
+                              color: mutedTextColor,
+                              fontSize: 12.5,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  TextButton(
-                    onPressed: () => Navigator.of(context).pop(),
-                    child: Text(
-                      'Skip for now',
-                      style: TextStyle(
-                        color: mutedTextColor,
-                        fontSize: 12.5,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-      ),
-    ],
+          ],
         ),
       ),
     );
@@ -447,7 +468,9 @@ class _PostExperienceChoiceScreenState
   ) {
     final isSelected = attendee.selectedOption == value;
     final activeBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-    final inactiveBg = isDark ? AppColors.darkElevated : AppColors.creamElevated;
+    final inactiveBg = isDark
+        ? AppColors.darkElevated
+        : AppColors.creamElevated;
 
     return GestureDetector(
       onTap: () {

@@ -11,10 +11,7 @@ import 'app_smart_image.dart';
 class ExperienceShareSheet extends StatefulWidget {
   final ExperienceModel experience;
 
-  const ExperienceShareSheet({
-    super.key,
-    required this.experience,
-  });
+  const ExperienceShareSheet({super.key, required this.experience});
 
   static Future<void> show(BuildContext context, ExperienceModel experience) {
     return showModalBottomSheet(
@@ -103,10 +100,16 @@ class _ExperienceShareSheetState extends State<ExperienceShareSheet> {
     final dateFormat = DateFormat('EEE, MMM d · h:mm a');
 
     final sheetBg = isDark ? const Color(0xFF1B142B) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
     final cardBg = isDark ? const Color(0xFF241C38) : const Color(0xFFF7F5FB);
-    final borderColor = isDark ? const Color(0xFF382F4D) : const Color(0xFFE9E4F5);
+    final borderColor = isDark
+        ? const Color(0xFF382F4D)
+        : const Color(0xFFE9E4F5);
 
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 32),
@@ -153,7 +156,11 @@ class _ExperienceShareSheetState extends State<ExperienceShareSheet> {
               IconButton(
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
-                icon: Icon(Icons.close_rounded, color: mutedTextColor, size: 22),
+                icon: Icon(
+                  Icons.close_rounded,
+                  color: mutedTextColor,
+                  size: 22,
+                ),
                 onPressed: () => Navigator.of(context).pop(),
               ),
             ],
@@ -201,10 +208,7 @@ class _ExperienceShareSheetState extends State<ExperienceShareSheet> {
                         '${dateFormat.format(exp.startsAt)} · ${exp.venueName}',
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: mutedTextColor,
-                          fontSize: 11.5,
-                        ),
+                        style: TextStyle(color: mutedTextColor, fontSize: 11.5),
                       ),
                     ],
                   ),

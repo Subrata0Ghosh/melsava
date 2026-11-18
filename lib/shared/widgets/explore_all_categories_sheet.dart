@@ -57,7 +57,8 @@ class ExploreAllCategoriesSheet extends StatefulWidget {
   }
 
   @override
-  State<ExploreAllCategoriesSheet> createState() => _ExploreAllCategoriesSheetState();
+  State<ExploreAllCategoriesSheet> createState() =>
+      _ExploreAllCategoriesSheetState();
 }
 
 class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
@@ -67,7 +68,8 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'All',
       title: 'All Categories',
-      description: 'Explore all public gatherings, weekend trips & micro-groups',
+      description:
+          'Explore all public gatherings, weekend trips & micro-groups',
       tag: 'All Events',
       iconBuilder: ({double size = 38}) => Icon(
         Icons.auto_awesome_rounded,
@@ -81,9 +83,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Social',
       title: 'Social & Cafés',
-      description: 'Artisan coffee tastings, book discussions & cozy micro-groups',
+      description:
+          'Artisan coffee tastings, book discussions & cozy micro-groups',
       tag: 'Cafés • Chats',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Social', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Social', size: size),
       bgGradient: const [Color(0xFFF0FDF4), Color(0xFFDCFCE7)],
       darkBgGradient: const [Color(0xFF13281E), Color(0xFF0C1A14)],
       accentColor: const Color(0xFF10B981),
@@ -91,9 +95,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Outdoors',
       title: 'Outdoors & Trekking',
-      description: 'Scenic ridge hikes, mountain trails, sunrise walks & campfires',
+      description:
+          'Scenic ridge hikes, mountain trails, sunrise walks & campfires',
       tag: 'Treks • Trails',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Outdoors', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Outdoors', size: size),
       bgGradient: const [Color(0xFFFFFBEB), Color(0xFFFEF3C7)],
       darkBgGradient: const [Color(0xFF2E2412), Color(0xFF1D170B)],
       accentColor: const Color(0xFFF59E0B),
@@ -101,9 +107,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Sports',
       title: 'Sports & Games',
-      description: 'Badminton doubles, court rallies, table tennis & weekend cycling',
+      description:
+          'Badminton doubles, court rallies, table tennis & weekend cycling',
       tag: 'Sports • Fitness',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Sports', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Sports', size: size),
       bgGradient: const [Color(0xFFFFF1F2), Color(0xFFFFE4E6)],
       darkBgGradient: const [Color(0xFF32141C), Color(0xFF200C12)],
       accentColor: const Color(0xFFF43F5E),
@@ -111,9 +119,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Arts & Culture',
       title: 'Arts & Culture',
-      description: 'Pottery workshops, heritage courtyard walks, painting & live shows',
+      description:
+          'Pottery workshops, heritage courtyard walks, painting & live shows',
       tag: 'Art & Pottery',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Arts', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Arts', size: size),
       bgGradient: const [Color(0xFFFDF4FF), Color(0xFFF5D0FE)],
       darkBgGradient: const [Color(0xFF2E1338), Color(0xFF1C0A23)],
       accentColor: const Color(0xFFD946EF),
@@ -121,7 +131,8 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Food',
       title: 'Food & Culinary',
-      description: 'Sourdough bread crafting, artisan baking & chef-led tastings',
+      description:
+          'Sourdough bread crafting, artisan baking & chef-led tastings',
       tag: 'Baking • Dining',
       iconBuilder: ({double size = 38}) => Container(
         width: size,
@@ -136,9 +147,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Wellness',
       title: 'Wellness & Mindfulness',
-      description: 'Morning hatha yoga, meditation circles & calming herbal tea sessions',
+      description:
+          'Morning hatha yoga, meditation circles & calming herbal tea sessions',
       tag: 'Yoga • Zen',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Wellness', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Wellness', size: size),
       bgGradient: const [Color(0xFFF5F3FF), Color(0xFFEDE9FE)],
       darkBgGradient: const [Color(0xFF23163E), Color(0xFF160D27)],
       accentColor: const Color(0xFF7C3AED),
@@ -146,9 +159,11 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
     CategoryOptionItem(
       key: 'Travel',
       title: 'Travel & Day Escapes',
-      description: 'Weekend lake getaways, heritage architecture tours & road trips',
+      description:
+          'Weekend lake getaways, heritage architecture tours & road trips',
       tag: 'Day Trips',
-      iconBuilder: ({double size = 38}) => Category3DIcon(categoryKey: 'Travel', size: size),
+      iconBuilder: ({double size = 38}) =>
+          Category3DIcon(categoryKey: 'Travel', size: size),
       bgGradient: const [Color(0xFFEFF6FF), Color(0xFFDBEAFE)],
       darkBgGradient: const [Color(0xFF14223A), Color(0xFF0C1525)],
       accentColor: const Color(0xFF3B82F6),
@@ -164,17 +179,21 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
     final sheetBg = isDark ? const Color(0xFF1B1528) : const Color(0xFFFAF7F4);
-    final borderColor = isDark ? const Color(0xFF332A45) : const Color(0xFFEDE9FE);
+    final borderColor = isDark
+        ? const Color(0xFF332A45)
+        : const Color(0xFFEDE9FE);
 
     final size = MediaQuery.of(context).size;
 
     return Container(
-      constraints: BoxConstraints(
-        maxHeight: size.height * 0.88,
-      ),
+      constraints: BoxConstraints(maxHeight: size.height * 0.88),
       decoration: BoxDecoration(
         color: sheetBg,
         borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
@@ -235,10 +254,7 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                       ),
                       Text(
                         'Pick a theme to filter verified public micro-experiences',
-                        style: TextStyle(
-                          color: mutedTextColor,
-                          fontSize: 11.5,
-                        ),
+                        style: TextStyle(color: mutedTextColor, fontSize: 11.5),
                       ),
                     ],
                   ),
@@ -284,7 +300,9 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                       border: Border.all(
                         color: isSelected
                             ? cat.accentColor
-                            : (isDark ? const Color(0xFF332A45) : const Color(0xFFEDE9FE)),
+                            : (isDark
+                                  ? const Color(0xFF332A45)
+                                  : const Color(0xFFEDE9FE)),
                         width: isSelected ? 2.0 : 0.9,
                       ),
                       boxShadow: isSelected
@@ -345,12 +363,19 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: cat.accentColor.withValues(alpha: 0.15),
+                                      color: cat.accentColor.withValues(
+                                        alpha: 0.15,
+                                      ),
                                       borderRadius: BorderRadius.circular(6),
                                       border: Border.all(
-                                        color: cat.accentColor.withValues(alpha: 0.25),
+                                        color: cat.accentColor.withValues(
+                                          alpha: 0.25,
+                                        ),
                                         width: 0.8,
                                       ),
                                     ),
@@ -386,14 +411,22 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                           margin: const EdgeInsets.only(left: 8),
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: isSelected ? cat.accentColor : Colors.transparent,
+                            color: isSelected
+                                ? cat.accentColor
+                                : Colors.transparent,
                             border: Border.all(
-                              color: isSelected ? cat.accentColor : mutedTextColor.withValues(alpha: 0.5),
+                              color: isSelected
+                                  ? cat.accentColor
+                                  : mutedTextColor.withValues(alpha: 0.5),
                               width: 1.8,
                             ),
                           ),
                           child: isSelected
-                              ? const Icon(Icons.check_rounded, size: 16, color: Colors.white)
+                              ? const Icon(
+                                  Icons.check_rounded,
+                                  size: 16,
+                                  color: Colors.white,
+                                )
                               : null,
                         ),
                       ],
@@ -406,7 +439,12 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
 
           // Bottom Action Buttons
           Padding(
-            padding: EdgeInsets.fromLTRB(20, 10, 20, MediaQuery.of(context).padding.bottom + 14),
+            padding: EdgeInsets.fromLTRB(
+              20,
+              10,
+              20,
+              MediaQuery.of(context).padding.bottom + 14,
+            ),
             child: Column(
               children: [
                 SizedBox(
@@ -417,7 +455,9 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                       backgroundColor: AppColors.brightViolet,
                       foregroundColor: Colors.white,
                       elevation: 4,
-                      shadowColor: AppColors.brightViolet.withValues(alpha: 0.35),
+                      shadowColor: AppColors.brightViolet.withValues(
+                        alpha: 0.35,
+                      ),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(24),
                       ),
@@ -431,7 +471,10 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                       _selected == 'All'
                           ? 'Show All Experiences'
                           : 'Apply Filter ($_selected)',
-                      style: const TextStyle(fontWeight: FontWeight.w800, fontSize: 14),
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                      ),
                     ),
                   ),
                 ),
@@ -444,7 +487,9 @@ class _ExploreAllCategoriesSheetState extends State<ExploreAllCategoriesSheet> {
                   child: Text(
                     'Open Full Experiences Catalog →',
                     style: TextStyle(
-                      color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                      color: isDark
+                          ? AppColors.brightViolet
+                          : AppColors.primaryPurple,
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
                     ),

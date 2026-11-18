@@ -5,8 +5,9 @@ import 'package:go_router/go_router.dart';
 import 'package:melsava/features/profile/presentation/profile_screen.dart';
 
 void main() {
-  testWidgets('Profile back button navigates back or falls back to /discover',
-      (tester) async {
+  testWidgets('Profile back button navigates back or falls back to /discover', (
+    tester,
+  ) async {
     bool navigatedToDiscover = false;
 
     final router = GoRouter(
@@ -27,11 +28,7 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ProviderScope(
-        child: MaterialApp.router(
-          routerConfig: router,
-        ),
-      ),
+      ProviderScope(child: MaterialApp.router(routerConfig: router)),
     );
 
     await tester.pump(const Duration(milliseconds: 300));

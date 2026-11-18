@@ -64,7 +64,10 @@ class AboutMelsavaScreen extends StatelessWidget {
               children: [
                 // Top Bar with Back Button
                 Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 8,
+                  ),
                   child: Row(
                     children: [
                       Container(
@@ -73,7 +76,10 @@ class AboutMelsavaScreen extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: IconButton(
-                          icon: const Icon(Icons.arrow_back_rounded, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back_rounded,
+                            color: Colors.white,
+                          ),
                           onPressed: () {
                             if (context.canPop()) {
                               context.pop();
@@ -160,9 +166,19 @@ class AboutMelsavaScreen extends StatelessWidget {
                   spacing: 8,
                   children: [
                     _buildFooterLink(context, 'Terms of Service'),
-                    Text('•', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
                     _buildFooterLink(context, 'Privacy Policy'),
-                    Text('•', style: TextStyle(color: Colors.white.withValues(alpha: 0.6))),
+                    Text(
+                      '•',
+                      style: TextStyle(
+                        color: Colors.white.withValues(alpha: 0.6),
+                      ),
+                    ),
                     _buildFooterLink(context, 'Community Guidelines'),
                   ],
                 ),
@@ -195,9 +211,9 @@ class AboutMelsavaScreen extends StatelessWidget {
   Widget _buildFooterLink(BuildContext context, String text) {
     return GestureDetector(
       onTap: () {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Opening $text...')),
-        );
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Opening $text...')));
       },
       child: Text(
         text,

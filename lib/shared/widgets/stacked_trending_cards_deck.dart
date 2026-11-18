@@ -53,13 +53,10 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
       duration: const Duration(milliseconds: 320),
     );
 
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-    ));
+    _slideAnimation = Tween<Offset>(begin: Offset.zero, end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutCubic),
+        );
 
     _startAutoSwipe();
   }
@@ -90,13 +87,16 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
     if (widget.experiences.isEmpty || !mounted) return;
 
     final screenWidth = MediaQuery.of(context).size.width;
-    _slideAnimation = Tween<Offset>(
-      begin: Offset.zero,
-      end: Offset(-screenWidth * 1.05, -15),
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeInOutCubic,
-    ));
+    _slideAnimation =
+        Tween<Offset>(
+          begin: Offset.zero,
+          end: Offset(-screenWidth * 1.05, -15),
+        ).animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: Curves.easeInOutCubic,
+          ),
+        );
 
     _animController.forward(from: 0.0).then((_) {
       if (mounted) {
@@ -116,13 +116,13 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
     final screenWidth = MediaQuery.of(context).size.width;
     final targetX = isNext ? -screenWidth * 1.1 : screenWidth * 1.1;
 
-    _slideAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset(targetX, _dragOffset.dy),
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutQuad,
-    ));
+    _slideAnimation =
+        Tween<Offset>(
+          begin: _dragOffset,
+          end: Offset(targetX, _dragOffset.dy),
+        ).animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutQuad),
+        );
 
     _animController.forward(from: 0.0).then((_) {
       if (mounted) {
@@ -130,7 +130,8 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
           if (isNext) {
             _currentIndex = (_currentIndex + 1) % widget.experiences.length;
           } else {
-            _currentIndex = (_currentIndex - 1 + widget.experiences.length) %
+            _currentIndex =
+                (_currentIndex - 1 + widget.experiences.length) %
                 widget.experiences.length;
           }
           _dragOffset = Offset.zero;
@@ -143,13 +144,10 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
   }
 
   void _snapBackToCenter() {
-    _slideAnimation = Tween<Offset>(
-      begin: _dragOffset,
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutBack,
-    ));
+    _slideAnimation = Tween<Offset>(begin: _dragOffset, end: Offset.zero)
+        .animate(
+          CurvedAnimation(parent: _animController, curve: Curves.easeOutBack),
+        );
 
     _animController.forward(from: 0.0).then((_) {
       if (mounted) {
@@ -254,13 +252,14 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
               children: [
                 AppSmartImage(
                   imagePath: exp.coverImageUrl,
-                  categoryHint: exp.categoryName,
+                  categoryHint: '${exp.title} ${exp.categoryName}',
                   fit: BoxFit.cover,
                 ),
                 DecoratedBox(
                   decoration: BoxDecoration(
-                    color: (isDark ? Colors.black : Colors.white)
-                        .withValues(alpha: 0.55),
+                    color: (isDark ? Colors.black : Colors.white).withValues(
+                      alpha: 0.55,
+                    ),
                   ),
                 ),
               ],
@@ -311,7 +310,7 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
               children: [
                 AppSmartImage(
                   imagePath: exp.coverImageUrl,
-                  categoryHint: exp.categoryName,
+                  categoryHint: '${exp.title} ${exp.categoryName}',
                   fit: BoxFit.cover,
                 ),
                 DecoratedBox(
@@ -355,8 +354,10 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
             : _dragOffset;
 
         final rotation = (currentOffset.dx / 320.0) * 0.12; // Natural tilt
-        final opacity =
-            (1.0 - (currentOffset.dx.abs() / 480.0)).clamp(0.0, 1.0);
+        final opacity = (1.0 - (currentOffset.dx.abs() / 480.0)).clamp(
+          0.0,
+          1.0,
+        );
 
         return Positioned(
           top: 0,
@@ -423,7 +424,7 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                           // ── Background Image ──
                           AppSmartImage(
                             imagePath: exp.coverImageUrl,
-                            categoryHint: exp.categoryName,
+                            categoryHint: '${exp.title} ${exp.categoryName}',
                             fit: BoxFit.cover,
                           ),
 
@@ -454,28 +455,34 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                                 const TrendingBadge(
                                   fontSize: 10.5,
                                   padding: EdgeInsets.symmetric(
-                                      horizontal: 9, vertical: 4.5),
+                                    horizontal: 9,
+                                    vertical: 4.5,
+                                  ),
                                 ),
                                 Container(
                                   padding: const EdgeInsets.symmetric(
-                                      horizontal: 10, vertical: 5),
+                                    horizontal: 10,
+                                    vertical: 5,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.black.withValues(alpha: 0.48),
                                     borderRadius: BorderRadius.circular(12),
                                     border: Border.all(
-                                        color: Colors.white30, width: 0.8),
+                                      color: Colors.white30,
+                                      width: 0.8,
+                                    ),
                                   ),
                                   child: Row(
                                     mainAxisSize: MainAxisSize.min,
                                     children: [
                                       Text(
                                         '${index + 1}/$totalCount',
-                                        style:
-                                            AppTypography.labelSmall.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w700,
-                                          fontSize: 11,
-                                        ),
+                                        style: AppTypography.labelSmall
+                                            .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w700,
+                                              fontSize: 11,
+                                            ),
                                       ),
                                     ],
                                   ),
@@ -502,12 +509,12 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                                         exp.title,
                                         maxLines: 1,
                                         overflow: TextOverflow.ellipsis,
-                                        style:
-                                            AppTypography.titleLarge.copyWith(
-                                          color: Colors.white,
-                                          fontWeight: FontWeight.w800,
-                                          fontSize: 17.5,
-                                        ),
+                                        style: AppTypography.titleLarge
+                                            .copyWith(
+                                              color: Colors.white,
+                                              fontWeight: FontWeight.w800,
+                                              fontSize: 17.5,
+                                            ),
                                       ),
                                       const SizedBox(height: 4),
                                       Row(
@@ -525,9 +532,9 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                                               overflow: TextOverflow.ellipsis,
                                               style: AppTypography.labelSmall
                                                   .copyWith(
-                                                color: Colors.white70,
-                                                fontSize: 11,
-                                              ),
+                                                    color: Colors.white70,
+                                                    fontSize: 11,
+                                                  ),
                                             ),
                                           ),
                                         ],
@@ -545,7 +552,9 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                                   },
                                   child: Container(
                                     padding: const EdgeInsets.symmetric(
-                                        horizontal: 14, vertical: 8),
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
                                     decoration: BoxDecoration(
                                       gradient: AppColors.sunsetCtaGradient,
                                       borderRadius: BorderRadius.circular(22),
@@ -559,7 +568,13 @@ class _StackedTrendingCardsDeckState extends State<StackedTrendingCardsDeck>
                                       ],
                                     ),
                                     child: Text(
-                                      exp.hasJoined ? 'Joined ✓' : 'Join Now →',
+                                      exp.hasJoined
+                                          ? 'Joined ✓'
+                                          : (exp.isWaitlisted
+                                                ? 'Waitlisted'
+                                                : (exp.isFull
+                                                      ? 'Join Waitlist →'
+                                                      : 'Join Now →')),
                                       style: AppTypography.labelSmall.copyWith(
                                         color: Colors.white,
                                         fontWeight: FontWeight.w800,

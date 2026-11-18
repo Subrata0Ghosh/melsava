@@ -1,14 +1,17 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
-import '../../../shared/widgets/trending_badge.dart';
+import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/experience_share_sheet.dart';
+import '../../../shared/widgets/trending_badge.dart';
+import '../data/experiences_repository.dart';
 import 'join_experience_sheet.dart';
 
 /// Full-Screen Experience Detail Screen (Screen 6 from master design)
@@ -16,77 +19,147 @@ import 'join_experience_sheet.dart';
 /// - True full-screen page route with zero top margin / drag handle
 /// - Full-bleed hero image header reaching under the status bar
 /// - Floating glassmorphic action buttons (Back, Bookmark, Share)
-/// - Organic asymmetrical wave transition matching Image 3 (sweeping convex crest under title sloping to right)
+/// - Organic asymmetrical wave transition matching Image 3
 /// - Sculptural 3D rim highlight along the wave
-/// - Clean metadata chips (Date & Time, Venue, Joined count)
-/// - Host card with verified badge and Follow CTA
-/// - Vetted Public Venue preview
+/// - Live metadata chips (Date & Time, Duration, Venue/Online, Live Joined count)
+/// - Host card with verified badge and host bio
+/// - Vetted Public Venue preview or Online Experience indicator
+/// - Real cancellation policy display
 /// - Safe Public Meeting Guarantee
 /// - Corner botanical foliage peeking from perimeter
-/// - Sticky full-width gradient [ Join Experience → ] CTA button
-class ExperienceDetailSheet extends StatefulWidget {
+/// - Sticky full-width gradient [ Join / Waitlist / Cancel RSVP ] CTA button
+class ExperienceDetailSheet extends ConsumerStatefulWidget {
   final ExperienceModel experience;
-  final VoidCallback onToggleJoin;
+  final VoidCallback? onToggleJoin;
 
   const ExperienceDetailSheet({
     super.key,
     required this.experience,
-    required this.onToggleJoin,
+    this.onToggleJoin,
   });
 
   /// Navigates to the full-screen Experience Detail Screen
   static Future<void> show(
     BuildContext context, {
     required ExperienceModel experience,
-    required VoidCallback onToggleJoin,
+    VoidCallback? onToggleJoin,
   }) {
     return Navigator.of(context, rootNavigator: true).push(
       PageRouteBuilder(
         pageBuilder: (context, animation, secondaryAnimation) =>
             ExperienceDetailSheet(
-          experience: experience,
-          onToggleJoin: onToggleJoin,
-        ),
+              experience: experience,
+              onToggleJoin: onToggleJoin,
+            ),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           const begin = Offset(0.0, 1.0);
           const end = Offset.zero;
           const curve = Curves.easeOutCubic;
-          final tween =
-              Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-          return SlideTransition(position: animation.drive(tween), child: child);
+          final tween = Tween(
+            begin: begin,
+            end: end,
+          ).chain(CurveTween(curve: curve));
+          return SlideTransition(
+            position: animation.drive(tween),
+            child: child,
+          );
         },
       ),
     );
   }
 
   @override
-  State<ExperienceDetailSheet> createState() => _ExperienceDetailSheetState();
+  ConsumerState<ExperienceDetailSheet> createState() =>
+      _ExperienceDetailSheetState();
 }
 
-class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
+class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
   bool _isBookmarked = false;
+  bool _isCancelling = false;
 
-  void _openJoinFlow() {
-    JoinExperienceSheet.show(
+  Future<void> _openJoinFlow(ExperienceModel exp) async {
+    final result = await JoinExperienceSheet.show(
       context,
-      experience: widget.experience,
-      onConfirmed: () {
-        widget.onToggleJoin();
-        // Return back to parent screen after join
-        Navigator.of(context).pop();
-      },
+      experience: exp,
+      onConfirmJoin: () =>
+          ref.read(experienceActionControllerProvider).joinExperience(exp.id),
     );
+    if (result != null && mounted) {
+      widget.onToggleJoin?.call();
+    }
+  }
+
+  Future<void> _confirmCancel(ExperienceModel exp) async {
+    if (_isCancelling) return;
+    final isWaitlist = exp.isWaitlisted;
+
+    final confirmed = await ConfirmationDialog.show(
+      context,
+      title: isWaitlist ? 'Leave Waitlist?' : 'Cancel Your RSVP?',
+      message: isWaitlist
+          ? 'You will give up your spot on the waitlist for "${exp.title}".'
+          : 'Are you sure you want to cancel your attendance? If there is a waitlist, the next person will automatically be invited.',
+      confirmLabel: isWaitlist ? 'Leave' : 'Cancel RSVP',
+      isDestructive: true,
+    );
+
+    if (confirmed == true && mounted) {
+      setState(() => _isCancelling = true);
+      try {
+        await ref
+            .read(experienceActionControllerProvider)
+            .cancelMembership(exp.id);
+        if (mounted) {
+          widget.onToggleJoin?.call();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isWaitlist
+                    ? 'You have left the waitlist.'
+                    : 'Your RSVP was cancelled successfully.',
+              ),
+            ),
+          );
+        }
+      } catch (e) {
+        if (mounted) {
+          final msg = e.toString().replaceAll('Exception: ', '').trim();
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                msg.isNotEmpty
+                    ? msg
+                    : 'We couldn\'t cancel your reservation. Please try again.',
+              ),
+              backgroundColor: AppColors.error,
+            ),
+          );
+        }
+      } finally {
+        if (mounted) {
+          setState(() => _isCancelling = false);
+        }
+      }
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final exp = widget.experience;
+
+    // Watch live experience provider for fresh capacity and membership state
+    final liveAsync = ref.watch(experienceDetailProvider(widget.experience.id));
+    final exp = liveAsync.valueOrNull ?? widget.experience;
+
     final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
 
     final sheetBg = isDark ? const Color(0xFF130F1E) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.warmIvory;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
@@ -113,7 +186,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                       // Hero Image (Edge to edge reaching under status bar)
                       AppSmartImage(
                         imagePath: exp.coverImageUrl,
-                        categoryHint: exp.categoryName,
+                        categoryHint: '${exp.title} ${exp.categoryName}',
                         fit: BoxFit.cover,
                       ),
 
@@ -133,7 +206,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                         ),
                       ),
 
-                      // Trending badge & spots remaining on bottom-left of hero image (Image 3)
+                      // Trending badge & spots remaining on bottom-left of hero image
                       Positioned(
                         left: 18,
                         bottom: waveOverlap + 12,
@@ -142,30 +215,13 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                           children: [
                             const TrendingBadge(
                               fontSize: 12,
-                              padding: EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
                             ),
                             const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFEF4444).withValues(alpha: 0.85),
-                                borderRadius: BorderRadius.circular(14),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withValues(alpha: 0.25),
-                                    blurRadius: 6,
-                                  ),
-                                ],
-                              ),
-                              child: Text(
-                                '${exp.maxParticipants - exp.currentParticipants} spots left',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
+                            _buildCapacityHeroPill(exp, isDark),
                           ],
                         ),
                       ),
@@ -173,7 +229,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                   ),
                 ),
 
-                // ── Sculpted Organic Curved Content Section (Image 3) ──
+                // ── Sculpted Organic Curved Content Section ──
                 Transform.translate(
                   offset: const Offset(0, -waveOverlap),
                   child: CustomPaint(
@@ -206,7 +262,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                // Title & Description (Image 3)
+                                // Title & Description
                                 Text(
                                   exp.title,
                                   style: AppTypography.headlineMedium.copyWith(
@@ -229,7 +285,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                 ),
                                 const SizedBox(height: 16),
 
-                                // ── Inline Meta Info Chips Row (Screen 6) ──
+                                // ── Inline Meta Info Chips Row ──
                                 Wrap(
                                   spacing: 10,
                                   runSpacing: 8,
@@ -241,16 +297,34 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                       mutedTextColor,
                                       primaryTextColor,
                                     ),
+                                    if (exp.durationMinutes > 0)
+                                      _buildInfoChip(
+                                        Icons.schedule_rounded,
+                                        _formatDuration(exp.durationMinutes),
+                                        isDark,
+                                        mutedTextColor,
+                                        primaryTextColor,
+                                      ),
                                     _buildInfoChip(
-                                      Icons.location_on_rounded,
-                                      exp.venueName.isNotEmpty ? exp.venueName : exp.city,
+                                      exp.isOnline
+                                          ? Icons.videocam_rounded
+                                          : Icons.location_on_rounded,
+                                      exp.isOnline
+                                          ? 'Online Experience'
+                                          : (exp.venueName.isNotEmpty
+                                                ? exp.venueName
+                                                : (exp.city.isNotEmpty
+                                                      ? exp.city
+                                                      : 'Public Venue')),
                                       isDark,
                                       mutedTextColor,
                                       primaryTextColor,
                                     ),
                                     _buildInfoChip(
                                       Icons.groups_rounded,
-                                      '${exp.currentParticipants} Joined',
+                                      exp.hasUnlimitedCapacity
+                                          ? '${exp.currentParticipants} Joined'
+                                          : '${exp.currentParticipants}/${exp.maxParticipants} Joined',
                                       isDark,
                                       mutedTextColor,
                                       primaryTextColor,
@@ -271,7 +345,9 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                 ),
                                 const SizedBox(height: 8),
                                 Text(
-                                  'A refreshing trekking experience with like-minded people. Perfect for nature lovers! Enjoy meaningful face-to-face moments, scenic vistas, and genuine connections without awkward small talk.',
+                                  exp.description.isNotEmpty
+                                      ? exp.description
+                                      : 'A refreshing social experience with like-minded people. Perfect for real connections! Enjoy meaningful face-to-face moments and genuine conversations without awkward small talk.',
                                   style: AppTypography.bodyMedium.copyWith(
                                     color: mutedTextColor,
                                     fontSize: 13,
@@ -283,23 +359,33 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                 // Category Tags
                                 Wrap(
                                   spacing: 8,
+                                  runSpacing: 6,
                                   children: [
-                                    _buildTagChip('Outdoor', isDark),
-                                    _buildTagChip('Adventure', isDark),
-                                    _buildTagChip('Fitness', isDark),
+                                    _buildTagChip(
+                                      '${exp.categoryIcon.isNotEmpty ? '${exp.categoryIcon} ' : ''}${exp.categoryName}',
+                                      isDark,
+                                    ),
+                                    if (exp.isOnline)
+                                      _buildTagChip('Live Online', isDark),
+                                    if (!exp.isOnline && exp.city.isNotEmpty)
+                                      _buildTagChip(exp.city, isDark),
                                   ],
                                 ),
 
                                 const SizedBox(height: 24),
 
-                                // ── Public Venue Interactive Card ──
+                                // ── Venue / Location Card ──
                                 Text(
-                                  'VETTED PUBLIC VENUE',
+                                  exp.isOnline
+                                      ? 'LIVE ONLINE EXPERIENCE'
+                                      : 'VETTED PUBLIC VENUE',
                                   style: AppTypography.labelSmall.copyWith(
                                     letterSpacing: 1.2,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 11,
-                                    color: isDark ? AppColors.softCoral : AppColors.mauve,
+                                    color: isDark
+                                        ? AppColors.softCoral
+                                        : AppColors.mauve,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -308,46 +394,74 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                   decoration: BoxDecoration(
                                     color: cardBg,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: borderColor, width: 0.9),
+                                    border: Border.all(
+                                      color: borderColor,
+                                      width: 0.9,
+                                    ),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Container(
                                         width: 44,
                                         height: 44,
                                         decoration: BoxDecoration(
-                                          color: (isDark ? AppColors.luminousMauve : AppColors.mauve)
-                                              .withValues(alpha: 0.15),
-                                          borderRadius: BorderRadius.circular(14),
+                                          color:
+                                              (isDark
+                                                      ? AppColors.luminousMauve
+                                                      : AppColors.mauve)
+                                                  .withValues(alpha: 0.15),
+                                          borderRadius: BorderRadius.circular(
+                                            14,
+                                          ),
                                         ),
                                         child: Icon(
-                                          Icons.place_rounded,
-                                          color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                          exp.isOnline
+                                              ? Icons.videocam_rounded
+                                              : Icons.place_rounded,
+                                          color: isDark
+                                              ? AppColors.luminousMauve
+                                              : AppColors.mauve,
                                           size: 22,
                                         ),
                                       ),
                                       const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
-                                              exp.venueName,
-                                              style: AppTypography.titleSmall.copyWith(
-                                                color: primaryTextColor,
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 14.5,
-                                              ),
+                                              exp.isOnline
+                                                  ? 'Interactive Online Session'
+                                                  : (exp.venueName.isNotEmpty
+                                                        ? exp.venueName
+                                                        : (exp.city.isNotEmpty
+                                                              ? exp.city
+                                                              : 'Vetted Public Spot')),
+                                              style: AppTypography.titleSmall
+                                                  .copyWith(
+                                                    color: primaryTextColor,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 14.5,
+                                                  ),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              exp.venueAddress,
-                                              style: AppTypography.bodySmall.copyWith(
-                                                color: mutedTextColor,
-                                                fontSize: 12.5,
-                                                height: 1.4,
-                                              ),
+                                              exp.isOnline
+                                                  ? 'Meeting link and details will become available to confirmed members before the session.'
+                                                  : (exp.venueAddress.isNotEmpty
+                                                        ? exp.venueAddress
+                                                        : (exp.city.isNotEmpty
+                                                              ? 'Public meeting venue in ${exp.city}'
+                                                              : 'Public verified venue')),
+                                              style: AppTypography.bodySmall
+                                                  .copyWith(
+                                                    color: mutedTextColor,
+                                                    fontSize: 12.5,
+                                                    height: 1.4,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -358,14 +472,16 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
 
                                 const SizedBox(height: 24),
 
-                                // ── Host Bio Card (Screen 6) ──
+                                // ── Host Bio Card ──
                                 Text(
                                   'HOSTED BY',
                                   style: AppTypography.labelSmall.copyWith(
                                     letterSpacing: 1.2,
                                     fontWeight: FontWeight.w800,
                                     fontSize: 11,
-                                    color: isDark ? AppColors.softCoral : AppColors.mauve,
+                                    color: isDark
+                                        ? AppColors.softCoral
+                                        : AppColors.mauve,
                                   ),
                                 ),
                                 const SizedBox(height: 10),
@@ -374,7 +490,10 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                   decoration: BoxDecoration(
                                     color: cardBg,
                                     borderRadius: BorderRadius.circular(20),
-                                    border: Border.all(color: borderColor, width: 0.9),
+                                    border: Border.all(
+                                      color: borderColor,
+                                      width: 0.9,
+                                    ),
                                   ),
                                   child: Row(
                                     children: [
@@ -402,7 +521,8 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                       const SizedBox(width: 14),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Row(
                                               children: [
@@ -410,12 +530,17 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                                   child: Text(
                                                     exp.hostName,
                                                     maxLines: 1,
-                                                    overflow: TextOverflow.ellipsis,
-                                                    style: AppTypography.titleSmall.copyWith(
-                                                      color: primaryTextColor,
-                                                      fontWeight: FontWeight.w800,
-                                                      fontSize: 14.5,
-                                                    ),
+                                                    overflow:
+                                                        TextOverflow.ellipsis,
+                                                    style: AppTypography
+                                                        .titleSmall
+                                                        .copyWith(
+                                                          color:
+                                                              primaryTextColor,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          fontSize: 14.5,
+                                                        ),
                                                   ),
                                                 ),
                                                 const SizedBox(width: 4),
@@ -429,34 +554,34 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                               ],
                                             ),
                                             const SizedBox(height: 3),
-                                            Row(
-                                              children: [
-                                                const Icon(
-                                                  Icons.star_rounded,
-                                                  size: 14,
-                                                  color: AppColors.warning,
-                                                ),
-                                                const SizedBox(width: 3),
-                                                Text(
-                                                  '4.8 (124 reviews)',
-                                                  style: AppTypography.bodySmall.copyWith(
+                                            Text(
+                                              (exp.hostBio != null &&
+                                                      exp.hostBio!.isNotEmpty)
+                                                  ? exp.hostBio!
+                                                  : 'Community Experience Host',
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: AppTypography.bodySmall
+                                                  .copyWith(
                                                     color: mutedTextColor,
                                                     fontSize: 11.5,
-                                                    fontWeight: FontWeight.w600,
+                                                    height: 1.35,
                                                   ),
-                                                ),
-                                              ],
                                             ),
                                           ],
                                         ),
                                       ),
-                                      // Follow Button (Screen 6)
+                                      // Follow Button
                                       GestureDetector(
                                         onTap: () {
                                           HapticFeedback.lightImpact();
-                                          ScaffoldMessenger.of(context).showSnackBar(
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
                                             SnackBar(
-                                              content: Text('Following ${exp.hostName}!'),
+                                              content: Text(
+                                                'Following ${exp.hostName}!',
+                                              ),
                                             ),
                                           );
                                         },
@@ -467,10 +592,13 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                           ),
                                           decoration: BoxDecoration(
                                             gradient: AppColors.purpleGradient,
-                                            borderRadius: BorderRadius.circular(20),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                             boxShadow: [
                                               BoxShadow(
-                                                color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                                                color: AppColors.primaryPurple
+                                                    .withValues(alpha: 0.35),
                                                 blurRadius: 10,
                                                 offset: const Offset(0, 3),
                                               ),
@@ -492,46 +620,114 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
 
                                 const SizedBox(height: 24),
 
+                                // ── Cancellation Policy Card ──
+                                Text(
+                                  'CANCELLATION POLICY',
+                                  style: AppTypography.labelSmall.copyWith(
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11,
+                                    color: isDark
+                                        ? AppColors.softCoral
+                                        : AppColors.mauve,
+                                  ),
+                                ),
+                                const SizedBox(height: 10),
+                                Container(
+                                  padding: const EdgeInsets.all(14),
+                                  decoration: BoxDecoration(
+                                    color: cardBg,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: borderColor,
+                                      width: 0.9,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Icon(
+                                        Icons.event_repeat_rounded,
+                                        size: 20,
+                                        color: isDark
+                                            ? AppColors.brightViolet
+                                            : AppColors.primaryPurple,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          (exp.cancellationPolicy != null &&
+                                                  exp
+                                                      .cancellationPolicy!
+                                                      .isNotEmpty)
+                                              ? exp.cancellationPolicy!
+                                              : 'Free cancellation up to 24 hours before the experience starts. If you cancel, your place is offered automatically to the first member on the waitlist.',
+                                          style: AppTypography.bodySmall
+                                              .copyWith(
+                                                color: mutedTextColor,
+                                                fontSize: 12,
+                                                height: 1.45,
+                                              ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                const SizedBox(height: 24),
+
                                 // ── Safe Public Meeting Guarantee ──
                                 Container(
                                   padding: const EdgeInsets.all(16),
                                   decoration: BoxDecoration(
-                                    color: (isDark ? AppColors.darkSurface : AppColors.sage)
-                                        .withValues(alpha: 0.35),
+                                    color:
+                                        (isDark
+                                                ? AppColors.darkSurface
+                                                : AppColors.sage)
+                                            .withValues(alpha: 0.35),
                                     borderRadius: BorderRadius.circular(18),
                                     border: Border.all(
-                                      color: isDark ? AppColors.darkBorder : AppColors.divider,
+                                      color: isDark
+                                          ? AppColors.darkBorder
+                                          : AppColors.divider,
                                     ),
                                   ),
                                   child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
                                     children: [
                                       Icon(
                                         Icons.shield_outlined,
-                                        color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                                        color: isDark
+                                            ? AppColors.luminousMauve
+                                            : AppColors.mauve,
                                         size: 22,
                                       ),
                                       const SizedBox(width: 12),
                                       Expanded(
                                         child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
                                           children: [
                                             Text(
                                               'Safe Public Meeting Guarantee',
-                                              style: AppTypography.titleSmall.copyWith(
-                                                color: primaryTextColor,
-                                                fontWeight: FontWeight.w800,
-                                                fontSize: 13.5,
-                                              ),
+                                              style: AppTypography.titleSmall
+                                                  .copyWith(
+                                                    color: primaryTextColor,
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 13.5,
+                                                  ),
                                             ),
                                             const SizedBox(height: 4),
                                             Text(
-                                              'Every MELSAVA experience occurs strictly in vetted public spaces. No private addresses or GPS tracking. After the meetup, participants choose privately who they want to reconnect with.',
-                                              style: AppTypography.bodySmall.copyWith(
-                                                color: primaryTextColor,
-                                                fontSize: 12,
-                                                height: 1.45,
-                                              ),
+                                              'Every in-person MELSAVA experience occurs strictly in vetted public spaces. No private addresses or GPS tracking. After the meetup, participants choose privately who they want to reconnect with.',
+                                              style: AppTypography.bodySmall
+                                                  .copyWith(
+                                                    color: primaryTextColor,
+                                                    fontSize: 12,
+                                                    height: 1.45,
+                                                  ),
                                             ),
                                           ],
                                         ),
@@ -541,7 +737,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                                 ),
 
                                 // Bottom clearance for sticky bar
-                                const SizedBox(height: 100),
+                                const SizedBox(height: 110),
                               ],
                             ),
                           ],
@@ -575,7 +771,9 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                         icon: _isBookmarked
                             ? Icons.bookmark_rounded
                             : Icons.bookmark_border_rounded,
-                        color: _isBookmarked ? const Color(0xFFFFB800) : Colors.white,
+                        color: _isBookmarked
+                            ? const Color(0xFFFFB800)
+                            : Colors.white,
                         onTap: () {
                           HapticFeedback.selectionClick();
                           setState(() => _isBookmarked = !_isBookmarked);
@@ -585,7 +783,10 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                       _buildGlassIconButton(
                         icon: Icons.ios_share_rounded,
                         color: Colors.white,
-                        onTap: () => ExperienceShareSheet.triggerNativeShare(context, exp),
+                        onTap: () => ExperienceShareSheet.triggerNativeShare(
+                          context,
+                          exp,
+                        ),
                       ),
                     ],
                   ),
@@ -594,7 +795,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
             ),
           ),
 
-          // ── Sticky Full-Width Join Experience Action Button (Screen 6) ──
+          // ── Sticky Bottom Join / Waitlist / Cancel RSVP Bar ──
           Positioned(
             left: 0,
             right: 0,
@@ -626,39 +827,7 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
                   ),
                   child: SafeArea(
                     top: false,
-                    child: GestureDetector(
-                      onTap: _openJoinFlow,
-                      child: Container(
-                        height: 52,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: exp.hasJoined ? null : AppColors.sunsetCtaGradient,
-                          color: exp.hasJoined
-                              ? (isDark ? AppColors.darkElevated : const Color(0xFFECE6F5))
-                              : null,
-                          borderRadius: BorderRadius.circular(26),
-                          boxShadow: exp.hasJoined
-                              ? null
-                              : [
-                                  BoxShadow(
-                                    color: const Color(0xFFFF5E7E).withValues(alpha: 0.40),
-                                    blurRadius: 18,
-                                    offset: const Offset(0, 5),
-                                  ),
-                                ],
-                        ),
-                        child: Text(
-                          exp.hasJoined ? 'Manage RSVP ✓' : 'Join Experience →',
-                          style: AppTypography.labelLarge.copyWith(
-                            color: exp.hasJoined
-                                ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                                : Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15.5,
-                          ),
-                        ),
-                      ),
-                    ),
+                    child: _buildStickyBottomBar(exp, isDark),
                   ),
                 ),
               ),
@@ -667,6 +836,296 @@ class _ExperienceDetailSheetState extends State<ExperienceDetailSheet> {
         ],
       ),
     );
+  }
+
+  Widget _buildStickyBottomBar(ExperienceModel exp, bool isDark) {
+    if (exp.isPast) {
+      return Container(
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkElevated : const Color(0xFFEDE9FE),
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Text(
+          exp.isAttended ? 'Attended ✓' : 'Experience Ended',
+          style: AppTypography.labelLarge.copyWith(
+            color: isDark ? AppColors.darkMutedText : AppColors.deepPlum,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+
+    if (exp.isAttended) {
+      return Container(
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkElevated : const Color(0xFFEDE9FE),
+          borderRadius: BorderRadius.circular(26),
+        ),
+        child: Text(
+          'Attended ✓',
+          style: AppTypography.labelLarge.copyWith(
+            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+            fontWeight: FontWeight.w800,
+          ),
+        ),
+      );
+    }
+
+    if (exp.hasJoined) {
+      return Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkElevated
+                    : const Color(0xFFECE6F5),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: isDark ? AppColors.darkBorder : AppColors.divider,
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.check_circle_rounded,
+                    size: 18,
+                    color: isDark
+                        ? AppColors.brightViolet
+                        : AppColors.primaryPurple,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Joined',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: isDark
+                          ? AppColors.brightViolet
+                          : AppColors.primaryPurple,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(26),
+            onTap: _isCancelling ? null : () => _confirmCancel(exp),
+            child: Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2D1822)
+                    : const Color(0xFFFDE8EC),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+                ),
+              ),
+              child: _isCancelling
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFEF4444),
+                      ),
+                    )
+                  : const Text(
+                      'Cancel RSVP',
+                      style: TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    if (exp.isWaitlisted) {
+      return Row(
+        children: [
+          Expanded(
+            child: Container(
+              height: 52,
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? AppColors.darkElevated
+                    : const Color(0xFFF3E8FF),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: isDark
+                      ? const Color(0xFF4C366B)
+                      : const Color(0xFFD8B4FE),
+                ),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.hourglass_top_rounded,
+                    size: 18,
+                    color: isDark
+                        ? AppColors.brightViolet
+                        : AppColors.primaryPurple,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'On Waitlist',
+                    style: AppTypography.labelLarge.copyWith(
+                      color: isDark
+                          ? AppColors.brightViolet
+                          : AppColors.primaryPurple,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          InkWell(
+            borderRadius: BorderRadius.circular(26),
+            onTap: _isCancelling ? null : () => _confirmCancel(exp),
+            child: Container(
+              height: 52,
+              padding: const EdgeInsets.symmetric(horizontal: 20),
+              alignment: Alignment.center,
+              decoration: BoxDecoration(
+                color: isDark
+                    ? const Color(0xFF2D1822)
+                    : const Color(0xFFFDE8EC),
+                borderRadius: BorderRadius.circular(26),
+                border: Border.all(
+                  color: const Color(0xFFEF4444).withValues(alpha: 0.35),
+                ),
+              ),
+              child: _isCancelling
+                  ? const SizedBox(
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Color(0xFFEF4444),
+                      ),
+                    )
+                  : const Text(
+                      'Leave Waitlist',
+                      style: TextStyle(
+                        color: Color(0xFFEF4444),
+                        fontWeight: FontWeight.w800,
+                        fontSize: 13.5,
+                      ),
+                    ),
+            ),
+          ),
+        ],
+      );
+    }
+
+    // Default: Join Experience or Join Waitlist
+    final isWaitlist = exp.isFull;
+    return GestureDetector(
+      onTap: () => _openJoinFlow(exp),
+      child: Container(
+        height: 52,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          gradient: AppColors.sunsetCtaGradient,
+          borderRadius: BorderRadius.circular(26),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFFFF5E7E).withValues(alpha: 0.40),
+              blurRadius: 18,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Text(
+          isWaitlist ? 'Join Waitlist →' : 'Join Experience →',
+          style: AppTypography.labelLarge.copyWith(
+            color: Colors.white,
+            fontWeight: FontWeight.w900,
+            fontSize: 15.5,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCapacityHeroPill(ExperienceModel exp, bool isDark) {
+    if (exp.hasUnlimitedCapacity) {
+      return Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: const Color(0xFF10B981).withValues(alpha: 0.85),
+          borderRadius: BorderRadius.circular(14),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.25),
+              blurRadius: 6,
+            ),
+          ],
+        ),
+        child: const Text(
+          'Open Capacity',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      );
+    }
+
+    final isFull = exp.isFull;
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+      decoration: BoxDecoration(
+        color: isFull
+            ? const Color(0xFF7C3AED).withValues(alpha: 0.90)
+            : const Color(0xFFEF4444).withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: Colors.black.withValues(alpha: 0.25), blurRadius: 6),
+        ],
+      ),
+      child: Text(
+        isFull
+            ? (exp.waitlistCount > 0
+                  ? '${exp.waitlistCount} on waitlist'
+                  : 'Waitlist Open')
+            : '${exp.spotsLeft} spots left',
+        style: const TextStyle(
+          color: Colors.white,
+          fontSize: 11,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
+    );
+  }
+
+  String _formatDuration(int minutes) {
+    if (minutes < 60) return '$minutes mins';
+    final hours = minutes / 60;
+    if (minutes % 60 == 0) return '${hours.toInt()} hrs';
+    return '${hours.toStringAsFixed(1)} hrs';
   }
 
   Widget _buildGlassIconButton({
@@ -781,18 +1240,10 @@ class _OrganicWaveClipper extends CustomClipper<Path> {
     path.quadraticBezierTo(0, 0, 18, 0);
 
     // Convex crest across left and center (where the title text sits)
-    path.cubicTo(
-      w * 0.25, 0,
-      w * 0.48, 4,
-      w * 0.65, 12,
-    );
+    path.cubicTo(w * 0.25, 0, w * 0.48, 4, w * 0.65, 12);
 
     // Graceful organic slope downward to the right edge
-    path.cubicTo(
-      w * 0.80, 20,
-      w * 0.94, 34,
-      w, 36,
-    );
+    path.cubicTo(w * 0.80, 20, w * 0.94, 34, w, 36);
 
     // Complete rectangle bounds
     path.lineTo(w, h);
@@ -810,10 +1261,7 @@ class _OrganicWaveBorderPainter extends CustomPainter {
   final bool isDark;
   final Color borderColor;
 
-  _OrganicWaveBorderPainter({
-    required this.isDark,
-    required this.borderColor,
-  });
+  _OrganicWaveBorderPainter({required this.isDark, required this.borderColor});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -822,16 +1270,8 @@ class _OrganicWaveBorderPainter extends CustomPainter {
     final path = Path();
     path.moveTo(0, 18);
     path.quadraticBezierTo(0, 0, 18, 0);
-    path.cubicTo(
-      w * 0.25, 0,
-      w * 0.48, 4,
-      w * 0.65, 12,
-    );
-    path.cubicTo(
-      w * 0.80, 20,
-      w * 0.94, 34,
-      w, 36,
-    );
+    path.cubicTo(w * 0.25, 0, w * 0.48, 4, w * 0.65, 12);
+    path.cubicTo(w * 0.80, 20, w * 0.94, 34, w, 36);
 
     // Soft drop shadow beneath wave crest
     final shadowPaint = Paint()
@@ -847,8 +1287,11 @@ class _OrganicWaveBorderPainter extends CustomPainter {
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
         colors: [
-          (isDark ? Colors.white : const Color(0xFFFFB300)).withValues(alpha: 0.5),
-          (isDark ? const Color(0xFFC084FC) : const Color(0xFFFF6584)).withValues(alpha: 0.35),
+          (isDark ? Colors.white : const Color(0xFFFFB300)).withValues(
+            alpha: 0.5,
+          ),
+          (isDark ? const Color(0xFFC084FC) : const Color(0xFFFF6584))
+              .withValues(alpha: 0.35),
           Colors.transparent,
         ],
       ).createShader(Rect.fromLTWH(0, 0, w, 40))

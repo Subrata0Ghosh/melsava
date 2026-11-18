@@ -26,16 +26,17 @@ class MainShellScreen extends ConsumerWidget {
 
   void _openQuickAction(BuildContext context, WidgetRef ref) {
     HapticFeedback.mediumImpact();
-    final allExp = ref.read(experiencesRepositoryProvider).getExperiences();
-    final activeExp = allExp.firstWhere(
-      (e) => e.hasJoined || e.isCompleted,
-      orElse: () => allExp.first,
-    );
+    final myBundle = ref.read(myExperiencesProvider).valueOrNull;
+    final activeExp =
+        myBundle?.upcoming.firstOrNull ??
+        myBundle?.waitlisted.firstOrNull ??
+        ref.read(publishedExperiencesProvider).valueOrNull?.firstOrNull;
 
-    ExperienceHubSheet.show(
-      context,
-      experience: activeExp,
-    );
+    if (activeExp != null) {
+      ExperienceHubSheet.show(context, experience: activeExp);
+    } else {
+      context.go('/experiences');
+    }
   }
 
   @override
@@ -77,14 +78,18 @@ class MainShellScreen extends ConsumerWidget {
             boxShadow: [
               // 1. Warm Gold Ambient Halo Shadow
               BoxShadow(
-                color: const Color(0xFFF59E0B).withValues(alpha: isDark ? 0.22 : 0.16),
+                color: const Color(
+                  0xFFF59E0B,
+                ).withValues(alpha: isDark ? 0.22 : 0.16),
                 blurRadius: 28,
                 spreadRadius: 0,
                 offset: const Offset(0, 4),
               ),
               // 2. Radiant Royal Violet/Magenta Aura
               BoxShadow(
-                color: const Color(0xFF8B5CF6).withValues(alpha: isDark ? 0.28 : 0.14),
+                color: const Color(
+                  0xFF8B5CF6,
+                ).withValues(alpha: isDark ? 0.28 : 0.14),
                 blurRadius: 22,
                 offset: const Offset(0, 8),
               ),
@@ -106,7 +111,10 @@ class MainShellScreen extends ConsumerWidget {
                 filter: ImageFilter.blur(sigmaX: 28, sigmaY: 28),
                 child: Container(
                   height: 66,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 6,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? const Color(0xFF151024).withValues(alpha: 0.82)
@@ -114,7 +122,9 @@ class MainShellScreen extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(33),
                     border: Border(
                       top: BorderSide(
-                        color: Colors.white.withValues(alpha: isDark ? 0.20 : 0.70),
+                        color: Colors.white.withValues(
+                          alpha: isDark ? 0.20 : 0.70,
+                        ),
                         width: 0.6,
                       ),
                     ),
@@ -211,13 +221,16 @@ class _AnimatedNavTabItemState extends State<_AnimatedNavTabItem> {
   @override
   Widget build(BuildContext context) {
     // If currentIndex is 3 (Inbox), highlight Connections as closest category
-    final isSelected = widget.branchIndex == widget.currentIndex ||
+    final isSelected =
+        widget.branchIndex == widget.currentIndex ||
         (widget.branchIndex == 2 && widget.currentIndex == 3);
 
-    final activeColor =
-        widget.isDark ? AppColors.brightViolet : AppColors.primaryPurple;
-    final inactiveColor =
-        widget.isDark ? const Color(0xFF9A91B0) : const Color(0xFF7E7394);
+    final activeColor = widget.isDark
+        ? AppColors.brightViolet
+        : AppColors.primaryPurple;
+    final inactiveColor = widget.isDark
+        ? const Color(0xFF9A91B0)
+        : const Color(0xFF7E7394);
 
     return Expanded(
       child: GestureDetector(
@@ -244,21 +257,24 @@ class _AnimatedNavTabItemState extends State<_AnimatedNavTabItem> {
                           ? const Color(0xFF8B5CF6)
                           : const Color(0xFF7C3AED))
                       .withValues(
-                          alpha: isSelected ? (widget.isDark ? 0.22 : 0.12) : 0.0),
+                        alpha: isSelected ? (widget.isDark ? 0.22 : 0.12) : 0.0,
+                      ),
                   (widget.isDark
                           ? const Color(0xFFC026D3)
                           : const Color(0xFFEC4899))
                       .withValues(
-                          alpha: isSelected ? (widget.isDark ? 0.12 : 0.05) : 0.0),
+                        alpha: isSelected ? (widget.isDark ? 0.12 : 0.05) : 0.0,
+                      ),
                 ],
               ),
               boxShadow: isSelected
                   ? [
                       BoxShadow(
-                        color: (widget.isDark
-                                ? const Color(0xFF8B5CF6)
-                                : const Color(0xFF7C3AED))
-                            .withValues(alpha: widget.isDark ? 0.25 : 0.12),
+                        color:
+                            (widget.isDark
+                                    ? const Color(0xFF8B5CF6)
+                                    : const Color(0xFF7C3AED))
+                                .withValues(alpha: widget.isDark ? 0.25 : 0.12),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),
@@ -286,8 +302,10 @@ class _AnimatedNavTabItemState extends State<_AnimatedNavTabItem> {
                         return FadeTransition(
                           opacity: animation,
                           child: ScaleTransition(
-                            scale: Tween<double>(begin: 0.85, end: 1.0)
-                                .animate(animation),
+                            scale: Tween<double>(
+                              begin: 0.85,
+                              end: 1.0,
+                            ).animate(animation),
                             child: child,
                           ),
                         );
@@ -336,14 +354,16 @@ class _AnimatedNavTabItemState extends State<_AnimatedNavTabItem> {
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: const Color(0xFFF59E0B)
-                                  .withValues(alpha: 0.65),
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.65),
                               blurRadius: 5,
                               offset: const Offset(0, 1),
                             ),
                             BoxShadow(
-                              color: const Color(0xFF8B5CF6)
-                                  .withValues(alpha: 0.50),
+                              color: const Color(
+                                0xFF8B5CF6,
+                              ).withValues(alpha: 0.50),
                               blurRadius: 4,
                             ),
                           ]
@@ -395,11 +415,7 @@ class _JewelActionButtonState extends State<_JewelActionButton> {
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [
-                Color(0xFF9333EA),
-                Color(0xFFC026D3),
-                Color(0xFFFF5E7E),
-              ],
+              colors: [Color(0xFF9333EA), Color(0xFFC026D3), Color(0xFFFF5E7E)],
             ),
             boxShadow: [
               BoxShadow(
@@ -436,11 +452,7 @@ class _JewelActionButtonState extends State<_JewelActionButton> {
                   ),
                 ),
               ),
-              const Icon(
-                Icons.add_rounded,
-                color: Colors.white,
-                size: 26,
-              ),
+              const Icon(Icons.add_rounded, color: Colors.white, size: 26),
             ],
           ),
         ),

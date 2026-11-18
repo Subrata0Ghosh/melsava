@@ -33,7 +33,9 @@ class SectionHeader extends StatelessWidget {
               child: Text(
                 title,
                 style: AppTypography.titleLarge.copyWith(
-                  color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
+                  color: isDark
+                      ? AppColors.darkTextPrimary
+                      : AppColors.deepPlum,
                   fontWeight: FontWeight.w700,
                 ),
               ),

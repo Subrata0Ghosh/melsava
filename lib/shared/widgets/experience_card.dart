@@ -59,12 +59,16 @@ class _ExperienceCardState extends State<ExperienceCard>
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final exp = widget.experience;
     final dateFormat = DateFormat('EEE, MMM d · h:mm a');
-    final isFull = exp.currentParticipants >= exp.maxParticipants;
-    final spotsLeft = exp.maxParticipants - exp.currentParticipants;
+    final isFull = exp.isFull;
+    final spotsLeft = exp.spotsLeft;
 
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return GestureDetector(
       onTapDown: (_) => _pressController.forward(),
@@ -75,10 +79,8 @@ class _ExperienceCardState extends State<ExperienceCard>
       onTapCancel: () => _pressController.reverse(),
       child: AnimatedBuilder(
         animation: _scaleAnim,
-        builder: (context, child) => Transform.scale(
-          scale: _scaleAnim.value,
-          child: child,
-        ),
+        builder: (context, child) =>
+            Transform.scale(scale: _scaleAnim.value, child: child),
         child: Container(
           margin: const EdgeInsets.only(bottom: 22),
           decoration: BoxDecoration(
@@ -131,7 +133,14 @@ class _ExperienceCardState extends State<ExperienceCard>
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
                       // ─── Hero Image with Sculptural Curvish Wave Transition ───
-                      _buildHeroImage(isDark, exp, dateFormat, isFull, spotsLeft, cardBg),
+                      _buildHeroImage(
+                        isDark,
+                        exp,
+                        dateFormat,
+                        isFull,
+                        spotsLeft,
+                        cardBg,
+                      ),
 
                       // ─── Content Body ───
                       Padding(
@@ -156,11 +165,24 @@ class _ExperienceCardState extends State<ExperienceCard>
 
                             // Venue + Location row with squircle icon
                             _buildInfoRow(
-                              icon: Icons.place_rounded,
-                              iconBg: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                                  .withValues(alpha: 0.12),
-                              iconColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-                              text: exp.venueName,
+                              icon: exp.isOnline
+                                  ? Icons.videocam_outlined
+                                  : Icons.place_rounded,
+                              iconBg:
+                                  (isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
+                                      .withValues(alpha: 0.12),
+                              iconColor: isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
+                              text: exp.isOnline
+                                  ? 'Online Experience'
+                                  : (exp.venueName.isNotEmpty
+                                        ? exp.venueName
+                                        : (exp.city.isNotEmpty
+                                              ? exp.city
+                                              : 'Public Venue')),
                               isDark: isDark,
                               primaryTextColor: primaryTextColor,
                               mutedTextColor: mutedTextColor,
@@ -170,7 +192,9 @@ class _ExperienceCardState extends State<ExperienceCard>
                             // Time row with squircle icon
                             _buildInfoRow(
                               icon: Icons.schedule_rounded,
-                              iconBg: const Color(0xFFFF9800).withValues(alpha: 0.12),
+                              iconBg: const Color(
+                                0xFFFF9800,
+                              ).withValues(alpha: 0.12),
                               iconColor: const Color(0xFFFF9800),
                               text: dateFormat.format(exp.startsAt),
                               isDark: isDark,
@@ -203,7 +227,9 @@ class _ExperienceCardState extends State<ExperienceCard>
                                       ),
                                       const SizedBox(width: 5),
                                       Text(
-                                        '${exp.currentParticipants}/${exp.maxParticipants} joined',
+                                        exp.hasUnlimitedCapacity
+                                            ? '${exp.currentParticipants} joined'
+                                            : '${exp.currentParticipants}/${exp.maxParticipants} joined',
                                         style: AppTypography.bodySmall.copyWith(
                                           color: mutedTextColor,
                                           fontWeight: FontWeight.w600,
@@ -249,7 +275,7 @@ class _ExperienceCardState extends State<ExperienceCard>
           // ── Photo ──────────────────────────────────────────────────────────
           AppSmartImage(
             imagePath: exp.coverImageUrl,
-            categoryHint: exp.categoryName,
+            categoryHint: '${exp.title} ${exp.categoryName}',
             fit: BoxFit.cover,
             placeholder: Container(
               decoration: BoxDecoration(
@@ -297,7 +323,9 @@ class _ExperienceCardState extends State<ExperienceCard>
             child: CustomPaint(
               painter: _CurvedWaveTransitionPainter(
                 cardColor: cardBg,
-                accentColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                accentColor: isDark
+                    ? AppColors.brightViolet
+                    : AppColors.primaryPurple,
               ),
             ),
           ),
@@ -314,7 +342,10 @@ class _ExperienceCardState extends State<ExperienceCard>
                   child: BackdropFilter(
                     filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
                       decoration: BoxDecoration(
                         color: (isDark ? const Color(0xFF151022) : Colors.white)
                             .withValues(alpha: 0.85),
@@ -333,7 +364,10 @@ class _ExperienceCardState extends State<ExperienceCard>
                       child: Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text(exp.categoryIcon, style: const TextStyle(fontSize: 12)),
+                          Text(
+                            exp.categoryIcon,
+                            style: const TextStyle(fontSize: 12),
+                          ),
                           const SizedBox(width: 5),
                           Text(
                             exp.categoryName,
@@ -369,15 +403,21 @@ class _ExperienceCardState extends State<ExperienceCard>
               mainAxisSize: MainAxisSize.min,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     gradient: exp.hasJoined
                         ? AppColors.purpleGradient
                         : (isFull
-                            ? null
-                            : const LinearGradient(
-                                colors: [Color(0xFFFF7A60), Color(0xFFFF5252)],
-                              )),
+                              ? null
+                              : const LinearGradient(
+                                  colors: [
+                                    Color(0xFFFF7A60),
+                                    Color(0xFFFF5252),
+                                  ],
+                                )),
                     color: isFull ? AppColors.mutedText : null,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
@@ -424,7 +464,9 @@ class _ExperienceCardState extends State<ExperienceCard>
                           _isBookmarked
                               ? Icons.bookmark_rounded
                               : Icons.bookmark_outline_rounded,
-                          color: _isBookmarked ? const Color(0xFFFFB300) : Colors.white,
+                          color: _isBookmarked
+                              ? const Color(0xFFFFB300)
+                              : Colors.white,
                           size: 17,
                         ),
                       ),
@@ -457,11 +499,7 @@ class _ExperienceCardState extends State<ExperienceCard>
             color: iconBg,
             borderRadius: BorderRadius.circular(9),
           ),
-          child: Icon(
-            icon,
-            size: 15,
-            color: iconColor,
-          ),
+          child: Icon(icon, size: 15, color: iconColor),
         ),
         const SizedBox(width: 10),
         Expanded(
@@ -496,10 +534,7 @@ class _ExperienceCardState extends State<ExperienceCard>
               height: 32,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                border: Border.all(
-                  color: cardBg,
-                  width: 2.2,
-                ),
+                border: Border.all(color: cardBg, width: 2.2),
                 boxShadow: [
                   BoxShadow(
                     color: Colors.black.withValues(alpha: 0.14),
@@ -527,6 +562,7 @@ class _ExperienceCardState extends State<ExperienceCard>
 
   Widget _buildJoinButton(ExperienceModel exp, bool isDark) {
     final isJoined = exp.hasJoined;
+    final isMember = isJoined || exp.isWaitlisted || exp.isAttended;
 
     return Material(
       color: Colors.transparent,
@@ -537,17 +573,17 @@ class _ExperienceCardState extends State<ExperienceCard>
           duration: const Duration(milliseconds: 200),
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
           decoration: BoxDecoration(
-            gradient: isJoined ? null : AppColors.sunsetCtaGradient,
-            color: isJoined
+            gradient: isMember ? null : AppColors.sunsetCtaGradient,
+            color: isMember
                 ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
                 : null,
             borderRadius: BorderRadius.circular(18),
-            border: isJoined
+            border: isMember
                 ? Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.divider,
                   )
                 : null,
-            boxShadow: isJoined
+            boxShadow: isMember
                 ? null
                 : [
                     BoxShadow(
@@ -561,16 +597,24 @@ class _ExperienceCardState extends State<ExperienceCard>
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                isJoined ? 'Joined ✓' : 'Join',
+                exp.isAttended
+                    ? 'Attended ✓'
+                    : (isJoined
+                          ? 'Joined ✓'
+                          : (exp.isWaitlisted
+                                ? 'Waitlisted'
+                                : (exp.isFull ? 'Waitlist' : 'Join'))),
                 style: AppTypography.labelSmall.copyWith(
-                  color: isJoined
-                      ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+                  color: isMember
+                      ? (isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple)
                       : Colors.white,
                   fontWeight: FontWeight.w900,
                   fontSize: 13,
                 ),
               ),
-              if (!isJoined) ...[
+              if (!isMember) ...[
                 const SizedBox(width: 4),
                 const Icon(
                   Icons.arrow_forward_rounded,
@@ -611,14 +655,20 @@ class _CurvedWaveTransitionPainter extends CustomPainter {
       final p = Path();
       p.moveTo(0, 14.0 + offsetY);
       p.cubicTo(
-        w * 0.25, 2.0 + offsetY,
-        w * 0.50, 4.0 + offsetY,
-        w * 0.65, 10.0 + offsetY,
+        w * 0.25,
+        2.0 + offsetY,
+        w * 0.50,
+        4.0 + offsetY,
+        w * 0.65,
+        10.0 + offsetY,
       );
       p.cubicTo(
-        w * 0.80, 16.0 + offsetY,
-        w * 0.94, 25.0 + offsetY,
-        w, 26.0 + offsetY,
+        w * 0.80,
+        16.0 + offsetY,
+        w * 0.94,
+        25.0 + offsetY,
+        w,
+        26.0 + offsetY,
       );
       p.lineTo(w, h + 3.0);
       p.lineTo(0, h + 3.0);
@@ -636,16 +686,8 @@ class _CurvedWaveTransitionPainter extends CustomPainter {
     // 3. Subtle Glowing Accent Crest Line
     final crestPath = Path()
       ..moveTo(0, 14.0)
-      ..cubicTo(
-        w * 0.25, 2.0,
-        w * 0.50, 4.0,
-        w * 0.65, 10.0,
-      )
-      ..cubicTo(
-        w * 0.80, 16.0,
-        w * 0.94, 25.0,
-        w, 26.0,
-      );
+      ..cubicTo(w * 0.25, 2.0, w * 0.50, 4.0, w * 0.65, 10.0)
+      ..cubicTo(w * 0.80, 16.0, w * 0.94, 25.0, w, 26.0);
 
     final crestGlowPaint = Paint()
       ..color = accentColor.withValues(alpha: 0.28)
@@ -677,5 +719,6 @@ class _CurvedWaveTransitionPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _CurvedWaveTransitionPainter oldDelegate) =>
-      oldDelegate.cardColor != cardColor || oldDelegate.accentColor != accentColor;
+      oldDelegate.cardColor != cardColor ||
+      oldDelegate.accentColor != accentColor;
 }

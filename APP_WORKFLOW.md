@@ -239,27 +239,37 @@ When a user taps an experience card:
 
 ---
 
-## H. Join Experience Flow
+## H. Join Experience Flow (Phase 2 Implemented)
 
 ### Steps
-1. User taps **Join Experience**
-2. System validates:
-   - ✅ Account eligibility (profile complete, not suspended)
-   - ✅ Available capacity (spots remaining)
-   - ✅ Not already joined
-   - ✅ No scheduling conflicts
-3. RSVP record created
+1. User taps **Join Experience** (or **Join Waitlist** when capacity is full)
+2. Bottom sheet opens showing selected experience details, live available capacity, and saved profile intentions (read-only, never defaults to Dating)
+3. User confirms RSVP (`join_experience` atomic RPC):
+   - Row-level lock (`FOR UPDATE`) on `experiences` prevents overbooking race conditions
+   - System validates adult eligibility (`age_verified = TRUE`, `onboarding_completed = TRUE`, `!is_suspended`)
+   - Checks published and upcoming status
+   - Prevents duplicate joins idempotently
+   - Enrolls user into `joined` if spots remain, or enqueues into `waitlisted`
 4. Confirmation screen displayed:
-   - *"You're in! Here's what to know before the experience."*
+   - *"You have joined this experience."* (or *"You're on the waitlist."*)
    - Activity details summary
-   - Date/time reminder
-   - Venue or online instructions
-5. Experience appears in **My Experiences**
+   - Cancellation policy reminder
+5. Experience appears in **My Circles** with immediate status update
 
 ### Additional Features
-- **Cancel** — User can cancel their RSVP
-- **Waitlist** — If capacity is full, user joins a waitlist
-- **Reminders** — Notifications before the experience
+- **Cancel RSVP** — User can cancel participation from Experience Details or My Circles with confirmation (`cancel_experience_membership` RPC)
+- **FIFO Waitlist Promotion** — When a joined member cancels, the earliest waitlisted user is automatically promoted to `joined` on the server
+- **Leave Waitlist** — Waitlisted users can withdraw their waitlist request anytime with confirmation
+
+---
+
+## H.1. My Circles Management (Phase 2 Implemented)
+
+Located under Tab 2 of the Experiences screen, organized into four functional sections:
+1. **Upcoming**: Experiences the user has actively joined, with confirmed RSVP badge, direct link to Experience Details, Open Hub trigger, and Cancel RSVP action
+2. **Waitlisted**: Full experiences where the user is queued on the waitlist, with waiting indicator and Leave Waitlist action
+3. **Attended**: Completed micro-group meetups the user attended, with trigger for private Post-Experience Choices
+4. **Past**: Concluded or expired experiences archived for reference
 
 ---
 

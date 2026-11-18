@@ -60,7 +60,9 @@ class GoogleSignInButton extends StatelessWidget {
                     child: CircularProgressIndicator(
                       strokeWidth: 2.3,
                       valueColor: AlwaysStoppedAnimation<Color>(
-                        isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                       ),
                     ),
                   )
@@ -95,10 +97,7 @@ class _GoogleGIcon extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CustomPaint(
-      size: Size.square(size),
-      painter: _GoogleGPainter(),
-    );
+    return CustomPaint(size: Size.square(size), painter: _GoogleGPainter());
   }
 }
 
@@ -142,12 +141,7 @@ class _GoogleGPainter extends CustomPainter {
       ..style = PaintingStyle.fill;
     final double barHeight = strokeWidth * 0.96;
     canvas.drawRect(
-      Rect.fromLTWH(
-        w * 0.50,
-        (h - barHeight) / 2,
-        w * 0.48,
-        barHeight,
-      ),
+      Rect.fromLTWH(w * 0.50, (h - barHeight) / 2, w * 0.48, barHeight),
       barPaint,
     );
   }

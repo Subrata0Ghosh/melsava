@@ -541,6 +541,24 @@ class _ProfileOnboardingScreenState
                                   ),
                                 ),
                               ),
+                              if (_currentStep == _totalSteps - 1 &&
+                                  !_isSubmitting)
+                                TextButton(
+                                  onPressed: _handleNext,
+                                  style: TextButton.styleFrom(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                    ),
+                                    minimumSize: const Size(0, 32),
+                                  ),
+                                  child: Text(
+                                    'Retry',
+                                    style: AppTypography.labelSmall.copyWith(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                ),
                             ],
                           ),
                         ),

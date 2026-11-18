@@ -419,12 +419,25 @@ Push notification tokens.
 
 ## Server-Side Functions
 
-| Function | Description |
-|----------|-------------|
-| `create_profile_on_signup()` | Trigger on `auth.users` INSERT — auto-creates profile + profile_private |
-| `check_experience_capacity(UUID)` | Returns JSON with capacity status for an experience |
-| `process_mutual_connections(UUID)` | Atomic: finds mutual choices, creates connections + conversations |
-| `handle_updated_at()` | Trigger function to auto-update `updated_at` timestamps |
+| Function | Migration | Description |
+|----------|-----------|-------------|
+| `create_profile_on_signup()` | 001 | Trigger on `auth.users` INSERT — auto-creates profile + profile_private |
+| `check_experience_capacity(UUID)` | 003 | Returns JSON with capacity status for an experience |
+| `process_mutual_connections(UUID)` | 003 | Atomic: finds mutual choices, creates connections + conversations |
+| `handle_updated_at()` | 001 | Trigger function to auto-update `updated_at` timestamps |
+| `complete_profile_onboarding(...)` | 006 | Atomic: saves profile, private data, interests, intentions; verifies age |
+| `get_experience_participant_counts(UUID[])` | 006 | Aggregate: returns joined & waitlisted counts without exposing PII |
+| `join_experience(UUID)` | 006 | Atomic: row-locked (`FOR UPDATE`) capacity check, join or FIFO waitlist |
+| `cancel_experience_membership(UUID)` | 006 | Atomic: row-locked (`FOR UPDATE`) cancellation with FIFO waitlist promotion |
+
+---
+
+## Performance & Concurrency Indexes (Migration 006)
+
+| Index Name | Table | Columns | Purpose |
+|------------|-------|---------|---------|
+| `idx_experiences_published_starts_at` | `experiences` | `(status, starts_at)` | Accelerates published upcoming feed queries |
+| `idx_experience_members_exp_status_fifo` | `experience_members` | `(experience_id, status, joined_at, created_at, id)` | Ensures indexed FIFO waitlist promotion and fast capacity calculation |
 
 ---
 

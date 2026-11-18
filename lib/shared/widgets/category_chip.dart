@@ -62,11 +62,7 @@ class CategoryChip extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             if (icon != null) ...[
-              Icon(
-                icon,
-                size: 16,
-                color: iconColor,
-              ),
+              Icon(icon, size: 16, color: iconColor),
               const SizedBox(width: AppConstants.spacingSM),
             ],
             Text(

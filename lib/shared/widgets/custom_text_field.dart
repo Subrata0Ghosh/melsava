@@ -44,8 +44,12 @@ class CustomTextField extends StatelessWidget {
 
     // High-contrast, theme-aware palette
     final labelColor = isDark ? const Color(0xFFF1ECF9) : AppColors.deepPlum;
-    final inputTextColor = isDark ? const Color(0xFFFDFCFE) : AppColors.deepPlum;
-    final hintColor = isDark ? const Color(0xFFA59CB6) : AppColors.mutedText.withValues(alpha: 0.70);
+    final inputTextColor = isDark
+        ? const Color(0xFFFDFCFE)
+        : AppColors.deepPlum;
+    final hintColor = isDark
+        ? const Color(0xFFA59CB6)
+        : AppColors.mutedText.withValues(alpha: 0.70);
     final iconColor = isDark ? const Color(0xFFBDB2D4) : AppColors.mutedText;
 
     // In dark mode: sleek translucent obsidian glass surface
@@ -58,7 +62,9 @@ class CustomTextField extends StatelessWidget {
         ? Colors.white.withValues(alpha: 0.16)
         : const Color(0xFFE2DDD7);
 
-    final focusedBorderColor = isDark ? AppColors.brightViolet : AppColors.mauve;
+    final focusedBorderColor = isDark
+        ? AppColors.brightViolet
+        : AppColors.mauve;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -78,9 +84,7 @@ class CustomTextField extends StatelessWidget {
         ],
         Container(
           decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(
-              AppConstants.buttonRadiusSmall,
-            ),
+            borderRadius: BorderRadius.circular(AppConstants.buttonRadiusSmall),
             boxShadow: [
               BoxShadow(
                 color: isDark
@@ -101,7 +105,9 @@ class CustomTextField extends StatelessWidget {
             maxLines: maxLines,
             readOnly: readOnly,
             onTap: onTap,
-            cursorColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+            cursorColor: isDark
+                ? AppColors.brightViolet
+                : AppColors.primaryPurple,
             style: AppTypography.bodyMedium.copyWith(
               color: inputTextColor,
               fontWeight: FontWeight.w600,
@@ -115,19 +121,13 @@ class CustomTextField extends StatelessWidget {
               errorText: errorText,
               prefixIcon: prefixIcon != null
                   ? IconTheme(
-                      data: IconThemeData(
-                        color: iconColor,
-                        size: 20,
-                      ),
+                      data: IconThemeData(color: iconColor, size: 20),
                       child: prefixIcon!,
                     )
                   : null,
               suffixIcon: suffixIcon != null
                   ? IconTheme(
-                      data: IconThemeData(
-                        color: iconColor,
-                        size: 20,
-                      ),
+                      data: IconThemeData(color: iconColor, size: 20),
                       child: suffixIcon!,
                     )
                   : null,
@@ -141,28 +141,19 @@ class CustomTextField extends StatelessWidget {
                 borderRadius: BorderRadius.circular(
                   AppConstants.buttonRadiusSmall,
                 ),
-                borderSide: BorderSide(
-                  color: defaultBorderColor,
-                  width: 1.0,
-                ),
+                borderSide: BorderSide(color: defaultBorderColor, width: 1.0),
               ),
               enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(
                   AppConstants.buttonRadiusSmall,
                 ),
-                borderSide: BorderSide(
-                  color: defaultBorderColor,
-                  width: 1.0,
-                ),
+                borderSide: BorderSide(color: defaultBorderColor, width: 1.0),
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(
                   AppConstants.buttonRadiusSmall,
                 ),
-                borderSide: BorderSide(
-                  color: focusedBorderColor,
-                  width: 1.8,
-                ),
+                borderSide: BorderSide(color: focusedBorderColor, width: 1.8),
               ),
               errorBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(

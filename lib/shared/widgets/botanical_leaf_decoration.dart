@@ -1,12 +1,7 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
-enum BotanicalLeafStyle {
-  monstera,
-  tropicalFoliage,
-  eucalyptus,
-  wildGrass,
-}
+enum BotanicalLeafStyle { monstera, tropicalFoliage, eucalyptus, wildGrass }
 
 /// ─────────────────────────────────────────────────────────────────────────────
 /// LUSH BOTANICAL NATURE DECORATIONS
@@ -73,7 +68,9 @@ class BotanicalLeafDecoration extends StatelessWidget {
       case BotanicalLeafStyle.tropicalFoliage:
         leaf = CustomPaint(
           size: Size(width, height),
-          painter: _TropicalFoliagePainter(colors: customColors ?? goldenSunlit),
+          painter: _TropicalFoliagePainter(
+            colors: customColors ?? goldenSunlit,
+          ),
         );
         break;
       case BotanicalLeafStyle.eucalyptus:
@@ -99,11 +96,7 @@ class BotanicalLeafDecoration extends StatelessWidget {
     }
 
     return IgnorePointer(
-      child: SizedBox(
-        width: width,
-        height: height,
-        child: leaf,
-      ),
+      child: SizedBox(width: width, height: height, child: leaf),
     );
   }
 }
@@ -161,7 +154,14 @@ class _MonsteraLeafPainter extends CustomPainter {
 
     final veinPath = Path();
     veinPath.moveTo(w * 0.15, h * 0.92);
-    veinPath.cubicTo(w * 0.35, h * 0.65, w * 0.55, h * 0.35, w * 0.70, h * 0.02);
+    veinPath.cubicTo(
+      w * 0.35,
+      h * 0.65,
+      w * 0.55,
+      h * 0.35,
+      w * 0.70,
+      h * 0.02,
+    );
     canvas.drawPath(veinPath, veinPaint);
 
     // Secondary veins branching out
@@ -171,10 +171,26 @@ class _MonsteraLeafPainter extends CustomPainter {
       ..strokeWidth = 1.2
       ..strokeCap = StrokeCap.round;
 
-    canvas.drawLine(Offset(w * 0.30, h * 0.70), Offset(w * 0.15, h * 0.58), subVeinPaint);
-    canvas.drawLine(Offset(w * 0.38, h * 0.58), Offset(w * 0.72, h * 0.50), subVeinPaint);
-    canvas.drawLine(Offset(w * 0.45, h * 0.45), Offset(w * 0.25, h * 0.35), subVeinPaint);
-    canvas.drawLine(Offset(w * 0.52, h * 0.32), Offset(w * 0.80, h * 0.25), subVeinPaint);
+    canvas.drawLine(
+      Offset(w * 0.30, h * 0.70),
+      Offset(w * 0.15, h * 0.58),
+      subVeinPaint,
+    );
+    canvas.drawLine(
+      Offset(w * 0.38, h * 0.58),
+      Offset(w * 0.72, h * 0.50),
+      subVeinPaint,
+    );
+    canvas.drawLine(
+      Offset(w * 0.45, h * 0.45),
+      Offset(w * 0.25, h * 0.35),
+      subVeinPaint,
+    );
+    canvas.drawLine(
+      Offset(w * 0.52, h * 0.32),
+      Offset(w * 0.80, h * 0.25),
+      subVeinPaint,
+    );
 
     // Edge highlight
     final highlightPaint = Paint()
@@ -302,13 +318,48 @@ class _EucalyptusPainter extends CustomPainter {
 
     // Draw pairs of circular/oval eucalyptus leaves along stem
     final leafData = [
-      {'pos': Offset(w * 0.25, h * 0.80), 'rx': w * 0.22, 'ry': h * 0.10, 'rot': -0.3},
-      {'pos': Offset(w * 0.40, h * 0.82), 'rx': w * 0.20, 'ry': h * 0.09, 'rot': 0.4},
-      {'pos': Offset(w * 0.38, h * 0.55), 'rx': w * 0.20, 'ry': h * 0.09, 'rot': -0.2},
-      {'pos': Offset(w * 0.52, h * 0.57), 'rx': w * 0.18, 'ry': h * 0.08, 'rot': 0.3},
-      {'pos': Offset(w * 0.55, h * 0.32), 'rx': w * 0.16, 'ry': h * 0.07, 'rot': -0.15},
-      {'pos': Offset(w * 0.68, h * 0.33), 'rx': w * 0.15, 'ry': h * 0.07, 'rot': 0.25},
-      {'pos': Offset(w * 0.75, h * 0.10), 'rx': w * 0.12, 'ry': h * 0.06, 'rot': 0.0},
+      {
+        'pos': Offset(w * 0.25, h * 0.80),
+        'rx': w * 0.22,
+        'ry': h * 0.10,
+        'rot': -0.3,
+      },
+      {
+        'pos': Offset(w * 0.40, h * 0.82),
+        'rx': w * 0.20,
+        'ry': h * 0.09,
+        'rot': 0.4,
+      },
+      {
+        'pos': Offset(w * 0.38, h * 0.55),
+        'rx': w * 0.20,
+        'ry': h * 0.09,
+        'rot': -0.2,
+      },
+      {
+        'pos': Offset(w * 0.52, h * 0.57),
+        'rx': w * 0.18,
+        'ry': h * 0.08,
+        'rot': 0.3,
+      },
+      {
+        'pos': Offset(w * 0.55, h * 0.32),
+        'rx': w * 0.16,
+        'ry': h * 0.07,
+        'rot': -0.15,
+      },
+      {
+        'pos': Offset(w * 0.68, h * 0.33),
+        'rx': w * 0.15,
+        'ry': h * 0.07,
+        'rot': 0.25,
+      },
+      {
+        'pos': Offset(w * 0.75, h * 0.10),
+        'rx': w * 0.12,
+        'ry': h * 0.06,
+        'rot': 0.0,
+      },
     ];
 
     for (int i = 0; i < leafData.length; i++) {
@@ -324,7 +375,11 @@ class _EucalyptusPainter extends CustomPainter {
 
       // Leaf shadow
       canvas.drawOval(
-        Rect.fromCenter(center: const Offset(1.5, 2.5), width: rx * 2, height: ry * 2),
+        Rect.fromCenter(
+          center: const Offset(1.5, 2.5),
+          width: rx * 2,
+          height: ry * 2,
+        ),
         Paint()
           ..color = Colors.black.withValues(alpha: 0.08)
           ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 3),
@@ -332,13 +387,20 @@ class _EucalyptusPainter extends CustomPainter {
 
       // Leaf fill
       final fillPaint = Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.3, -0.3),
-          colors: [
-            colors[i % colors.length],
-            colors[(i + 1) % colors.length],
-          ],
-        ).createShader(Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2));
+        ..shader =
+            RadialGradient(
+              center: const Alignment(-0.3, -0.3),
+              colors: [
+                colors[i % colors.length],
+                colors[(i + 1) % colors.length],
+              ],
+            ).createShader(
+              Rect.fromCenter(
+                center: Offset.zero,
+                width: rx * 2,
+                height: ry * 2,
+              ),
+            );
       canvas.drawOval(
         Rect.fromCenter(center: Offset.zero, width: rx * 2, height: ry * 2),
         fillPaint,
@@ -373,11 +435,36 @@ class _WildGrassPainter extends CustomPainter {
 
     // Draw 5 graceful curving grass blades with varied heights and bends
     final blades = [
-      {'base': Offset(w * 0.1, h), 'ctrl': Offset(w * 0.05, h * 0.4), 'tip': Offset(w * 0.3, h * 0.05), 'width': 3.5},
-      {'base': Offset(w * 0.3, h), 'ctrl': Offset(w * 0.45, h * 0.45), 'tip': Offset(w * 0.6, h * 0.15), 'width': 3.2},
-      {'base': Offset(w * 0.5, h), 'ctrl': Offset(w * 0.35, h * 0.35), 'tip': Offset(w * 0.15, h * 0.2), 'width': 3.0},
-      {'base': Offset(w * 0.7, h), 'ctrl': Offset(w * 0.85, h * 0.4), 'tip': Offset(w * 0.95, h * 0.1), 'width': 2.8},
-      {'base': Offset(w * 0.85, h), 'ctrl': Offset(w * 0.75, h * 0.5), 'tip': Offset(w * 0.65, h * 0.3), 'width': 2.5},
+      {
+        'base': Offset(w * 0.1, h),
+        'ctrl': Offset(w * 0.05, h * 0.4),
+        'tip': Offset(w * 0.3, h * 0.05),
+        'width': 3.5,
+      },
+      {
+        'base': Offset(w * 0.3, h),
+        'ctrl': Offset(w * 0.45, h * 0.45),
+        'tip': Offset(w * 0.6, h * 0.15),
+        'width': 3.2,
+      },
+      {
+        'base': Offset(w * 0.5, h),
+        'ctrl': Offset(w * 0.35, h * 0.35),
+        'tip': Offset(w * 0.15, h * 0.2),
+        'width': 3.0,
+      },
+      {
+        'base': Offset(w * 0.7, h),
+        'ctrl': Offset(w * 0.85, h * 0.4),
+        'tip': Offset(w * 0.95, h * 0.1),
+        'width': 2.8,
+      },
+      {
+        'base': Offset(w * 0.85, h),
+        'ctrl': Offset(w * 0.75, h * 0.5),
+        'tip': Offset(w * 0.65, h * 0.3),
+        'width': 2.5,
+      },
     ];
 
     for (int i = 0; i < blades.length; i++) {
@@ -390,18 +477,19 @@ class _WildGrassPainter extends CustomPainter {
       final p = Path();
       p.moveTo(base.dx - width * 0.5, base.dy);
       p.quadraticBezierTo(ctrl.dx - width * 0.2, ctrl.dy, tip.dx, tip.dy);
-      p.quadraticBezierTo(ctrl.dx + width * 0.2, ctrl.dy, base.dx + width * 0.5, base.dy);
+      p.quadraticBezierTo(
+        ctrl.dx + width * 0.2,
+        ctrl.dy,
+        base.dx + width * 0.5,
+        base.dy,
+      );
       p.close();
 
       final paint = Paint()
         ..shader = LinearGradient(
           begin: Alignment.bottomCenter,
           end: Alignment.topCenter,
-          colors: [
-            colors.last,
-            colors[i % colors.length],
-            colors.first,
-          ],
+          colors: [colors.last, colors[i % colors.length], colors.first],
         ).createShader(Rect.fromPoints(base, tip));
       canvas.drawPath(p, paint);
     }
@@ -563,7 +651,9 @@ class _AmbientNatureBackdropState extends State<AmbientNatureBackdrop>
                       painter: _InteractiveNatureAuraPainter(
                         progress: _animController.value,
                         isDark: isDark,
-                        recentTouch: _touchPoints.isNotEmpty ? _touchPoints.last : null,
+                        recentTouch: _touchPoints.isNotEmpty
+                            ? _touchPoints.last
+                            : null,
                       ),
                     );
                   },
@@ -576,7 +666,8 @@ class _AmbientNatureBackdropState extends State<AmbientNatureBackdrop>
             AnimatedBuilder(
               animation: _animController,
               builder: (context, child) {
-                final sway = math.sin(_animController.value * 2 * math.pi) * 0.035;
+                final sway =
+                    math.sin(_animController.value * 2 * math.pi) * 0.035;
                 return Positioned(
                   top: -10,
                   right: -15,
@@ -586,7 +677,9 @@ class _AmbientNatureBackdropState extends State<AmbientNatureBackdrop>
                     height: 145,
                     rotation: -0.32 + sway,
                     opacity: isDark ? 0.30 : 0.48,
-                    customColors: widget.leafColors ?? BotanicalLeafDecoration.emeraldForest,
+                    customColors:
+                        widget.leafColors ??
+                        BotanicalLeafDecoration.emeraldForest,
                   ),
                 );
               },
@@ -596,7 +689,8 @@ class _AmbientNatureBackdropState extends State<AmbientNatureBackdrop>
             AnimatedBuilder(
               animation: _animController,
               builder: (context, child) {
-                final sway = math.cos(_animController.value * 2 * math.pi) * 0.035;
+                final sway =
+                    math.cos(_animController.value * 2 * math.pi) * 0.035;
                 return Positioned(
                   bottom: 30,
                   left: -18,
@@ -636,10 +730,7 @@ class _InteractiveNatureAuraPainter extends CustomPainter {
 
   static final List<math.Point<double>> _fireflySeeds = List.generate(
     14,
-    (i) => math.Point(
-      (0.08 + (i * 0.071)) % 1.0,
-      (0.05 + (i * 0.063)) % 1.0,
-    ),
+    (i) => math.Point((0.08 + (i * 0.071)) % 1.0, (0.05 + (i * 0.063)) % 1.0),
   );
 
   _InteractiveNatureAuraPainter({
@@ -671,8 +762,8 @@ class _InteractiveNatureAuraPainter extends CustomPainter {
       final Color color = (i % 3 == 0)
           ? const Color(0xFFFFD54F) // Warm Gold
           : (i % 3 == 1)
-              ? const Color(0xFF64FFDA) // Dew Mint
-              : const Color(0xFFC084FC); // Luminous Lavender
+          ? const Color(0xFF64FFDA) // Dew Mint
+          : const Color(0xFFC084FC); // Luminous Lavender
 
       final paint = Paint()
         ..color = color.withValues(alpha: alpha)
@@ -701,5 +792,6 @@ class _InteractiveNatureAuraPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant _InteractiveNatureAuraPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _InteractiveNatureAuraPainter oldDelegate) =>
+      true;
 }

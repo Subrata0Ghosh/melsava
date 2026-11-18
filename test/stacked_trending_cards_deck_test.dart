@@ -4,8 +4,9 @@ import 'package:melsava/shared/models/experience_model.dart';
 import 'package:melsava/shared/widgets/stacked_trending_cards_deck.dart';
 
 void main() {
-  testWidgets('StackedTrendingCardsDeck renders and allows swipe interaction',
-      (tester) async {
+  testWidgets('StackedTrendingCardsDeck renders and allows swipe interaction', (
+    tester,
+  ) async {
     final experiences = [
       ExperienceModel(
         id: 'exp-1',
