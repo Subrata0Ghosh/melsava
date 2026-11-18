@@ -31,7 +31,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         curve: Curves.easeOutCubic,
       );
     } else {
-      context.go('/adults-only');
+      context.go('/welcome');
     }
   }
 
@@ -57,7 +57,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
             children: [
               // Top Bar: Brand Wordmark + Theme Toggle + Skip
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 12,
+                ),
                 child: Row(
                   children: [
                     const MelsavaLogo(size: 26),
@@ -67,30 +70,45 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       style: AppTypography.titleMedium.copyWith(
                         fontWeight: FontWeight.w800,
                         letterSpacing: 2.0,
-                        color: isDark ? AppColors.darkTextPrimary : AppColors.deepPlum,
+                        color: isDark
+                            ? AppColors.darkTextPrimary
+                            : AppColors.deepPlum,
                       ),
                     ),
                     const Spacer(),
 
                     // Quick Dark / Light Theme Toggle Pill
                     GestureDetector(
-                      onTap: () => ref.read(themeModeProvider.notifier).toggleTheme(isDark),
+                      onTap: () => ref
+                          .read(themeModeProvider.notifier)
+                          .toggleTheme(isDark),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
-                          color: isDark ? AppColors.darkElevated : AppColors.white,
+                          color: isDark
+                              ? AppColors.darkElevated
+                              : AppColors.white,
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                            color: isDark ? AppColors.darkBorder : AppColors.divider,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : AppColors.divider,
                           ),
                         ),
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
                             Icon(
-                              isDark ? Icons.dark_mode_rounded : Icons.light_mode_rounded,
+                              isDark
+                                  ? Icons.dark_mode_rounded
+                                  : Icons.light_mode_rounded,
                               size: 15,
-                              color: isDark ? AppColors.luminousMauve : AppColors.mauve,
+                              color: isDark
+                                  ? AppColors.luminousMauve
+                                  : AppColors.mauve,
                             ),
                             const SizedBox(width: 5),
                             Text(
@@ -112,11 +130,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
                     // Skip button
                     TextButton(
-                      onPressed: () => context.go('/adults-only'),
+                      onPressed: () => context.go('/welcome'),
                       child: Text(
                         'Skip',
                         style: AppTypography.labelMedium.copyWith(
-                          color: isDark ? AppColors.darkMutedText : AppColors.mutedText,
+                          color: isDark
+                              ? AppColors.darkMutedText
+                              : AppColors.mutedText,
                         ),
                       ),
                     ),
@@ -140,7 +160,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Bottom Navigation & Indicators
               Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 16,
+                ),
                 child: Column(
                   children: [
                     // Indicators
@@ -154,12 +177,14 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           height: 6,
                           width: isActive ? 24 : 6,
                           decoration: BoxDecoration(
-                            gradient: isActive ? AppColors.sunsetCtaGradient : null,
+                            gradient: isActive
+                                ? AppColors.sunsetCtaGradient
+                                : null,
                             color: isActive
                                 ? null
                                 : (isDark
-                                    ? Colors.white.withValues(alpha: 0.15)
-                                    : AppColors.divider),
+                                      ? Colors.white.withValues(alpha: 0.15)
+                                      : AppColors.divider),
                             borderRadius: BorderRadius.circular(3),
                           ),
                         );
@@ -172,8 +197,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       label: _currentPage == 0
                           ? 'Get Started →'
                           : (_currentPage == _totalPages - 1
-                              ? 'Explore MELSAVA'
-                              : 'Continue'),
+                                ? 'Explore MELSAVA'
+                                : 'Continue'),
                       gradient: AppColors.sunsetCtaGradient,
                       onPressed: _onNext,
                     ),
@@ -190,7 +215,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           style: AppTypography.labelLarge.copyWith(
                             fontWeight: FontWeight.w700,
                             fontSize: 14,
-                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            color: isDark
+                                ? AppColors.brightViolet
+                                : AppColors.primaryPurple,
                           ),
                         ),
                       ),
@@ -207,8 +234,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 1: Discover Experiences, Meet Amazing People (Image 3 Screen 2)
   Widget _buildStepOne(bool isDark) {
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Stack(
       children: [
@@ -339,7 +370,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFFFF5E7E).withValues(alpha: 0.5),
+                              color: const Color(
+                                0xFFFF5E7E,
+                              ).withValues(alpha: 0.5),
                               blurRadius: 14,
                               offset: const Offset(0, 4),
                             ),
@@ -374,17 +407,24 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // ── Social Proof Community Badge ──
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkElevated : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEDE9FE),
                     width: 0.9,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.2 : 0.03,
+                      ),
                       blurRadius: 8,
                       offset: const Offset(0, 2),
                     ),
@@ -400,15 +440,21 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         children: [
                           Positioned(
                             left: 0,
-                            child: _buildMiniAvatar('assets/images/sneha_avatar.png'),
+                            child: _buildMiniAvatar(
+                              'assets/images/sneha_avatar.png',
+                            ),
                           ),
                           Positioned(
                             left: 16,
-                            child: _buildMiniAvatar('assets/images/aditi_avatar.png'),
+                            child: _buildMiniAvatar(
+                              'assets/images/aditi_avatar.png',
+                            ),
                           ),
                           Positioned(
                             left: 32,
-                            child: _buildMiniAvatar('assets/images/rohan_avatar.png'),
+                            child: _buildMiniAvatar(
+                              'assets/images/rohan_avatar.png',
+                            ),
                           ),
                         ],
                       ),
@@ -445,10 +491,7 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
       height: height,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: Colors.white,
-          width: 3.5,
-        ),
+        border: Border.all(color: Colors.white, width: 3.5),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: isDark ? 0.40 : 0.12),
@@ -473,14 +516,34 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 2: Small Safe Groups (3–5 participants)
   Widget _buildStepTwo(bool isDark) {
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     final attendees = [
-      {'name': 'Sneha', 'role': 'Designer', 'avatar': 'assets/images/sneha_avatar.png'},
-      {'name': 'Rohan', 'role': 'Architect', 'avatar': 'assets/images/rohan_avatar.png'},
-      {'name': 'Aditi', 'role': 'Writer', 'avatar': 'assets/images/aditi_avatar.png'},
-      {'name': 'Vikram', 'role': 'Foodie', 'avatar': 'assets/images/vikram_avatar.png'},
+      {
+        'name': 'Sneha',
+        'role': 'Designer',
+        'avatar': 'assets/images/sneha_avatar.png',
+      },
+      {
+        'name': 'Rohan',
+        'role': 'Architect',
+        'avatar': 'assets/images/rohan_avatar.png',
+      },
+      {
+        'name': 'Aditi',
+        'role': 'Writer',
+        'avatar': 'assets/images/aditi_avatar.png',
+      },
+      {
+        'name': 'Vikram',
+        'role': 'Foodie',
+        'avatar': 'assets/images/vikram_avatar.png',
+      },
     ];
 
     return Stack(
@@ -519,19 +582,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Safe & Intimate Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.12),
+                  color:
+                      (isDark
+                              ? const Color(0xFF10B981)
+                              : const Color(0xFF059669))
+                          .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.3),
+                    color:
+                        (isDark
+                                ? const Color(0xFF10B981)
+                                : const Color(0xFF059669))
+                            .withValues(alpha: 0.3),
                     width: 0.9,
                   ),
                 ),
                 child: Text(
                   'SAFE & INTIMATE CIRCLES',
                   style: AppTypography.labelSmall.copyWith(
-                    color: isDark ? const Color(0xFF34D399) : const Color(0xFF047857),
+                    color: isDark
+                        ? const Color(0xFF34D399)
+                        : const Color(0xFF047857),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
@@ -571,12 +647,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   color: isDark ? AppColors.darkSurface : AppColors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEDE9FE),
                     width: 1.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.35 : 0.06,
+                      ),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -586,7 +666,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   children: [
                     // Top Venue Photo Header with Ambient Glow & Badges
                     ClipRRect(
-                      borderRadius: const BorderRadius.vertical(top: Radius.circular(23)),
+                      borderRadius: const BorderRadius.vertical(
+                        top: Radius.circular(23),
+                      ),
                       child: Stack(
                         children: [
                           Image.asset(
@@ -594,11 +676,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             height: 115,
                             width: double.infinity,
                             fit: BoxFit.cover,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 115,
-                              color: AppColors.brightViolet.withValues(alpha: 0.2),
-                              child: const Icon(Icons.coffee_rounded, color: AppColors.brightViolet, size: 36),
-                            ),
+                            errorBuilder: (context, error, stackTrace) =>
+                                Container(
+                                  height: 115,
+                                  color: AppColors.brightViolet.withValues(
+                                    alpha: 0.2,
+                                  ),
+                                  child: const Icon(
+                                    Icons.coffee_rounded,
+                                    color: AppColors.brightViolet,
+                                    size: 36,
+                                  ),
+                                ),
                           ),
                           Positioned.fill(
                             child: DecoratedBox(
@@ -618,16 +707,26 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             top: 10,
                             left: 12,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.black.withValues(alpha: 0.55),
                                 borderRadius: BorderRadius.circular(14),
-                                border: Border.all(color: Colors.white24, width: 0.8),
+                                border: Border.all(
+                                  color: Colors.white24,
+                                  width: 0.8,
+                                ),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.place_rounded, size: 12, color: Color(0xFFFBBF24)),
+                                  Icon(
+                                    Icons.place_rounded,
+                                    size: 12,
+                                    color: Color(0xFFFBBF24),
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Subko Specialty Coffee • Bandra',
@@ -645,7 +744,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             bottom: 10,
                             right: 12,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
                               decoration: BoxDecoration(
                                 color: const Color(0xFF10B981),
                                 borderRadius: BorderRadius.circular(14),
@@ -653,7 +755,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.bolt_rounded, size: 13, color: Colors.white),
+                                  Icon(
+                                    Icons.bolt_rounded,
+                                    size: 13,
+                                    color: Colors.white,
+                                  ),
                                   SizedBox(width: 3),
                                   Text(
                                     '1 Spot Left!',
@@ -691,7 +797,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                           decoration: BoxDecoration(
                                             shape: BoxShape.circle,
                                             border: Border.all(
-                                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                                              color: isDark
+                                                  ? AppColors.brightViolet
+                                                  : AppColors.primaryPurple,
                                               width: 1.8,
                                             ),
                                           ),
@@ -699,8 +807,15 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                             child: Image.asset(
                                               a['avatar']!,
                                               fit: BoxFit.cover,
-                                              errorBuilder: (context, error, stackTrace) =>
-                                                  const ColoredBox(color: AppColors.brightViolet),
+                                              errorBuilder:
+                                                  (
+                                                    context,
+                                                    error,
+                                                    stackTrace,
+                                                  ) => const ColoredBox(
+                                                    color:
+                                                        AppColors.brightViolet,
+                                                  ),
                                             ),
                                           ),
                                         ),
@@ -714,7 +829,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                               color: const Color(0xFF10B981),
                                               shape: BoxShape.circle,
                                               border: Border.all(
-                                                color: isDark ? AppColors.darkSurface : Colors.white,
+                                                color: isDark
+                                                    ? AppColors.darkSurface
+                                                    : Colors.white,
                                                 width: 1.8,
                                               ),
                                             ),
@@ -728,14 +845,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       style: TextStyle(
                                         fontSize: 11,
                                         fontWeight: FontWeight.w700,
-                                        color: isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435),
+                                        color: isDark
+                                            ? AppColors.darkTextPrimary
+                                            : const Color(0xFF1E1435),
                                       ),
                                     ),
                                     Text(
                                       a['role']!,
                                       style: TextStyle(
                                         fontSize: 9.5,
-                                        color: isDark ? AppColors.darkMutedText : const Color(0xFF7E7394),
+                                        color: isDark
+                                            ? AppColors.darkMutedText
+                                            : const Color(0xFF7E7394),
                                       ),
                                     ),
                                   ],
@@ -754,10 +875,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                         color: const Color(0xFFFF5E7E),
                                         width: 1.8,
                                       ),
-                                      color: const Color(0xFFFF5E7E).withValues(alpha: 0.1),
+                                      color: const Color(
+                                        0xFFFF5E7E,
+                                      ).withValues(alpha: 0.1),
                                     ),
                                     child: const Center(
-                                      child: Icon(Icons.add_rounded, color: Color(0xFFFF5E7E), size: 24),
+                                      child: Icon(
+                                        Icons.add_rounded,
+                                        color: Color(0xFFFF5E7E),
+                                        size: 24,
+                                      ),
                                     ),
                                   ),
                                   const SizedBox(height: 4),
@@ -774,7 +901,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 9.5,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? AppColors.darkMutedText : const Color(0xFF7E7394),
+                                      color: isDark
+                                          ? AppColors.darkMutedText
+                                          : const Color(0xFF7E7394),
                                     ),
                                   ),
                                 ],
@@ -783,19 +912,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           ),
 
                           const SizedBox(height: 12),
-                          Divider(height: 1, color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE)),
+                          Divider(
+                            height: 1,
+                            color: isDark
+                                ? AppColors.darkBorder
+                                : const Color(0xFFEDE9FE),
+                          ),
                           const SizedBox(height: 10),
 
                           // Icebreaker Prompt Bubble
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 8,
+                            ),
                             decoration: BoxDecoration(
-                              color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.07),
+                              color:
+                                  (isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
+                                      .withValues(alpha: 0.07),
                               borderRadius: BorderRadius.circular(14),
                             ),
                             child: Row(
                               children: [
-                                const Icon(Icons.forum_outlined, size: 17, color: AppColors.brightViolet),
+                                const Icon(
+                                  Icons.forum_outlined,
+                                  size: 17,
+                                  color: AppColors.brightViolet,
+                                ),
                                 const SizedBox(width: 8),
                                 Expanded(
                                   child: Text(
@@ -804,7 +949,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
                                       fontStyle: FontStyle.italic,
-                                      color: isDark ? Colors.white : const Color(0xFF1E1435),
+                                      color: isDark
+                                          ? Colors.white
+                                          : const Color(0xFF1E1435),
                                     ),
                                   ),
                                 ),
@@ -842,8 +989,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 3: Private Mutual Chemistry
   Widget _buildStepThree(bool isDark) {
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Stack(
       children: [
@@ -881,19 +1032,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Dignity Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.12),
+                  color:
+                      (isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple)
+                          .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.3),
+                    color:
+                        (isDark
+                                ? AppColors.brightViolet
+                                : AppColors.primaryPurple)
+                            .withValues(alpha: 0.3),
                     width: 0.9,
                   ),
                 ),
                 child: Text(
                   'DIGNITY BY DESIGN',
                   style: AppTypography.labelSmall.copyWith(
-                    color: isDark ? AppColors.luminousMauve : AppColors.deepPlum,
+                    color: isDark
+                        ? AppColors.luminousMauve
+                        : AppColors.deepPlum,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
@@ -934,12 +1098,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   color: isDark ? AppColors.darkSurface : AppColors.white,
                   borderRadius: BorderRadius.circular(24),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEDE9FE),
                     width: 1.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.06),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.35 : 0.06,
+                      ),
                       blurRadius: 18,
                       offset: const Offset(0, 6),
                     ),
@@ -959,32 +1127,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFFFF5E7E), width: 2),
+                                border: Border.all(
+                                  color: const Color(0xFFFF5E7E),
+                                  width: 2,
+                                ),
                               ),
                               child: ClipOval(
                                 child: Image.asset(
                                   'assets/images/rohan_avatar.png',
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const ColoredBox(color: AppColors.brightViolet),
+                                      const ColoredBox(
+                                        color: AppColors.brightViolet,
+                                      ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 5),
                             const Text(
                               'You',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
                             ),
                             Container(
                               margin: const EdgeInsets.only(top: 3),
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFFF5E7E).withValues(alpha: 0.12),
+                                color: const Color(
+                                  0xFFFF5E7E,
+                                ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
                                 'Voted 💫 + 🤝',
-                                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFFFF5E7E)),
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFFFF5E7E),
+                                ),
                               ),
                             ),
                           ],
@@ -994,15 +1179,23 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         Column(
                           children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 gradient: const LinearGradient(
-                                  colors: [Color(0xFFFF5E7E), Color(0xFF8B5CF6)],
+                                  colors: [
+                                    Color(0xFFFF5E7E),
+                                    Color(0xFF8B5CF6),
+                                  ],
                                 ),
                                 borderRadius: BorderRadius.circular(16),
                                 boxShadow: [
                                   BoxShadow(
-                                    color: const Color(0xFFFF5E7E).withValues(alpha: 0.4),
+                                    color: const Color(
+                                      0xFFFF5E7E,
+                                    ).withValues(alpha: 0.4),
                                     blurRadius: 10,
                                     offset: const Offset(0, 3),
                                   ),
@@ -1011,7 +1204,11 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.auto_awesome_rounded, size: 14, color: Colors.white),
+                                  Icon(
+                                    Icons.auto_awesome_rounded,
+                                    size: 14,
+                                    color: Colors.white,
+                                  ),
                                   SizedBox(width: 4),
                                   Text(
                                     'Mutual Spark!',
@@ -1028,11 +1225,19 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             const Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(Icons.lock_rounded, size: 11, color: Color(0xFF10B981)),
+                                Icon(
+                                  Icons.lock_rounded,
+                                  size: 11,
+                                  color: Color(0xFF10B981),
+                                ),
                                 SizedBox(width: 3),
                                 Text(
                                   'Encrypted & Private',
-                                  style: TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: Color(0xFF10B981)),
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF10B981),
+                                  ),
                                 ),
                               ],
                             ),
@@ -1047,32 +1252,49 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               height: 52,
                               decoration: BoxDecoration(
                                 shape: BoxShape.circle,
-                                border: Border.all(color: const Color(0xFF8B5CF6), width: 2),
+                                border: Border.all(
+                                  color: const Color(0xFF8B5CF6),
+                                  width: 2,
+                                ),
                               ),
                               child: ClipOval(
                                 child: Image.asset(
                                   'assets/images/sneha_avatar.png',
                                   fit: BoxFit.cover,
                                   errorBuilder: (context, error, stackTrace) =>
-                                      const ColoredBox(color: AppColors.brightViolet),
+                                      const ColoredBox(
+                                        color: AppColors.brightViolet,
+                                      ),
                                 ),
                               ),
                             ),
                             const SizedBox(height: 5),
                             const Text(
                               'Sneha',
-                              style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12),
+                              style: TextStyle(
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
                             ),
                             Container(
                               margin: const EdgeInsets.only(top: 3),
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF8B5CF6).withValues(alpha: 0.12),
+                                color: const Color(
+                                  0xFF8B5CF6,
+                                ).withValues(alpha: 0.12),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Text(
                                 'Voted 💫 + 🤝',
-                                style: TextStyle(fontSize: 9.5, fontWeight: FontWeight.w700, color: Color(0xFF8B5CF6)),
+                                style: TextStyle(
+                                  fontSize: 9.5,
+                                  fontWeight: FontWeight.w700,
+                                  color: Color(0xFF8B5CF6),
+                                ),
                               ),
                             ),
                           ],
@@ -1081,19 +1303,35 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                     ),
 
                     const SizedBox(height: 14),
-                    Divider(height: 1, color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE)),
+                    Divider(
+                      height: 1,
+                      color: isDark
+                          ? AppColors.darkBorder
+                          : const Color(0xFFEDE9FE),
+                    ),
                     const SizedBox(height: 12),
 
                     // Zero Rejection Reassurance
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
-                        color: (isDark ? const Color(0xFF10B981) : const Color(0xFF059669)).withValues(alpha: 0.08),
+                        color:
+                            (isDark
+                                    ? const Color(0xFF10B981)
+                                    : const Color(0xFF059669))
+                                .withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(14),
                       ),
                       child: const Row(
                         children: [
-                          Icon(Icons.shield_outlined, size: 16, color: Color(0xFF10B981)),
+                          Icon(
+                            Icons.shield_outlined,
+                            size: 16,
+                            color: Color(0xFF10B981),
+                          ),
                           SizedBox(width: 8),
                           Expanded(
                             child: Text(
@@ -1123,10 +1361,31 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                 crossAxisSpacing: 10,
                 childAspectRatio: 2.3,
                 children: [
-                  _buildIntentionTile('🤝 Friendship', 'Coffee & casual chats', const Color(0xFFF59E0B), isDark),
-                  _buildIntentionTile('🏸 Activity Partner', 'Sports & hobbies', const Color(0xFF10B981), isDark),
-                  _buildIntentionTile('💫 Explore Dating', 'Spark chemistry', const Color(0xFFFF5E7E), isDark),
-                  _buildIntentionTile('🕊️ Polite Pass', 'Zero awkwardness', const Color(0xFF8B5CF6), isDark, isPass: true),
+                  _buildIntentionTile(
+                    '🤝 Friendship',
+                    'Coffee & casual chats',
+                    const Color(0xFFF59E0B),
+                    isDark,
+                  ),
+                  _buildIntentionTile(
+                    '🏸 Activity Partner',
+                    'Sports & hobbies',
+                    const Color(0xFF10B981),
+                    isDark,
+                  ),
+                  _buildIntentionTile(
+                    '💫 Explore Dating',
+                    'Spark chemistry',
+                    const Color(0xFFFF5E7E),
+                    isDark,
+                  ),
+                  _buildIntentionTile(
+                    '🕊️ Polite Pass',
+                    'Zero awkwardness',
+                    const Color(0xFF8B5CF6),
+                    isDark,
+                    isPass: true,
+                  ),
                 ],
               ),
 
@@ -1140,8 +1399,12 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
   // Step 4: Worldwide Anywhere
   Widget _buildStepFour(bool isDark) {
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
     final userLoc = ref.watch(userLocationProvider);
 
     final globalCities = [
@@ -1207,19 +1470,32 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // Global Perspective Badge
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 14,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
-                  color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.12),
+                  color:
+                      (isDark
+                              ? const Color(0xFF38BDF8)
+                              : const Color(0xFF0284C7))
+                          .withValues(alpha: 0.12),
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                    color: (isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7)).withValues(alpha: 0.3),
+                    color:
+                        (isDark
+                                ? const Color(0xFF38BDF8)
+                                : const Color(0xFF0284C7))
+                            .withValues(alpha: 0.3),
                     width: 0.9,
                   ),
                 ),
                 child: Text(
                   'GLOBAL PERSPECTIVE',
                   style: AppTypography.labelSmall.copyWith(
-                    color: isDark ? const Color(0xFF38BDF8) : const Color(0xFF0369A1),
+                    color: isDark
+                        ? const Color(0xFF38BDF8)
+                        : const Color(0xFF0369A1),
                     fontWeight: FontWeight.w800,
                     letterSpacing: 1.2,
                   ),
@@ -1261,7 +1537,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   physics: const BouncingScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 4),
                   itemCount: globalCities.length,
-                  separatorBuilder: (context, index) => const SizedBox(width: 12),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(width: 12),
                   itemBuilder: (context, i) {
                     final c = globalCities[i];
                     return Container(
@@ -1270,7 +1547,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withValues(alpha: isDark ? 0.35 : 0.08),
+                            color: Colors.black.withValues(
+                              alpha: isDark ? 0.35 : 0.08,
+                            ),
                             blurRadius: 10,
                             offset: const Offset(0, 4),
                           ),
@@ -1284,10 +1563,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                             Image.asset(
                               c['image']!,
                               fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) => Container(
-                                color: AppColors.brightViolet.withValues(alpha: 0.3),
-                                child: const Icon(Icons.location_city_rounded, color: Colors.white),
-                              ),
+                              errorBuilder: (context, error, stackTrace) =>
+                                  Container(
+                                    color: AppColors.brightViolet.withValues(
+                                      alpha: 0.3,
+                                    ),
+                                    child: const Icon(
+                                      Icons.location_city_rounded,
+                                      color: Colors.white,
+                                    ),
+                                  ),
                             ),
                             DecoratedBox(
                               decoration: BoxDecoration(
@@ -1305,7 +1590,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                               top: 8,
                               left: 8,
                               child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 7,
+                                  vertical: 3,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.black.withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(10),
@@ -1365,12 +1653,16 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   color: isDark ? AppColors.darkSurface : AppColors.white,
                   borderRadius: BorderRadius.circular(22),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEDE9FE),
                     width: 1.0,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: isDark ? 0.30 : 0.04),
+                      color: Colors.black.withValues(
+                        alpha: isDark ? 0.30 : 0.04,
+                      ),
                       blurRadius: 14,
                       offset: const Offset(0, 4),
                     ),
@@ -1384,10 +1676,18 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                           width: 44,
                           height: 44,
                           decoration: BoxDecoration(
-                            color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.12),
+                            color:
+                                (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: 0.12),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(Icons.location_on_rounded, color: AppColors.brightViolet, size: 24),
+                          child: const Icon(
+                            Icons.location_on_rounded,
+                            color: AppColors.brightViolet,
+                            size: 24,
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -1400,7 +1700,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                   fontSize: 10,
                                   fontWeight: FontWeight.w800,
                                   letterSpacing: 1.1,
-                                  color: isDark ? AppColors.darkMutedText : const Color(0xFF7E7394),
+                                  color: isDark
+                                      ? AppColors.darkMutedText
+                                      : const Color(0xFF7E7394),
                                 ),
                               ),
                               const SizedBox(height: 2),
@@ -1429,7 +1731,9 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                                     style: TextStyle(
                                       fontSize: 11,
                                       fontWeight: FontWeight.w600,
-                                      color: isDark ? const Color(0xFF34D399) : const Color(0xFF059669),
+                                      color: isDark
+                                          ? const Color(0xFF34D399)
+                                          : const Color(0xFF059669),
                                     ),
                                   ),
                                 ],
@@ -1447,9 +1751,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                       child: OutlinedButton.icon(
                         style: OutlinedButton.styleFrom(
                           padding: const EdgeInsets.symmetric(vertical: 11),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
                           side: BorderSide(
-                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            color: isDark
+                                ? AppColors.brightViolet
+                                : AppColors.primaryPurple,
                             width: 1.2,
                           ),
                         ),
@@ -1457,7 +1765,10 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                         icon: const Icon(Icons.public_rounded, size: 16),
                         label: const Text(
                           'Change City or Choose Meetup Venue',
-                          style: TextStyle(fontWeight: FontWeight.w700, fontSize: 12.5),
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 12.5,
+                          ),
                         ),
                       ),
                     ),
@@ -1469,12 +1780,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
 
               // ── Global Trust Metrics Pill ──
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 8,
+                ),
                 decoration: BoxDecoration(
                   color: isDark ? AppColors.darkElevated : Colors.white,
                   borderRadius: BorderRadius.circular(20),
                   border: Border.all(
-                    color: isDark ? AppColors.darkBorder : const Color(0xFFEDE9FE),
+                    color: isDark
+                        ? AppColors.darkBorder
+                        : const Color(0xFFEDE9FE),
                     width: 0.9,
                   ),
                 ),
@@ -1482,9 +1798,17 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
                   mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     _buildMetricCol('45+', 'Global Cities', isDark),
-                    Container(height: 20, width: 1, color: isDark ? Colors.white12 : const Color(0xFFEDE9FE)),
+                    Container(
+                      height: 20,
+                      width: 1,
+                      color: isDark ? Colors.white12 : const Color(0xFFEDE9FE),
+                    ),
                     _buildMetricCol('12k+', 'Vetted Venues', isDark),
-                    Container(height: 20, width: 1, color: isDark ? Colors.white12 : const Color(0xFFEDE9FE)),
+                    Container(
+                      height: 20,
+                      width: 1,
+                      color: isDark ? Colors.white12 : const Color(0xFFEDE9FE),
+                    ),
                     _buildMetricCol('99%', 'Felt Safe', isDark),
                   ],
                 ),
@@ -1498,7 +1822,13 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
     );
   }
 
-  Widget _buildIntentionTile(String title, String subtitle, Color color, bool isDark, {bool isPass = false}) {
+  Widget _buildIntentionTile(
+    String title,
+    String subtitle,
+    Color color,
+    bool isDark, {
+    bool isPass = false,
+  }) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
       decoration: BoxDecoration(
@@ -1580,7 +1910,8 @@ class _OnboardingScreenState extends ConsumerState<OnboardingScreen> {
         child: Image.asset(
           assetPath,
           fit: BoxFit.cover,
-          errorBuilder: (context, error, stackTrace) => const ColoredBox(color: AppColors.brightViolet),
+          errorBuilder: (context, error, stackTrace) =>
+              const ColoredBox(color: AppColors.brightViolet),
         ),
       ),
     );

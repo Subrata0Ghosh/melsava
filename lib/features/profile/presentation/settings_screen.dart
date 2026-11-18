@@ -28,14 +28,22 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
     final cardBg = isDark ? const Color(0xFF1B1528) : Colors.white;
-    final borderColor = isDark ? const Color(0xFF332A45) : const Color(0xFFEDE9FE);
+    final borderColor = isDark
+        ? const Color(0xFF332A45)
+        : const Color(0xFFEDE9FE);
     final currentUser = ref.watch(currentUserProvider);
 
     return Scaffold(
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFFFDF9),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFFFDF9),
       body: AmbientNatureBackdrop(
         showTopLeaf: true,
         showBottomLeaf: true,
@@ -99,7 +107,10 @@ class SettingsScreen extends ConsumerWidget {
               Expanded(
                 child: ListView(
                   physics: const ClampingScrollPhysics(),
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 10,
+                  ),
                   children: [
                     _buildCardGroup(
                       cardBg: cardBg,
@@ -109,7 +120,12 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.shield_outlined,
                           title: 'Account & Security',
                           subtitle: 'Email, password & active sessions',
-                          onTap: () => _showAccountSecuritySheet(context, ref, isDark, currentUser),
+                          onTap: () => _showAccountSecuritySheet(
+                            context,
+                            ref,
+                            isDark,
+                            currentUser,
+                          ),
                           primaryTextColor: primaryTextColor,
                           mutedTextColor: mutedTextColor,
                           isDark: isDark,
@@ -184,7 +200,10 @@ class SettingsScreen extends ConsumerWidget {
                         ],
                       ),
                       child: ListTile(
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 18, vertical: 4),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 4,
+                        ),
                         leading: Container(
                           width: 40,
                           height: 40,
@@ -208,7 +227,10 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         subtitle: Text(
                           'Sign out of your active session on this device',
-                          style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                          style: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 11.5,
+                          ),
                         ),
                         trailing: const Icon(
                           Icons.chevron_right_rounded,
@@ -219,12 +241,14 @@ class SettingsScreen extends ConsumerWidget {
                           final confirm = await ConfirmationDialog.show(
                             context,
                             title: 'Sign Out',
-                            message: 'Are you sure you want to sign out of MELSAVA?',
+                            message:
+                                'Are you sure you want to sign out of MELSAVA?',
                             confirmLabel: 'Sign Out',
                             isDestructive: true,
                           );
                           if (confirm == true) {
                             await ref.read(authRepositoryProvider).signOut();
+                            ref.read(currentUserProvider.notifier).state = null;
                             if (context.mounted) {
                               context.go('/welcome');
                             }
@@ -267,16 +291,24 @@ class SettingsScreen extends ConsumerWidget {
   ) {
     HapticFeedback.lightImpact();
     final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
-    final borderColor = isDark ? const Color(0xFF382E4D) : const Color(0xFFEDE9FE);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
+    final borderColor = isDark
+        ? const Color(0xFF382E4D)
+        : const Color(0xFFEDE9FE);
 
     bool is2faEnabled = true;
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFAF7F4),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFAF7F4),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -319,7 +351,11 @@ class SettingsScreen extends ConsumerWidget {
                           color: AppColors.brightViolet.withValues(alpha: 0.15),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.shield_rounded, color: AppColors.brightViolet, size: 22),
+                        child: const Icon(
+                          Icons.shield_rounded,
+                          color: AppColors.brightViolet,
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -336,7 +372,10 @@ class SettingsScreen extends ConsumerWidget {
                             ),
                             Text(
                               'Manage login credentials and secure your account',
-                              style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 11.5,
+                              ),
                             ),
                           ],
                         ),
@@ -379,9 +418,19 @@ class SettingsScreen extends ConsumerWidget {
                         const SizedBox(height: 12),
                         Row(
                           children: [
-                            Icon(Icons.person_outline_rounded, size: 18, color: mutedTextColor),
+                            Icon(
+                              Icons.person_outline_rounded,
+                              size: 18,
+                              color: mutedTextColor,
+                            ),
                             const SizedBox(width: 10),
-                            Text('Display Name', style: TextStyle(color: mutedTextColor, fontSize: 13)),
+                            Text(
+                              'Display Name',
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 13,
+                              ),
+                            ),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
@@ -389,7 +438,11 @@ class SettingsScreen extends ConsumerWidget {
                                 textAlign: TextAlign.end,
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 13.5),
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5,
+                                ),
                               ),
                             ),
                           ],
@@ -397,32 +450,59 @@ class SettingsScreen extends ConsumerWidget {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            Icon(Icons.email_outlined, size: 18, color: mutedTextColor),
+                            Icon(
+                              Icons.email_outlined,
+                              size: 18,
+                              color: mutedTextColor,
+                            ),
                             const SizedBox(width: 10),
-                            Text('Email', style: TextStyle(color: mutedTextColor, fontSize: 13)),
+                            Text(
+                              'Email',
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 13,
+                              ),
+                            ),
                             const Spacer(),
                             Flexible(
                               child: Text(
                                 email,
                                 overflow: TextOverflow.ellipsis,
-                                style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w600, fontSize: 13),
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
                             const SizedBox(width: 6),
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 6,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
-                                color: const Color(0xFF10B981).withValues(alpha: 0.15),
+                                color: const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: 0.15),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: const Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.check_circle_rounded, color: Color(0xFF10B981), size: 12),
+                                  Icon(
+                                    Icons.check_circle_rounded,
+                                    color: Color(0xFF10B981),
+                                    size: 12,
+                                  ),
                                   SizedBox(width: 3),
                                   Text(
                                     'Verified',
-                                    style: TextStyle(color: Color(0xFF10B981), fontSize: 10, fontWeight: FontWeight.w700),
+                                    style: TextStyle(
+                                      color: Color(0xFF10B981),
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ],
                               ),
@@ -432,13 +512,27 @@ class SettingsScreen extends ConsumerWidget {
                         const Divider(height: 20),
                         Row(
                           children: [
-                            Icon(Icons.phone_outlined, size: 18, color: mutedTextColor),
+                            Icon(
+                              Icons.phone_outlined,
+                              size: 18,
+                              color: mutedTextColor,
+                            ),
                             const SizedBox(width: 10),
-                            Text('Phone', style: TextStyle(color: mutedTextColor, fontSize: 13)),
+                            Text(
+                              'Phone',
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 13,
+                              ),
+                            ),
                             const Spacer(),
                             Text(
                               '+91 98765 •••••',
-                              style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w600, fontSize: 13),
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w600,
+                                fontSize: 13,
+                              ),
                             ),
                           ],
                         ),
@@ -453,7 +547,10 @@ class SettingsScreen extends ConsumerWidget {
                     onTap: () => _showChangePasswordDialog(context, isDark),
                     borderRadius: BorderRadius.circular(16),
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
                       decoration: BoxDecoration(
                         color: cardBg,
                         borderRadius: BorderRadius.circular(16),
@@ -464,13 +561,19 @@ class SettingsScreen extends ConsumerWidget {
                           Container(
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
-                              color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple).withValues(alpha: 0.12),
+                              color:
+                                  (isDark
+                                          ? AppColors.brightViolet
+                                          : AppColors.primaryPurple)
+                                      .withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Icon(
                               Icons.key_rounded,
                               size: 18,
-                              color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                              color: isDark
+                                  ? AppColors.brightViolet
+                                  : AppColors.primaryPurple,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -480,16 +583,27 @@ class SettingsScreen extends ConsumerWidget {
                               children: [
                                 Text(
                                   'Change Password',
-                                  style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 14),
+                                  style: TextStyle(
+                                    color: primaryTextColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
                                 ),
                                 Text(
                                   'Update your secret password regularly',
-                                  style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 11.5,
+                                  ),
                                 ),
                               ],
                             ),
                           ),
-                          Icon(Icons.chevron_right_rounded, color: mutedTextColor, size: 20),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: mutedTextColor,
+                            size: 20,
+                          ),
                         ],
                       ),
                     ),
@@ -499,7 +613,10 @@ class SettingsScreen extends ConsumerWidget {
 
                   // 2FA Switch Card
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: cardBg,
                       borderRadius: BorderRadius.circular(16),
@@ -510,10 +627,16 @@ class SettingsScreen extends ConsumerWidget {
                         Container(
                           padding: const EdgeInsets.all(8),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF10B981).withValues(alpha: 0.12),
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.12),
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: const Icon(Icons.phonelink_lock_rounded, size: 18, color: Color(0xFF10B981)),
+                          child: const Icon(
+                            Icons.phonelink_lock_rounded,
+                            size: 18,
+                            color: Color(0xFF10B981),
+                          ),
                         ),
                         const SizedBox(width: 12),
                         Expanded(
@@ -522,11 +645,20 @@ class SettingsScreen extends ConsumerWidget {
                             children: [
                               Text(
                                 'Two-Factor Authentication',
-                                style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 13.5),
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 13.5,
+                                ),
                               ),
                               Text(
-                                is2faEnabled ? 'Protected with SMS code on sign in' : 'Disabled (Not recommended)',
-                                style: TextStyle(color: mutedTextColor, fontSize: 11),
+                                is2faEnabled
+                                    ? 'Protected with SMS code on sign in'
+                                    : 'Disabled (Not recommended)',
+                                style: TextStyle(
+                                  color: mutedTextColor,
+                                  fontSize: 11,
+                                ),
                               ),
                             ],
                           ),
@@ -539,7 +671,11 @@ class SettingsScreen extends ConsumerWidget {
                             setSheetState(() => is2faEnabled = val);
                             ScaffoldMessenger.of(context).showSnackBar(
                               SnackBar(
-                                content: Text(val ? '2FA Enabled successfully' : '2FA Disabled'),
+                                content: Text(
+                                  val
+                                      ? '2FA Enabled successfully'
+                                      : '2FA Disabled',
+                                ),
                                 duration: const Duration(seconds: 2),
                               ),
                             );
@@ -579,14 +715,20 @@ class SettingsScreen extends ConsumerWidget {
                                 HapticFeedback.lightImpact();
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
-                                    content: Text('All other remote devices logged out safely'),
+                                    content: Text(
+                                      'All other remote devices logged out safely',
+                                    ),
                                     duration: Duration(seconds: 2),
                                   ),
                                 );
                               },
                               child: const Text(
                                 'Log out other sessions',
-                                style: TextStyle(color: AppColors.brightViolet, fontSize: 11, fontWeight: FontWeight.w700),
+                                style: TextStyle(
+                                  color: AppColors.brightViolet,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w700,
+                                ),
                               ),
                             ),
                           ],
@@ -594,12 +736,20 @@ class SettingsScreen extends ConsumerWidget {
                         const SizedBox(height: 10),
                         Row(
                           children: [
-                            const Icon(Icons.phone_android_rounded, size: 18, color: Color(0xFF10B981)),
+                            const Icon(
+                              Icons.phone_android_rounded,
+                              size: 18,
+                              color: Color(0xFF10B981),
+                            ),
                             const SizedBox(width: 8),
                             Expanded(
                               child: Text(
                                 'Android Device • Current session (Active now)',
-                                style: TextStyle(color: primaryTextColor, fontSize: 12, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ),
                           ],
@@ -645,8 +795,12 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 labelText: 'Current Password',
-                labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -656,8 +810,12 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 labelText: 'New Password',
-                labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
             const SizedBox(height: 12),
@@ -667,8 +825,12 @@ class SettingsScreen extends ConsumerWidget {
               style: TextStyle(color: isDark ? Colors.white : Colors.black87),
               decoration: InputDecoration(
                 labelText: 'Confirm New Password',
-                labelStyle: TextStyle(color: isDark ? Colors.white70 : Colors.black54),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                labelStyle: TextStyle(
+                  color: isDark ? Colors.white70 : Colors.black54,
+                ),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
               ),
             ),
           ],
@@ -681,12 +843,16 @@ class SettingsScreen extends ConsumerWidget {
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.brightViolet,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
             ),
             onPressed: () {
               if (newPwController.text.length < 6) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Password must be at least 6 characters')),
+                  const SnackBar(
+                    content: Text('Password must be at least 6 characters'),
+                  ),
                 );
                 return;
               }
@@ -705,7 +871,13 @@ class SettingsScreen extends ConsumerWidget {
                 ),
               );
             },
-            child: const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+            child: const Text(
+              'Update Password',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
           ),
         ],
       ),
@@ -718,9 +890,15 @@ class SettingsScreen extends ConsumerWidget {
   void _showNotificationsSheet(BuildContext context, bool isDark) {
     HapticFeedback.lightImpact();
     final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
-    final borderColor = isDark ? const Color(0xFF382E4D) : const Color(0xFFEDE9FE);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
+    final borderColor = isDark
+        ? const Color(0xFF382E4D)
+        : const Color(0xFFEDE9FE);
 
     bool rsvpAlerts = true;
     bool matchMessages = true;
@@ -732,7 +910,9 @@ class SettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFAF7F4),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFAF7F4),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -762,7 +942,11 @@ class SettingsScreen extends ConsumerWidget {
                       color: AppColors.brightViolet.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.notifications_active_rounded, color: AppColors.brightViolet, size: 22),
+                    child: const Icon(
+                      Icons.notifications_active_rounded,
+                      color: AppColors.brightViolet,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -779,7 +963,10 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         Text(
                           'Control alerts for RSVPs, matches and radar',
-                          style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                          style: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 11.5,
+                          ),
                         ),
                       ],
                     ),
@@ -802,31 +989,51 @@ class SettingsScreen extends ConsumerWidget {
                   children: [
                     _buildSwitchTile(
                       title: 'Experience Invites & RSVPs',
-                      subtitle: 'Notifications when spots open or invites arrive',
+                      subtitle:
+                          'Notifications when spots open or invites arrive',
                       value: rsvpAlerts,
                       onChanged: (val) => setSheetState(() => rsvpAlerts = val),
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
-                    Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                    Divider(
+                      height: 1,
+                      color: borderColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildSwitchTile(
                       title: 'Matches & Mutual Messages',
-                      subtitle: 'Direct chat messages from experience connections',
+                      subtitle:
+                          'Direct chat messages from experience connections',
                       value: matchMessages,
-                      onChanged: (val) => setSheetState(() => matchMessages = val),
+                      onChanged: (val) =>
+                          setSheetState(() => matchMessages = val),
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
-                    Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                    Divider(
+                      height: 1,
+                      color: borderColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildSwitchTile(
                       title: 'Activity Radar & Nearby',
-                      subtitle: 'Alerts when people gather near your favorite venues',
+                      subtitle:
+                          'Alerts when people gather near your favorite venues',
                       value: radarAlerts,
-                      onChanged: (val) => setSheetState(() => radarAlerts = val),
+                      onChanged: (val) =>
+                          setSheetState(() => radarAlerts = val),
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
-                    Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                    Divider(
+                      height: 1,
+                      color: borderColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildSwitchTile(
                       title: '24h Event Reminders',
                       subtitle: 'Timely prompts before your confirmed meetups',
@@ -835,21 +1042,34 @@ class SettingsScreen extends ConsumerWidget {
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
-                    Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                    Divider(
+                      height: 1,
+                      color: borderColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildSwitchTile(
                       title: 'Sound & Vibration Feedback',
                       subtitle: 'Subtle sound waves and haptic tactile clicks',
                       value: soundHaptics,
-                      onChanged: (val) => setSheetState(() => soundHaptics = val),
+                      onChanged: (val) =>
+                          setSheetState(() => soundHaptics = val),
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
-                    Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                    Divider(
+                      height: 1,
+                      color: borderColor,
+                      indent: 16,
+                      endIndent: 16,
+                    ),
                     _buildSwitchTile(
                       title: 'Weekend City Digest',
-                      subtitle: 'Weekly newsletter of curated experiences in your city',
+                      subtitle:
+                          'Weekly newsletter of curated experiences in your city',
                       value: weeklyDigest,
-                      onChanged: (val) => setSheetState(() => weeklyDigest = val),
+                      onChanged: (val) =>
+                          setSheetState(() => weeklyDigest = val),
                       primaryTextColor: primaryTextColor,
                       mutedTextColor: mutedTextColor,
                     ),
@@ -881,7 +1101,11 @@ class SettingsScreen extends ConsumerWidget {
               children: [
                 Text(
                   title,
-                  style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 13.5),
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 13.5,
+                  ),
                 ),
                 const SizedBox(height: 2),
                 Text(
@@ -910,9 +1134,15 @@ class SettingsScreen extends ConsumerWidget {
   void _showPrivacySafetySheet(BuildContext context, bool isDark) {
     HapticFeedback.lightImpact();
     final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
-    final borderColor = isDark ? const Color(0xFF382E4D) : const Color(0xFFEDE9FE);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
+    final borderColor = isDark
+        ? const Color(0xFF382E4D)
+        : const Color(0xFFEDE9FE);
 
     bool ghostMode = false;
     bool publicRadar = true;
@@ -921,7 +1151,9 @@ class SettingsScreen extends ConsumerWidget {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFAF7F4),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFAF7F4),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -953,7 +1185,11 @@ class SettingsScreen extends ConsumerWidget {
                         color: const Color(0xFF10B981).withValues(alpha: 0.15),
                         shape: BoxShape.circle,
                       ),
-                      child: const Icon(Icons.lock_person_rounded, color: Color(0xFF10B981), size: 22),
+                      child: const Icon(
+                        Icons.lock_person_rounded,
+                        color: Color(0xFF10B981),
+                        size: 22,
+                      ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
@@ -970,7 +1206,10 @@ class SettingsScreen extends ConsumerWidget {
                           ),
                           Text(
                             'Control visibility and review public venue guarantees',
-                            style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                            style: TextStyle(
+                              color: mutedTextColor,
+                              fontSize: 11.5,
+                            ),
                           ),
                         ],
                       ),
@@ -989,16 +1228,26 @@ class SettingsScreen extends ConsumerWidget {
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
                       colors: [
-                        const Color(0xFF10B981).withValues(alpha: isDark ? 0.2 : 0.12),
-                        const Color(0xFF059669).withValues(alpha: isDark ? 0.08 : 0.04),
+                        const Color(
+                          0xFF10B981,
+                        ).withValues(alpha: isDark ? 0.2 : 0.12),
+                        const Color(
+                          0xFF059669,
+                        ).withValues(alpha: isDark ? 0.08 : 0.04),
                       ],
                     ),
                     borderRadius: BorderRadius.circular(18),
-                    border: Border.all(color: const Color(0xFF10B981).withValues(alpha: 0.35)),
+                    border: Border.all(
+                      color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                    ),
                   ),
                   child: Row(
                     children: [
-                      const Icon(Icons.verified_user_rounded, color: Color(0xFF10B981), size: 26),
+                      const Icon(
+                        Icons.verified_user_rounded,
+                        color: Color(0xFF10B981),
+                        size: 26,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
@@ -1015,7 +1264,10 @@ class SettingsScreen extends ConsumerWidget {
                             const SizedBox(height: 2),
                             Text(
                               'MELSAVA strictly restricts meetups to certified public spaces (licensed cafés, public trails, registered studios). Private addresses are never permitted.',
-                              style: TextStyle(color: primaryTextColor.withValues(alpha: 0.85), fontSize: 11),
+                              style: TextStyle(
+                                color: primaryTextColor.withValues(alpha: 0.85),
+                                fontSize: 11,
+                              ),
                             ),
                           ],
                         ),
@@ -1036,25 +1288,40 @@ class SettingsScreen extends ConsumerWidget {
                     children: [
                       _buildSwitchTile(
                         title: 'Public Activity Radar',
-                        subtitle: 'Appear on radar for other attendees joining the same events',
+                        subtitle:
+                            'Appear on radar for other attendees joining the same events',
                         value: publicRadar,
-                        onChanged: (val) => setSheetState(() => publicRadar = val),
+                        onChanged: (val) =>
+                            setSheetState(() => publicRadar = val),
                         primaryTextColor: primaryTextColor,
                         mutedTextColor: mutedTextColor,
                       ),
-                      Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                      Divider(
+                        height: 1,
+                        color: borderColor,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
                       _buildSwitchTile(
                         title: 'Incognito Ghost Mode',
-                        subtitle: 'Browse experiences completely hidden from discovery',
+                        subtitle:
+                            'Browse experiences completely hidden from discovery',
                         value: ghostMode,
-                        onChanged: (val) => setSheetState(() => ghostMode = val),
+                        onChanged: (val) =>
+                            setSheetState(() => ghostMode = val),
                         primaryTextColor: primaryTextColor,
                         mutedTextColor: mutedTextColor,
                       ),
-                      Divider(height: 1, color: borderColor, indent: 16, endIndent: 16),
+                      Divider(
+                        height: 1,
+                        color: borderColor,
+                        indent: 16,
+                        endIndent: 16,
+                      ),
                       _buildSwitchTile(
                         title: 'Display Active City',
-                        subtitle: 'Let other attendees know your home city badge',
+                        subtitle:
+                            'Let other attendees know your home city badge',
                         value: showCity,
                         onChanged: (val) => setSheetState(() => showCity = val),
                         primaryTextColor: primaryTextColor,
@@ -1071,12 +1338,19 @@ class SettingsScreen extends ConsumerWidget {
                   onTap: () {
                     HapticFeedback.lightImpact();
                     ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('No users currently blocked. You have a clean roster!')),
+                      const SnackBar(
+                        content: Text(
+                          'No users currently blocked. You have a clean roster!',
+                        ),
+                      ),
                     );
                   },
                   borderRadius: BorderRadius.circular(16),
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     decoration: BoxDecoration(
                       color: cardBg,
                       borderRadius: BorderRadius.circular(16),
@@ -1084,15 +1358,27 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                     child: Row(
                       children: [
-                        const Icon(Icons.block_flipped, size: 20, color: AppColors.error),
+                        const Icon(
+                          Icons.block_flipped,
+                          size: 20,
+                          color: AppColors.error,
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Text(
                             'Blocked Profiles (0)',
-                            style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 13.5),
+                            style: TextStyle(
+                              color: primaryTextColor,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 13.5,
+                            ),
                           ),
                         ),
-                        Icon(Icons.chevron_right_rounded, color: mutedTextColor, size: 20),
+                        Icon(
+                          Icons.chevron_right_rounded,
+                          color: mutedTextColor,
+                          size: 20,
+                        ),
                       ],
                     ),
                   ),
@@ -1111,37 +1397,50 @@ class SettingsScreen extends ConsumerWidget {
   void _showHelpSupportSheet(BuildContext context, bool isDark) {
     HapticFeedback.lightImpact();
     final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF7E7394);
-    final borderColor = isDark ? const Color(0xFF382E4D) : const Color(0xFFEDE9FE);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
+    final borderColor = isDark
+        ? const Color(0xFF382E4D)
+        : const Color(0xFFEDE9FE);
 
     final faqs = [
       {
         'q': 'How do MELSAVA public experiences work?',
-        'a': 'Pick an experience in your city (trek, coffee tasting, pottery, badminton). RSVP to confirm your spot. Meet at the vetted public venue with a micro-group of 4-15 people. After the event, you can privately select anyone you resonated with for post-event mutual chat!'
+        'a':
+            'Pick an experience in your city (trek, coffee tasting, pottery, badminton). RSVP to confirm your spot. Meet at the vetted public venue with a micro-group of 4-15 people. After the event, you can privately select anyone you resonated with for post-event mutual chat!',
       },
       {
         'q': 'Is MELSAVA safe for solo attendees?',
-        'a': 'Absolutely! Over 75% of MELSAVA community members join events solo. We exclusively partner with verified public venues with active staff and registered hosts.'
+        'a':
+            'Absolutely! Over 75% of MELSAVA community members join events solo. We exclusively partner with verified public venues with active staff and registered hosts.',
       },
       {
         'q': 'What is the Post-Experience Mutual Match?',
-        'a': 'Say goodbye to awkward rejections! Within 24 hours after an experience ends, you anonymously pick the people you liked. If feelings are mutual, a private conversation is unlocked automatically.'
+        'a':
+            'Say goodbye to awkward rejections! Within 24 hours after an experience ends, you anonymously pick the people you liked. If feelings are mutual, a private conversation is unlocked automatically.',
       },
       {
         'q': 'How do I cancel an RSVP?',
-        'a': 'You can cancel anytime up to 4 hours before the event start time directly from the "My RSVPs" tab on the Experiences screen. This opens the spot for fellow community members.'
+        'a':
+            'You can cancel anytime up to 4 hours before the event start time directly from the "My RSVPs" tab on the Experiences screen. This opens the spot for fellow community members.',
       },
       {
         'q': 'How do I report inappropriate behavior?',
-        'a': 'We have zero tolerance for harassment. Tap the report button in any chat or profile, or email our 24/7 concierge at safety@melsava.app.'
+        'a':
+            'We have zero tolerance for harassment. Tap the report button in any chat or profile, or email our 24/7 concierge at safety@melsava.app.',
       },
     ];
 
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
-      backgroundColor: isDark ? const Color(0xFF1D142E) : const Color(0xFFFAF7F4),
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFAF7F4),
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
@@ -1172,7 +1471,11 @@ class SettingsScreen extends ConsumerWidget {
                       color: AppColors.brightViolet.withValues(alpha: 0.15),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.help_outline_rounded, color: AppColors.brightViolet, size: 22),
+                    child: const Icon(
+                      Icons.help_outline_rounded,
+                      color: AppColors.brightViolet,
+                      size: 22,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
@@ -1189,7 +1492,10 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         Text(
                           'Frequently asked questions & 24/7 concierge',
-                          style: TextStyle(color: mutedTextColor, fontSize: 11.5),
+                          style: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 11.5,
+                          ),
                         ),
                       ],
                     ),
@@ -1209,17 +1515,24 @@ class SettingsScreen extends ConsumerWidget {
                     child: InkWell(
                       onTap: () {
                         HapticFeedback.lightImpact();
-                        Clipboard.setData(const ClipboardData(text: 'support@melsava.app'));
+                        Clipboard.setData(
+                          const ClipboardData(text: 'support@melsava.app'),
+                        );
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Copied support@melsava.app to clipboard!'),
+                            content: Text(
+                              'Copied support@melsava.app to clipboard!',
+                            ),
                             duration: Duration(seconds: 2),
                           ),
                         );
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(16),
@@ -1227,15 +1540,26 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            const Icon(Icons.mail_outline_rounded, color: AppColors.brightViolet, size: 22),
+                            const Icon(
+                              Icons.mail_outline_rounded,
+                              color: AppColors.brightViolet,
+                              size: 22,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               'Email Concierge',
-                              style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 12),
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
                             ),
                             Text(
                               'support@melsava.app',
-                              style: TextStyle(color: mutedTextColor, fontSize: 10),
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 10,
+                              ),
                             ),
                           ],
                         ),
@@ -1249,14 +1573,19 @@ class SettingsScreen extends ConsumerWidget {
                         HapticFeedback.lightImpact();
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Connecting to MELSAVA Concierge live assistant...'),
+                            content: Text(
+                              'Connecting to MELSAVA Concierge live assistant...',
+                            ),
                             duration: Duration(seconds: 2),
                           ),
                         );
                       },
                       borderRadius: BorderRadius.circular(16),
                       child: Container(
-                        padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 10),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 10,
+                        ),
                         decoration: BoxDecoration(
                           color: cardBg,
                           borderRadius: BorderRadius.circular(16),
@@ -1264,15 +1593,26 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         child: Column(
                           children: [
-                            const Icon(Icons.forum_outlined, color: Color(0xFF10B981), size: 22),
+                            const Icon(
+                              Icons.forum_outlined,
+                              color: Color(0xFF10B981),
+                              size: 22,
+                            ),
                             const SizedBox(height: 4),
                             Text(
                               'Live Chat',
-                              style: TextStyle(color: primaryTextColor, fontWeight: FontWeight.w700, fontSize: 12),
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 12,
+                              ),
                             ),
                             Text(
                               'Typical reply in 5m',
-                              style: TextStyle(color: mutedTextColor, fontSize: 10),
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 10,
+                              ),
                             ),
                           ],
                         ),
@@ -1330,9 +1670,7 @@ class SettingsScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: Column(
-        children: children,
-      ),
+      child: Column(children: children),
     );
   }
 
@@ -1436,7 +1774,8 @@ class _FaqAccordionState extends State<FaqAccordion> {
       if (_openIndex == index) {
         _openIndex = null; // collapse if tapping currently open section
       } else {
-        _openIndex = index; // open tapped section, auto-collapse previous open section
+        _openIndex =
+            index; // open tapped section, auto-collapse previous open section
       }
     });
   }
@@ -1463,9 +1802,14 @@ class _FaqAccordionState extends State<FaqAccordion> {
                 InkWell(
                   onTap: () => _handleTap(index),
                   splashColor: AppColors.brightViolet.withValues(alpha: 0.08),
-                  highlightColor: AppColors.brightViolet.withValues(alpha: 0.04),
+                  highlightColor: AppColors.brightViolet.withValues(
+                    alpha: 0.04,
+                  ),
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 14,
+                    ),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
@@ -1473,8 +1817,12 @@ class _FaqAccordionState extends State<FaqAccordion> {
                           child: Text(
                             item['q']!,
                             style: TextStyle(
-                              color: isOpen ? AppColors.brightViolet : widget.primaryTextColor,
-                              fontWeight: isOpen ? FontWeight.w800 : FontWeight.w700,
+                              color: isOpen
+                                  ? AppColors.brightViolet
+                                  : widget.primaryTextColor,
+                              fontWeight: isOpen
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
                               fontSize: 13,
                               height: 1.3,
                             ),
@@ -1487,7 +1835,9 @@ class _FaqAccordionState extends State<FaqAccordion> {
                           curve: Curves.easeInOutCubic,
                           child: Icon(
                             Icons.keyboard_arrow_down_rounded,
-                            color: isOpen ? AppColors.brightViolet : widget.mutedTextColor,
+                            color: isOpen
+                                ? AppColors.brightViolet
+                                : widget.mutedTextColor,
                             size: 22,
                           ),
                         ),
@@ -1497,7 +1847,10 @@ class _FaqAccordionState extends State<FaqAccordion> {
                 ),
                 ClipRect(
                   child: AnimatedCrossFade(
-                    firstChild: const SizedBox(width: double.infinity, height: 0),
+                    firstChild: const SizedBox(
+                      width: double.infinity,
+                      height: 0,
+                    ),
                     secondChild: Padding(
                       padding: const EdgeInsets.fromLTRB(16, 2, 16, 14),
                       child: Text(
@@ -1509,7 +1862,9 @@ class _FaqAccordionState extends State<FaqAccordion> {
                         ),
                       ),
                     ),
-                    crossFadeState: isOpen ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+                    crossFadeState: isOpen
+                        ? CrossFadeState.showSecond
+                        : CrossFadeState.showFirst,
                     duration: const Duration(milliseconds: 240),
                     firstCurve: Curves.easeInOutCubic,
                     secondCurve: Curves.easeInOutCubic,

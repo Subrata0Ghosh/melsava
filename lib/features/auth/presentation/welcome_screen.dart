@@ -32,7 +32,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
       }
       ref.read(currentUserProvider.notifier).state = user;
       if (mounted) {
-        context.go('/discover');
+        context.go(user.nextRequiredRoute);
       }
     } catch (e) {
       if (mounted) {
@@ -42,10 +42,7 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
         }
         setState(() => _isGoogleLoading = false);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(msg),
-            behavior: SnackBarBehavior.floating,
-          ),
+          SnackBar(content: Text(msg), behavior: SnackBarBehavior.floating),
         );
       }
     }
@@ -54,8 +51,12 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : const Color(0xFFFBF8F5),
@@ -143,7 +144,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.04),
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.20 : 0.04,
+                        ),
                         blurRadius: 10,
                         offset: const Offset(0, 2),
                       ),

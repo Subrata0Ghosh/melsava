@@ -26,7 +26,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
   Timer? _navigationTimer;
   bool _sessionChecked = false;
   bool _animationCompleted = false;
-  bool _hasUser = false;
+  String _nextRoute = '/onboarding';
 
   @override
   void initState() {
@@ -48,9 +48,12 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
     final authRepo = ref.read(authRepositoryProvider);
     await authRepo.restoreSession();
     final user = authRepo.currentUser;
-    _hasUser = user != null;
-    if (_hasUser) {
+    if (user != null) {
       ref.read(currentUserProvider.notifier).state = user;
+      _nextRoute = user.nextRequiredRoute;
+    } else {
+      ref.read(currentUserProvider.notifier).state = null;
+      _nextRoute = '/onboarding';
     }
     _sessionChecked = true;
     _attemptNavigation();
@@ -58,12 +61,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
 
   void _attemptNavigation() {
     if (!mounted || !_sessionChecked || !_animationCompleted) return;
-
-    if (_hasUser) {
-      context.go('/discover');
-    } else {
-      context.go('/onboarding');
-    }
+    context.go(_nextRoute);
   }
 
   @override
@@ -123,10 +121,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
                 const Spacer(flex: 3),
 
                 // Animated glowing MELSAVA brand logo (Iconic 'M' meeting circles & Glowing Wordmark)
-                const AnimatedMelsavaBrandLogo(
-                  size: 92,
-                  isDark: true,
-                ),
+                const AnimatedMelsavaBrandLogo(size: 92, isDark: true),
 
                 const Spacer(flex: 7),
 
@@ -172,10 +167,7 @@ class _SplashScreenState extends ConsumerState<SplashScreen> {
             bottom: 0,
             left: 0,
             right: 0,
-            child: FluidWaveRibbon(
-              height: 70,
-              opacity: 0.95,
-            ),
+            child: FluidWaveRibbon(height: 70, opacity: 0.95),
           ),
         ],
       ),

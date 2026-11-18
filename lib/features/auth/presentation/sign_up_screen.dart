@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/auth_validators.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/glass_back_button.dart';
@@ -42,13 +43,15 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
     final password = _passwordController.text.trim();
     final confirmPassword = _confirmPasswordController.text.trim();
 
-    if (email.isEmpty || password.isEmpty) {
-      setState(() => _errorMessage = 'Please complete all required fields');
+    final emailErr = AuthValidators.validateEmail(email);
+    if (emailErr != null) {
+      setState(() => _errorMessage = emailErr);
       return;
     }
 
-    if (password.length < 6) {
-      setState(() => _errorMessage = 'Password must be at least 6 characters');
+    final passErr = AuthValidators.validatePassword(password);
+    if (passErr != null) {
+      setState(() => _errorMessage = passErr);
       return;
     }
 
@@ -78,7 +81,11 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       );
       ref.read(currentUserProvider.notifier).state = user;
       if (mounted) {
-        context.go('/discover');
+        if (!user.isEmailVerified) {
+          context.go('/verify-email', extra: user.email);
+        } else {
+          context.go(user.nextRequiredRoute);
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -119,7 +126,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
       }
       ref.read(currentUserProvider.notifier).state = user;
       if (mounted) {
-        context.go('/discover');
+        context.go(user.nextRequiredRoute);
       }
     } catch (e) {
       if (mounted) {
@@ -138,8 +145,12 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : const Color(0xFFFBF8F5),
@@ -172,12 +183,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                 const SizedBox(height: 6),
 
                 // ── Centered Melsava Logo ───────────────────────────────────
-                const Center(
-                  child: MelsavaLogo(
-                    size: 58,
-                    showWordmark: false,
-                  ),
-                ),
+                const Center(child: MelsavaLogo(size: 58, showWordmark: false)),
                 const SizedBox(height: 18),
 
                 // ── Header Titles ───────────────────────────────────────────
@@ -209,7 +215,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       borderRadius: BorderRadius.circular(
                         AppConstants.buttonRadiusSmall,
                       ),
-                      border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
+                      border: Border.all(
+                        color: AppColors.error.withValues(alpha: 0.3),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -239,10 +247,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   label: 'Email address',
                   hintText: 'name@example.com',
                   keyboardType: TextInputType.emailAddress,
-                  prefixIcon: const Icon(
-                    Icons.mail_outline_rounded,
-                    size: 20,
-                  ),
+                  prefixIcon: const Icon(Icons.mail_outline_rounded, size: 20),
                 ),
                 const SizedBox(height: AppConstants.spacingMD),
 
@@ -252,10 +257,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   label: 'Password',
                   hintText: 'Minimum 6 characters',
                   obscureText: true,
-                  prefixIcon: const Icon(
-                    Icons.lock_outline_rounded,
-                    size: 20,
-                  ),
+                  prefixIcon: const Icon(Icons.lock_outline_rounded, size: 20),
                 ),
                 const SizedBox(height: AppConstants.spacingMD),
 
@@ -265,16 +267,16 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   label: 'Confirm Password',
                   hintText: 'Re-enter your password',
                   obscureText: true,
-                  prefixIcon: const Icon(
-                    Icons.lock_reset_rounded,
-                    size: 20,
-                  ),
+                  prefixIcon: const Icon(Icons.lock_reset_rounded, size: 20),
                 ),
                 const SizedBox(height: 18),
 
                 // ── Adult Eligibility Certification Checkbox ────────────────
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                   decoration: BoxDecoration(
                     color: isDark
                         ? Colors.white.withValues(alpha: 0.06)
@@ -288,7 +290,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.black.withValues(alpha: isDark ? 0.20 : 0.03),
+                        color: Colors.black.withValues(
+                          alpha: isDark ? 0.20 : 0.03,
+                        ),
                         blurRadius: 8,
                         offset: const Offset(0, 2),
                       ),
@@ -299,7 +303,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                     children: [
                       Checkbox(
                         value: _isAdultConfirmed,
-                        activeColor: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                        activeColor: isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -389,7 +395,9 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                       child: Text(
                         'Sign In',
                         style: AppTypography.labelLarge.copyWith(
-                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                          color: isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple,
                           fontWeight: FontWeight.w800,
                         ),
                       ),

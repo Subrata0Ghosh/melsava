@@ -3,13 +3,22 @@ import '../data/auth_repository.dart';
 import '../domain/app_user.dart';
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return SupabaseAuthRepository();
+  final repo = SupabaseAuthRepository();
+  ref.onDispose(repo.dispose);
+  return repo;
 });
 
 final authStateProvider = StreamProvider<AppUser?>((ref) {
-  return ref.watch(authRepositoryProvider).authStateChanges;
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.authStateChanges;
 });
 
 final currentUserProvider = StateProvider<AppUser?>((ref) {
-  return ref.watch(authRepositoryProvider).currentUser;
+  final authRepo = ref.watch(authRepositoryProvider);
+  ref.listen<AsyncValue<AppUser?>>(authStateProvider, (_, next) {
+    next.whenData((user) {
+      ref.controller.state = user;
+    });
+  });
+  return authRepo.currentUser;
 });

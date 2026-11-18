@@ -4,32 +4,34 @@ This roadmap tracks the incremental delivery of MELSAVA following the specificat
 
 ---
 
-## Phase 1 — Foundation (Current)
+## Phase 1 — Foundation, Authentication & Onboarding (Completed)
 - [x] Flutter project initialization with clean architecture.
 - [x] Feature-first directory structure (`features/`, `core/`, `shared/`, `app/`).
 - [x] Brand typography configuration (`Manrope` + `Inter`).
 - [x] Palette tokens definition (`Warm Ivory`, `Deep Plum`, `Mauve`, `Soft Coral`, `Sage`).
-- [x] ThemeData configuration with custom card/button styling.
+- [x] ThemeData configuration with Light and Dark theme support.
 - [x] Brand constants and abstract vector logo implementation.
-- [x] Reusable widget primitives (`PrimaryButton`, `SecondaryButton`, `CustomTextField`, `EmptyStateWidget`, etc.).
-- [x] Complete GoRouter navigation shell with persistent 5-tab bottom navigation bar.
-- [x] Authentication screens (Welcome, Sign In, Sign Up, Forgot Password, Verification).
-- [x] Supabase service provider & local environment mock fallback.
-- [x] PostgreSQL database migrations (`001_initial_schema.sql` to `004_seed_data.sql`).
+- [x] Reusable widget primitives (`PrimaryButton`, `SecondaryButton`, `CustomTextField`, `GoogleSignInButton`, `EmptyStateWidget`, etc.).
+- [x] Authentication-aware GoRouter navigation with redirects and persistent 5-tab bottom navigation bar.
+- [x] Authentication screens (Welcome, Sign In without hard-coded demo credentials, Sign Up, Forgot Password, Email Verification, Native Google Sign-In).
+- [x] Supabase Auth session as single source of truth (no fake SharedPreferences session restore) and strictly debug-only mock fallback (`kDebugMode`).
+- [x] PostgreSQL database migrations (`001_initial_schema.sql` to `005_onboarding_preferences_and_storage.sql`).
 - [x] Core documentation suite (`README.md`, `PRODUCT_OVERVIEW.md`, `APP_WORKFLOW.md`, `DESIGN_SYSTEM.md`, `SECURITY_AND_RLS.md`).
 
 ---
 
-## Phase 2 — Onboarding & Adult Eligibility
-- [ ] Age verification gate (18+ certification & confirmation modal).
-- [ ] Multi-step profile setup wizard:
-  - Step 1: Display name & avatar picker.
-  - Step 2: Location (City / broad neighborhood).
-  - Step 3: Bio & conversational icebreakers.
-  - Step 4: Interests multi-select (15+ curated topics).
-  - Step 5: Primary & secondary connection intentions.
-  - Step 6: Community safety pledge & terms acceptance.
-- [ ] Persistence to `profiles` and `profile_private` via Supabase.
+## Phase 2 — Onboarding & Adult Eligibility (Completed in Phase 1 Implementation)
+- [x] Adult eligibility gate (18+ Date of Birth validation, underage access blocking, private `profile_private.date_of_birth` persistence).
+- [x] Multi-step profile onboarding wizard (`ProfileOnboardingScreen`):
+  - Step 1: Display name & profile photo upload to Supabase Storage (`avatars` bucket).
+  - Step 2: Broad location (city/area) & short bio.
+  - Step 3: Interests multi-select & preferred activity categories.
+  - Step 4: Primary & secondary connection intentions.
+  - Step 5: Availability & discovery preferences (age range, distance radius, format).
+  - Step 6: Community safety pledge & guidelines acceptance.
+- [x] Persistence to `profiles`, `profile_private`, `profile_interests`, `profile_intentions`, and Supabase Storage `avatars` bucket via repository & provider layers.
+- [x] Post-login & session-restore routing based on real `isEmailVerified`, `ageVerified`, and `onboardingCompleted` state.
+- [x] Clean logout clearing Supabase & Google sessions and returning to Welcome.
 
 ---
 

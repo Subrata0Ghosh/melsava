@@ -1,27 +1,138 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/auth_validators.dart';
+import '../../onboarding/domain/onboarding_models.dart';
+import '../../onboarding/presentation/onboarding_providers.dart';
+import 'auth_providers.dart';
 
-/// Adults Only Age Certification Screen
+/// Adults Only Age Eligibility Screen (18+ Date of Birth Verification)
 ///
-/// Pixel-matched to Image 2:
-/// - Dreamy pastel lilac-blue sky background with floating bokeh orbs
-/// - Multi-layered undulating fluid waves rising across the bottom (orange, magenta, purple)
-/// - Grand floating white arch/dome card with deep ambient elevation
-/// - 3D glossy heraldic shield with silver beveled rim, royal blue gradient face,
-///   glossy specular reflection, and 3D golden checkmark half-overlapping the top card rim
-/// - Berry-wine to royal-purple gradient "I am 18 or Older" stadium pill CTA
-/// - Clean dark plum "I am under 18" secondary action
-class AdultsOnlyScreen extends StatelessWidget {
+/// Preserves the MELSAVA pastel sky, bokeh orbs, fluid waves, dome card, and
+/// 3D glossy heraldic shield while collecting Date of Birth privately
+/// (`profile_private.date_of_birth`) and blocking users under 18 from continuing.
+class AdultsOnlyScreen extends ConsumerStatefulWidget {
   const AdultsOnlyScreen({super.key});
+
+  @override
+  ConsumerState<AdultsOnlyScreen> createState() => _AdultsOnlyScreenState();
+}
+
+class _AdultsOnlyScreenState extends ConsumerState<AdultsOnlyScreen> {
+  DateTime? _selectedDob;
+  bool _isSaving = false;
+  bool _isUnderageBlocked = false;
+  String? _errorMessage;
+
+  Future<void> _pickDateOfBirth() async {
+    final now = DateTime.now();
+    final initial = _selectedDob ?? DateTime(now.year - 24, now.month, now.day);
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: initial,
+      firstDate: DateTime(now.year - 100, 1, 1),
+      lastDate: now,
+      helpText: 'Select your date of birth',
+      confirmText: 'Confirm',
+    );
+    if (picked != null && mounted) {
+      setState(() {
+        _selectedDob = picked;
+        _errorMessage = null;
+        _isUnderageBlocked = !AuthValidators.isAdult(picked);
+      });
+    }
+  }
+
+  Future<void> _handleContinue() async {
+    HapticFeedback.mediumImpact();
+
+    if (_selectedDob == null) {
+      setState(
+        () => _errorMessage = 'Please select your date of birth to continue.',
+      );
+      return;
+    }
+
+    if (!AuthValidators.isAdult(_selectedDob!)) {
+      setState(() {
+        _isUnderageBlocked = true;
+        _errorMessage = null;
+      });
+      _showAgeRestrictionDialog(context);
+      return;
+    }
+
+    final user = ref.read(currentUserProvider);
+    if (user == null) {
+      if (mounted) context.go('/welcome');
+      return;
+    }
+
+    setState(() {
+      _isSaving = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final onboardingRepo = ref.read(onboardingRepositoryProvider);
+      final updatedUser = await onboardingRepo.saveAdultEligibility(
+        currentUser: user,
+        dateOfBirth: _selectedDob!,
+      );
+      ref.read(currentUserProvider.notifier).state = updatedUser;
+      if (mounted) {
+        context.go(
+          updatedUser.onboardingCompleted ? '/discover' : '/profile-onboarding',
+        );
+      }
+    } on UnderageUserException catch (e) {
+      if (mounted) {
+        setState(() {
+          _isSaving = false;
+          _isUnderageBlocked = true;
+          _errorMessage = e.message;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = e.toString().replaceAll('Exception: ', '');
+        if (e is PostgrestException) {
+          msg = e.message;
+        }
+        setState(() {
+          _isSaving = false;
+          _errorMessage = msg;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleSignOut() async {
+    await ref.read(authRepositoryProvider).signOut();
+    ref.read(currentUserProvider.notifier).state = null;
+    if (mounted) {
+      context.go('/welcome');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : const Color(0xFF1E1435);
-    final mutedTextColor = isDark ? AppColors.darkMutedText : const Color(0xFF594F70);
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF594F70);
+    final dateLabel = _selectedDob == null
+        ? 'Tap to select date of birth'
+        : DateFormat('MMMM d, yyyy').format(_selectedDob!);
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : const Color(0xFFF3F0FA),
@@ -52,7 +163,6 @@ class AdultsOnlyScreen extends StatelessWidget {
           ),
 
           // ── 2. Floating Background Bokeh Spheres & Ambient Aura ────────
-          // Top-left soft cyan-blue orb
           Positioned(
             top: 40,
             left: -40,
@@ -72,7 +182,6 @@ class AdultsOnlyScreen extends StatelessWidget {
             ),
           ),
 
-          // Top-right soft lilac/violet orb
           Positioned(
             top: 20,
             right: -30,
@@ -92,7 +201,6 @@ class AdultsOnlyScreen extends StatelessWidget {
             ),
           ),
 
-          // Center-upper ambient blue glow behind shield
           Positioned(
             top: 140,
             left: 0,
@@ -105,8 +213,12 @@ class AdultsOnlyScreen extends StatelessWidget {
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
                     colors: [
-                      const Color(0xFF60A5FA).withValues(alpha: isDark ? 0.30 : 0.35),
-                      const Color(0xFFA78BFA).withValues(alpha: isDark ? 0.15 : 0.18),
+                      const Color(
+                        0xFF60A5FA,
+                      ).withValues(alpha: isDark ? 0.30 : 0.35),
+                      const Color(
+                        0xFFA78BFA,
+                      ).withValues(alpha: isDark ? 0.15 : 0.18),
                       Colors.transparent,
                     ],
                   ),
@@ -115,7 +227,6 @@ class AdultsOnlyScreen extends StatelessWidget {
             ),
           ),
 
-          // Floating decorative mini bubbles
           Positioned(
             top: 90,
             left: 55,
@@ -148,18 +259,22 @@ class AdultsOnlyScreen extends StatelessWidget {
             child: Center(
               child: SingleChildScrollView(
                 physics: const ClampingScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 20),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 22,
+                  vertical: 20,
+                ),
                 child: SizedBox(
                   width: 350,
                   child: Stack(
                     clipBehavior: Clip.none,
                     alignment: Alignment.topCenter,
                     children: [
-                      // White Arch Card Container
                       Container(
                         margin: const EdgeInsets.only(top: 65),
                         decoration: BoxDecoration(
-                          color: isDark ? const Color(0xFF1C162E) : Colors.white,
+                          color: isDark
+                              ? const Color(0xFF1C162E)
+                              : Colors.white,
                           borderRadius: const BorderRadius.vertical(
                             top: Radius.circular(54),
                             bottom: Radius.circular(46),
@@ -172,9 +287,9 @@ class AdultsOnlyScreen extends StatelessWidget {
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: const Color(0xFF4C1D95).withValues(
-                                alpha: isDark ? 0.40 : 0.09,
-                              ),
+                              color: const Color(
+                                0xFF4C1D95,
+                              ).withValues(alpha: isDark ? 0.40 : 0.09),
                               blurRadius: 36,
                               offset: const Offset(0, 14),
                             ),
@@ -192,7 +307,6 @@ class AdultsOnlyScreen extends StatelessWidget {
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              // Title: Adults Only
                               Text(
                                 'Adults Only',
                                 textAlign: TextAlign.center,
@@ -204,97 +318,263 @@ class AdultsOnlyScreen extends StatelessWidget {
                                 ),
                               ),
 
-                              const SizedBox(height: 12),
+                              const SizedBox(height: 10),
 
-                              // Subtitle
                               Text(
-                                'MELSAVA is for adults\n(18+) only. Please confirm\nyou are 18 or older.',
+                                'MELSAVA is exclusively for adults (18+). Confirm your date of birth to continue.',
                                 textAlign: TextAlign.center,
                                 style: AppTypography.bodyMedium.copyWith(
                                   color: mutedTextColor,
                                   height: 1.45,
-                                  fontSize: 15,
+                                  fontSize: 14,
                                   fontWeight: FontWeight.w500,
                                 ),
                               ),
 
-                              const SizedBox(height: 28),
+                              const SizedBox(height: 20),
 
-                              // Primary Button: "I am 18 or Older"
-                              // Berry-wine to royal-purple gradient matching Image 2
-                              Container(
-                                width: double.infinity,
-                                height: 54,
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(27),
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFF861B5E),
-                                      Color(0xFF271066),
-                                    ],
-                                    begin: Alignment.centerLeft,
-                                    end: Alignment.centerRight,
+                              // ── Date of Birth Picker Card ───────────────
+                              GestureDetector(
+                                onTap: _isSaving ? null : _pickDateOfBirth,
+                                child: Container(
+                                  width: double.infinity,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 14,
                                   ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(0xFF861B5E).withValues(alpha: 0.38),
-                                      blurRadius: 18,
-                                      offset: const Offset(0, 6),
+                                  decoration: BoxDecoration(
+                                    color: isDark
+                                        ? AppColors.darkElevated
+                                        : AppColors.warmIvory,
+                                    borderRadius: BorderRadius.circular(18),
+                                    border: Border.all(
+                                      color: _isUnderageBlocked
+                                          ? AppColors.error
+                                          : (isDark
+                                                ? AppColors.darkBorder
+                                                : AppColors.divider),
+                                      width: _isUnderageBlocked ? 1.5 : 1.1,
                                     ),
-                                  ],
-                                ),
-                                child: Material(
-                                  color: Colors.transparent,
-                                  child: InkWell(
-                                    borderRadius: BorderRadius.circular(27),
-                                    onTap: () {
-                                      HapticFeedback.mediumImpact();
-                                      context.go('/welcome');
-                                    },
-                                    child: const Center(
-                                      child: Text(
-                                        'I am 18 or Older',
-                                        style: TextStyle(
-                                          color: Colors.white,
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w800,
-                                          letterSpacing: 0.2,
+                                  ),
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.cake_outlined,
+                                        size: 20,
+                                        color: _isUnderageBlocked
+                                            ? AppColors.error
+                                            : (isDark
+                                                  ? AppColors.luminousMauve
+                                                  : AppColors.mauve),
+                                      ),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              'Date of Birth',
+                                              style: AppTypography.labelSmall
+                                                  .copyWith(
+                                                    color: mutedTextColor,
+                                                    fontWeight: FontWeight.w600,
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              dateLabel,
+                                              style: AppTypography.bodyMedium
+                                                  .copyWith(
+                                                    color: _selectedDob == null
+                                                        ? mutedTextColor
+                                                        : primaryTextColor,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                            ),
+                                          ],
                                         ),
+                                      ),
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 16,
+                                        color: mutedTextColor,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+
+                              const SizedBox(height: 10),
+
+                              // Private DOB guarantee note
+                              Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(
+                                    Icons.lock_outline_rounded,
+                                    size: 13,
+                                    color: mutedTextColor,
+                                  ),
+                                  const SizedBox(width: 5),
+                                  Flexible(
+                                    child: Text(
+                                      'Kept strictly private and never displayed publicly.',
+                                      style: AppTypography.bodySmall.copyWith(
+                                        color: mutedTextColor,
+                                        fontSize: 11.5,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              if (_isUnderageBlocked) ...[
+                                const SizedBox(height: 14),
+                                Container(
+                                  padding: const EdgeInsets.all(12),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.error.withValues(
+                                      alpha: 0.10,
+                                    ),
+                                    borderRadius: BorderRadius.circular(14),
+                                    border: Border.all(
+                                      color: AppColors.error.withValues(
+                                        alpha: 0.40,
+                                      ),
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'Access restricted: You must be at least 18 years old to use MELSAVA.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: AppColors.error,
+                                      fontWeight: FontWeight.w700,
+                                      height: 1.4,
+                                    ),
+                                  ),
+                                ),
+                              ] else if (_errorMessage != null) ...[
+                                const SizedBox(height: 14),
+                                Text(
+                                  _errorMessage!,
+                                  textAlign: TextAlign.center,
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: AppColors.error,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+
+                              const SizedBox(height: 22),
+
+                              // Primary Button: "Confirm & Continue"
+                              Opacity(
+                                opacity: _isUnderageBlocked ? 0.45 : 1.0,
+                                child: Container(
+                                  width: double.infinity,
+                                  height: 54,
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(27),
+                                    gradient: const LinearGradient(
+                                      colors: [
+                                        Color(0xFF861B5E),
+                                        Color(0xFF271066),
+                                      ],
+                                      begin: Alignment.centerLeft,
+                                      end: Alignment.centerRight,
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: const Color(
+                                          0xFF861B5E,
+                                        ).withValues(alpha: 0.38),
+                                        blurRadius: 18,
+                                        offset: const Offset(0, 6),
+                                      ),
+                                    ],
+                                  ),
+                                  child: Material(
+                                    color: Colors.transparent,
+                                    child: InkWell(
+                                      borderRadius: BorderRadius.circular(27),
+                                      onTap: (_isSaving || _isUnderageBlocked)
+                                          ? null
+                                          : _handleContinue,
+                                      child: Center(
+                                        child: _isSaving
+                                            ? const SizedBox(
+                                                width: 22,
+                                                height: 22,
+                                                child:
+                                                    CircularProgressIndicator(
+                                                      strokeWidth: 2.3,
+                                                      color: Colors.white,
+                                                    ),
+                                              )
+                                            : const Text(
+                                                'I am 18 or Older',
+                                                style: TextStyle(
+                                                  color: Colors.white,
+                                                  fontSize: 16,
+                                                  fontWeight: FontWeight.w800,
+                                                  letterSpacing: 0.2,
+                                                ),
+                                              ),
                                       ),
                                     ),
                                   ),
                                 ),
                               ),
 
-                              const SizedBox(height: 16),
+                              const SizedBox(height: 14),
 
                               // Secondary Link: "I am under 18"
                               GestureDetector(
-                                onTap: () => _showAgeRestrictionDialog(context),
+                                onTap: () {
+                                  setState(() => _isUnderageBlocked = true);
+                                  _showAgeRestrictionDialog(context);
+                                },
                                 child: Padding(
-                                  padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 12),
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 6,
+                                    horizontal: 12,
+                                  ),
                                   child: Text(
                                     'I am under 18',
                                     style: TextStyle(
-                                      color: isDark ? AppColors.luminousMauve : const Color(0xFF2A1D44),
+                                      color: isDark
+                                          ? AppColors.luminousMauve
+                                          : const Color(0xFF2A1D44),
                                       fontWeight: FontWeight.w700,
                                       fontSize: 14.5,
                                     ),
                                   ),
                                 ),
                               ),
+
+                              if (_isUnderageBlocked) ...[
+                                const SizedBox(height: 6),
+                                TextButton(
+                                  onPressed: _handleSignOut,
+                                  child: Text(
+                                    'Sign Out & Return to Welcome',
+                                    style: AppTypography.labelMedium.copyWith(
+                                      color: mutedTextColor,
+                                      fontWeight: FontWeight.w600,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
                       ),
 
                       // ── 3D Glossy Heraldic Shield & Gold Checkmark ──────
-                      Positioned(
+                      const Positioned(
                         top: 0,
-                        child: const Glossy3dShieldWidget(
-                          width: 122,
-                          height: 138,
-                        ),
+                        child: Glossy3dShieldWidget(width: 122, height: 138),
                       ),
                     ],
                   ),
@@ -323,18 +603,23 @@ class AdultsOnlyScreen extends StatelessWidget {
     );
   }
 
-  static void _showAgeRestrictionDialog(BuildContext context) {
+  void _showAgeRestrictionDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Text('Age Requirement'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Age Requirement (18+)'),
         content: const Text(
-          'MELSAVA experiences are strictly designed for individuals 18 years or older to maintain safety and compliance standards. We look forward to welcoming you in the future!',
+          'MELSAVA experiences are strictly designed for individuals 18 years or older to maintain safety and compliance standards. You cannot continue with an under-18 date of birth.',
         ),
         actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.of(ctx).pop();
+              _handleSignOut();
+            },
+            child: const Text('Sign Out'),
+          ),
           TextButton(
             onPressed: () => Navigator.of(ctx).pop(),
             child: const Text('Understood'),
@@ -358,11 +643,7 @@ class Glossy3dShieldWidget extends StatelessWidget {
   final double width;
   final double height;
 
-  const Glossy3dShieldWidget({
-    super.key,
-    this.width = 122,
-    this.height = 138,
-  });
+  const Glossy3dShieldWidget({super.key, this.width = 122, this.height = 138});
 
   @override
   Widget build(BuildContext context) {
@@ -529,7 +810,10 @@ class _Glossy3dShieldPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round
       ..strokeJoin = StrokeJoin.round
       ..color = Colors.white.withValues(alpha: 0.65);
-    canvas.drawPath(checkPath.shift(const Offset(-0.8, -0.8)), checkHighlightPaint);
+    canvas.drawPath(
+      checkPath.shift(const Offset(-0.8, -0.8)),
+      checkHighlightPaint,
+    );
   }
 
   Path _getShieldPath(Rect rect) {
@@ -542,9 +826,19 @@ class _Glossy3dShieldPainter extends CustomPainter {
     // Top-left shoulder
     path.moveTo(l + w * 0.15, t + h * 0.08);
     // Top crest dip to center
-    path.quadraticBezierTo(l + w * 0.50, t + h * 0.16, l + w * 0.85, t + h * 0.08);
+    path.quadraticBezierTo(
+      l + w * 0.50,
+      t + h * 0.16,
+      l + w * 0.85,
+      t + h * 0.08,
+    );
     // Top-right rounded ear / shoulder
-    path.quadraticBezierTo(l + w * 0.98, t + h * 0.09, l + w * 0.95, t + h * 0.28);
+    path.quadraticBezierTo(
+      l + w * 0.98,
+      t + h * 0.09,
+      l + w * 0.95,
+      t + h * 0.28,
+    );
     // Right flank tapering down to bottom point
     path.cubicTo(
       l + w * 0.92,
@@ -564,7 +858,12 @@ class _Glossy3dShieldPainter extends CustomPainter {
       t + h * 0.28,
     );
     // Top-left rounded ear / shoulder
-    path.quadraticBezierTo(l + w * 0.02, t + h * 0.09, l + w * 0.15, t + h * 0.08);
+    path.quadraticBezierTo(
+      l + w * 0.02,
+      t + h * 0.09,
+      l + w * 0.15,
+      t + h * 0.08,
+    );
     path.close();
     return path;
   }
@@ -604,11 +903,7 @@ class _AdultsOnlyFluidWavesPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.topLeft,
         end: Alignment.bottomRight,
-        colors: [
-          Color(0xFF581C87),
-          Color(0xFF7C3AED),
-          Color(0xFF4C1D95),
-        ],
+        colors: [Color(0xFF581C87), Color(0xFF7C3AED), Color(0xFF4C1D95)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path1, paint1);
 
@@ -625,11 +920,7 @@ class _AdultsOnlyFluidWavesPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
-        colors: [
-          Color(0xFFD946EF),
-          Color(0xFFEC4899),
-          Color(0xFFF43F5E),
-        ],
+        colors: [Color(0xFFD946EF), Color(0xFFEC4899), Color(0xFFF43F5E)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path2, paint2);
 
@@ -646,11 +937,7 @@ class _AdultsOnlyFluidWavesPainter extends CustomPainter {
       ..shader = const LinearGradient(
         begin: Alignment.centerLeft,
         end: Alignment.centerRight,
-        colors: [
-          Color(0xFFF97316),
-          Color(0xFFFB923C),
-          Color(0xFFFBBF24),
-        ],
+        colors: [Color(0xFFF97316), Color(0xFFFB923C), Color(0xFFFBBF24)],
       ).createShader(Rect.fromLTWH(0, 0, w, h));
     canvas.drawPath(path3, paint3);
   }

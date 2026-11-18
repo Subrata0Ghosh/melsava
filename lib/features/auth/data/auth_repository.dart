@@ -1,7 +1,7 @@
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:google_sign_in/google_sign_in.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../domain/app_user.dart';
@@ -9,105 +9,345 @@ import '../domain/app_user.dart';
 abstract class AuthRepository {
   Stream<AppUser?> get authStateChanges;
   AppUser? get currentUser;
-  Future<AppUser> signInWithEmail({required String email, required String password});
-  Future<AppUser> signUpWithEmail({required String email, required String password});
+  String? get pendingVerificationEmail;
+  bool get isDebugMockMode;
+
+  Future<AppUser> signInWithEmail({
+    required String email,
+    required String password,
+  });
+  Future<AppUser> signUpWithEmail({
+    required String email,
+    required String password,
+  });
   Future<AppUser?> signInWithGoogle();
+  Future<void> sendMagicLinkEmail({required String email});
   Future<void> sendPasswordResetEmail({required String email});
+  Future<void> resendVerificationEmail({required String email});
+  Future<AppUser?> refreshEmailVerificationStatus();
+  Future<AppUser?> refreshCurrentUser();
+  Future<AppUser?> debugVerifyEmailIfAllowed();
   Future<void> signOut();
   Future<void> restoreSession();
   Future<void> updateProfile(AppUser updatedUser);
+  void syncCachedUser(AppUser user);
 }
 
-/// Unified Auth Repository supporting Email, Native Google Sign-In,
-/// Supabase Auth, and session persistence across app launches.
+/// Unified Auth Repository backed by Supabase Auth & PostgreSQL (`profiles` + `profile_private`).
+///
+/// - Uses the live Supabase session as the single source of authentication truth.
+/// - Never restores a fake authenticated user from SharedPreferences.
+/// - Mock fallback is strictly restricted to `kDebugMode` when Supabase is unconfigured,
+///   and will never authenticate users in release builds.
 class SupabaseAuthRepository implements AuthRepository {
   final _controller = StreamController<AppUser?>.broadcast();
   AppUser? _cachedUser;
+  String? _pendingVerificationEmail;
+  StreamSubscription<AuthState>? _authSubscription;
+  bool _listenerAttached = false;
 
   static Future<void>? _googleInitFuture;
   static bool _googleInitialized = false;
 
   SupabaseAuthRepository() {
-    _initAuth();
+    _attachSupabaseListener();
   }
 
-  AppUser _mapSupabaseUser(User user, {String? fallbackName, String? fallbackAvatar}) {
+  bool get _hasLiveSupabase =>
+      SupabaseService.isConfigured && SupabaseService.client != null;
+
+  @override
+  bool get isDebugMockMode => kDebugMode && !_hasLiveSupabase;
+
+  @override
+  String? get pendingVerificationEmail => _pendingVerificationEmail;
+
+  @override
+  Stream<AppUser?> get authStateChanges => _controller.stream;
+
+  @override
+  AppUser? get currentUser => _cachedUser;
+
+  void _ensureBackendAvailable() {
+    if (!_hasLiveSupabase && !kDebugMode) {
+      throw Exception(
+        'Authentication service is not configured. Please provide valid Supabase credentials.',
+      );
+    }
+  }
+
+  void _attachSupabaseListener() {
+    if (_listenerAttached || !_hasLiveSupabase) return;
+    _listenerAttached = true;
+
+    _authSubscription = SupabaseService.client!.auth.onAuthStateChange.listen((
+      data,
+    ) async {
+      final session = data.session;
+      if (session == null) {
+        _cachedUser = null;
+        _controller.add(null);
+      } else {
+        final hydrated = await _hydrateUserFromSupabase(session.user);
+        _cachedUser = hydrated;
+        if (hydrated.isEmailVerified) {
+          _pendingVerificationEmail = null;
+        }
+        _controller.add(_cachedUser);
+      }
+    });
+  }
+
+  /// Hydrates real profile completion, age verification, interests & intentions
+  /// from `public.profiles` and `public.profile_private` without exposing `date_of_birth`.
+  Future<AppUser> _hydrateUserFromSupabase(
+    User user, {
+    String? fallbackName,
+    String? fallbackAvatar,
+  }) async {
+    final client = SupabaseService.client!;
     final meta = user.userMetadata ?? const <String, dynamic>{};
     final email = user.email ?? '';
-    final displayName =
+
+    String? displayName =
         (meta['display_name'] as String?) ??
         (meta['full_name'] as String?) ??
         (meta['name'] as String?) ??
-        fallbackName ??
-        (email.isNotEmpty ? email.split('@').first : 'MELSAVA Member');
-    final avatarUrl =
+        fallbackName;
+    String? avatarUrl =
         (meta['avatar_url'] as String?) ??
         (meta['picture'] as String?) ??
         fallbackAvatar;
+    String? city;
+    String? bio;
+    bool onboardingCompleted = false;
+    bool ageVerified = false;
+    bool guidelinesAccepted = false;
+    List<String> preferredActivityCategories = const [];
+    List<String> availability = const [];
+    int minAge = 21;
+    int maxAge = 40;
+    int maxDistanceKm = 25;
+    String discoveryFormat = 'Both';
+    List<String> interests = const [];
+    String? primaryIntent;
+    List<String> secondaryIntents = const [];
+
+    // 1. Read public.profiles row
+    try {
+      final profileRow = await client
+          .from('profiles')
+          .select('display_name, avatar_url, bio, city, onboarding_completed')
+          .eq('id', user.id)
+          .maybeSingle();
+
+      if (profileRow != null) {
+        final dbName = profileRow['display_name'] as String?;
+        if (dbName != null &&
+            dbName.trim().isNotEmpty &&
+            dbName != 'New User') {
+          displayName = dbName;
+        }
+        avatarUrl = (profileRow['avatar_url'] as String?) ?? avatarUrl;
+        bio = profileRow['bio'] as String?;
+        city = profileRow['city'] as String?;
+        onboardingCompleted =
+            (profileRow['onboarding_completed'] as bool?) ?? false;
+      }
+    } catch (e) {
+      debugPrint('[SupabaseAuthRepository] Failed to fetch profiles: $e');
+    }
+
+    // 2. Read private verification & preference flags (never expose date_of_birth)
+    try {
+      final privateRow = await client
+          .from('profile_private')
+          .select('age_verified, guidelines_accepted_at, terms_accepted_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (privateRow != null) {
+        ageVerified = (privateRow['age_verified'] as bool?) ?? false;
+        guidelinesAccepted = privateRow['guidelines_accepted_at'] != null;
+      }
+    } catch (e) {
+      debugPrint(
+        '[SupabaseAuthRepository] Failed to fetch profile_private: $e',
+      );
+    }
+
+    // 2b. Optional extended preference columns from migration 005
+    try {
+      final prefRow = await client
+          .from('profile_private')
+          .select(
+            'preferred_activity_categories, availability_preferences, discovery_preferences',
+          )
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+      if (prefRow != null) {
+        final rawCats = prefRow['preferred_activity_categories'];
+        if (rawCats is List) {
+          preferredActivityCategories = rawCats
+              .map((e) => e.toString())
+              .toList();
+        }
+        final rawAvail = prefRow['availability_preferences'];
+        if (rawAvail is List) {
+          availability = rawAvail.map((e) => e.toString()).toList();
+        }
+        final rawDisc = prefRow['discovery_preferences'];
+        if (rawDisc is Map) {
+          minAge = (rawDisc['min_age'] as num?)?.toInt() ?? minAge;
+          maxAge = (rawDisc['max_age'] as num?)?.toInt() ?? maxAge;
+          maxDistanceKm =
+              (rawDisc['max_distance_km'] as num?)?.toInt() ?? maxDistanceKm;
+          discoveryFormat = (rawDisc['format'] as String?) ?? discoveryFormat;
+        }
+      }
+    } catch (_) {
+      // Fallback to userMetadata if migration 005 columns are not yet applied
+      final metaCats = meta['preferred_activity_categories'];
+      if (metaCats is List) {
+        preferredActivityCategories = metaCats
+            .map((e) => e.toString())
+            .toList();
+      }
+      final metaAvail = meta['availability_preferences'];
+      if (metaAvail is List) {
+        availability = metaAvail.map((e) => e.toString()).toList();
+      }
+      final metaDisc = meta['discovery_preferences'];
+      if (metaDisc is Map) {
+        minAge = (metaDisc['min_age'] as num?)?.toInt() ?? minAge;
+        maxAge = (metaDisc['max_age'] as num?)?.toInt() ?? maxAge;
+        maxDistanceKm =
+            (metaDisc['max_distance_km'] as num?)?.toInt() ?? maxDistanceKm;
+        discoveryFormat = (metaDisc['format'] as String?) ?? discoveryFormat;
+      }
+    }
+
+    // 3. Read selected interests
+    try {
+      final interestRows = await client
+          .from('profile_interests')
+          .select('interests(name)')
+          .eq('profile_id', user.id);
+
+      interests = (interestRows as List)
+          .map((row) {
+            final nested = row['interests'];
+            if (nested is Map) return nested['name']?.toString();
+            return null;
+          })
+          .whereType<String>()
+          .toList();
+    } catch (_) {}
+
+    // 4. Read selected intentions
+    try {
+      final intentionRows = await client
+          .from('profile_intentions')
+          .select('is_primary, intentions(name)')
+          .eq('profile_id', user.id);
+
+      final others = <String>[];
+      for (final row in (intentionRows as List)) {
+        final nested = row['intentions'];
+        final name = nested is Map ? nested['name']?.toString() : null;
+        if (name == null) continue;
+        if (row['is_primary'] == true) {
+          primaryIntent = name;
+        } else {
+          others.add(name);
+        }
+      }
+      secondaryIntents = others;
+    } catch (_) {}
+
+    // OAuth providers (like Google) confirm email automatically
+    final isOAuth =
+        user.appMetadata['provider'] == 'google' ||
+        (user.identities?.any((id) => id.provider == 'google') ?? false);
+    final isEmailVerified = user.emailConfirmedAt != null || isOAuth;
 
     return AppUser(
       id: user.id,
       email: email,
       displayName: displayName,
       avatarUrl: avatarUrl,
-      city: 'Mumbai',
-      isEmailVerified: user.emailConfirmedAt != null || true,
-      onboardingCompleted: true,
+      city: city,
+      bio: bio,
+      primaryIntent: primaryIntent,
+      secondaryIntents: secondaryIntents,
+      interests: interests,
+      preferredActivityCategories: preferredActivityCategories,
+      availability: availability,
+      discoveryMinAge: minAge,
+      discoveryMaxAge: maxAge,
+      discoveryMaxDistanceKm: maxDistanceKm,
+      discoveryFormat: discoveryFormat,
+      isEmailVerified: isEmailVerified,
+      ageVerified: ageVerified,
+      guidelinesAccepted: guidelinesAccepted,
+      onboardingCompleted: onboardingCompleted,
     );
   }
 
-  Future<void> _persistUserLocally(AppUser user) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('melsava_user_id', user.id);
-    await prefs.setString('melsava_user_email', user.email);
-    if (user.displayName != null) {
-      await prefs.setString('melsava_user_name', user.displayName!);
+  @override
+  Future<void> restoreSession() async {
+    _attachSupabaseListener();
+
+    // Always use actual Supabase session as source of authentication truth.
+    // Never restore a fake authenticated user from SharedPreferences.
+    if (_hasLiveSupabase) {
+      final session = SupabaseService.client!.auth.currentSession;
+      if (session == null) {
+        _cachedUser = null;
+        _controller.add(null);
+        return;
+      }
+
+      try {
+        final userResponse = await SupabaseService.client!.auth.getUser();
+        final activeUser = userResponse.user ?? session.user;
+        _cachedUser = await _hydrateUserFromSupabase(activeUser);
+        _controller.add(_cachedUser);
+      } catch (_) {
+        // Session expired or invalid on server — treat as unauthenticated
+        _cachedUser = null;
+        _controller.add(null);
+      }
+      return;
     }
-    if (user.avatarUrl != null && user.avatarUrl!.isNotEmpty) {
-      await prefs.setString('melsava_user_avatar', user.avatarUrl!);
-    }
-    await prefs.setString('melsava_user_city', user.city ?? 'Mumbai');
+
+    // Without live Supabase, do not fabricate a persisted session.
+    _controller.add(_cachedUser);
   }
 
-  Future<void> _initAuth() async {
-    // 1. Check live Supabase session
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
+  @override
+  Future<AppUser?> refreshCurrentUser() async {
+    if (_hasLiveSupabase) {
       final session = SupabaseService.client!.auth.currentSession;
-      if (session != null) {
-        _cachedUser = _mapSupabaseUser(session.user);
-        _controller.add(_cachedUser);
+      if (session == null) {
+        _cachedUser = null;
+        _controller.add(null);
+        return null;
       }
-
-      SupabaseService.client!.auth.onAuthStateChange.listen((data) {
-        final currentSession = data.session;
-        if (currentSession != null) {
-          _cachedUser = _mapSupabaseUser(currentSession.user);
-        } else {
-          _cachedUser = null;
-        }
-        _controller.add(_cachedUser);
-      });
+      final userRes = await SupabaseService.client!.auth.getUser();
+      final user = userRes.user ?? session.user;
+      _cachedUser = await _hydrateUserFromSupabase(user);
+      _controller.add(_cachedUser);
+      return _cachedUser;
     }
+    return _cachedUser;
+  }
 
-    // 2. Check local persistence
-    if (_cachedUser == null) {
-      final prefs = await SharedPreferences.getInstance();
-      final savedEmail = prefs.getString('melsava_user_email');
-      if (savedEmail != null) {
-        _cachedUser = AppUser(
-          id: prefs.getString('melsava_user_id') ?? 'user-saved',
-          email: savedEmail,
-          displayName: prefs.getString('melsava_user_name') ?? savedEmail.split('@').first,
-          avatarUrl: prefs.getString('melsava_user_avatar') ?? 'assets/images/sneha_avatar.png',
-          city: prefs.getString('melsava_user_city') ?? 'Mumbai',
-          bio: prefs.getString('melsava_user_bio') ?? 'Nature lover | Coffee enthusiast | Explorer',
-          primaryIntent: prefs.getString('melsava_user_intent') ?? 'Friend',
-          isEmailVerified: true,
-          onboardingCompleted: true,
-        );
-        _controller.add(_cachedUser);
-      }
-    }
+  @override
+  void syncCachedUser(AppUser user) {
+    _cachedUser = user;
+    _controller.add(_cachedUser);
   }
 
   Future<void> _ensureGoogleSignInInitialized() async {
@@ -145,6 +385,7 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<AppUser?> signInWithGoogle() async {
+    _ensureBackendAvailable();
     await _ensureGoogleSignInInitialized();
 
     final GoogleSignInAccount googleUser;
@@ -155,7 +396,7 @@ class SupabaseAuthRepository implements AuthRepository {
     } on GoogleSignInException catch (e) {
       if (e.code == GoogleSignInExceptionCode.canceled ||
           e.code == GoogleSignInExceptionCode.interrupted) {
-        return null; // User cancelled picker
+        return null;
       }
       throw Exception(
         e.description ?? 'Google Sign-In failed (${e.code.name}).',
@@ -169,17 +410,17 @@ class SupabaseAuthRepository implements AuthRepository {
       );
     }
 
-    // Request optional access token without forcing an extra consent prompt
     String? accessToken;
     try {
-      final authz = await googleUser.authorizationClient
-          .authorizationForScopes(const ['email', 'profile']);
+      final authz = await googleUser.authorizationClient.authorizationForScopes(
+        const ['email', 'profile'],
+      );
       accessToken = authz?.accessToken;
     } catch (_) {
       // Optional when authenticating with Supabase via ID token
     }
 
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
+    if (_hasLiveSupabase) {
       final res = await SupabaseService.client!.auth.signInWithIdToken(
         provider: OAuthProvider.google,
         idToken: idToken,
@@ -189,91 +430,66 @@ class SupabaseAuthRepository implements AuthRepository {
       if (user == null) {
         throw Exception('Google sign-in with Supabase failed.');
       }
-      _cachedUser = _mapSupabaseUser(
+      _cachedUser = await _hydrateUserFromSupabase(
         user,
         fallbackName: googleUser.displayName,
         fallbackAvatar: googleUser.photoUrl,
       );
-    } else {
+    } else if (isDebugMockMode) {
       _cachedUser = AppUser(
-        id: 'google-${googleUser.id}',
+        id: 'debug-google-${googleUser.id}',
         email: googleUser.email,
         displayName:
             googleUser.displayName ?? googleUser.email.split('@').first,
         avatarUrl: googleUser.photoUrl,
-        city: 'Mumbai',
         isEmailVerified: true,
-        onboardingCompleted: true,
+        ageVerified: false,
+        onboardingCompleted: false,
       );
     }
 
-    await _persistUserLocally(_cachedUser!);
+    _pendingVerificationEmail = null;
     _controller.add(_cachedUser);
-    return _cachedUser!;
+    return _cachedUser;
   }
-
-  @override
-  Future<void> updateProfile(AppUser updatedUser) async {
-    _cachedUser = updatedUser;
-    final prefs = await SharedPreferences.getInstance();
-    if (updatedUser.displayName != null) {
-      await prefs.setString('melsava_user_name', updatedUser.displayName!);
-    }
-    if (updatedUser.city != null) {
-      await prefs.setString('melsava_user_city', updatedUser.city!);
-    }
-    if (updatedUser.avatarUrl != null) {
-      await prefs.setString('melsava_user_avatar', updatedUser.avatarUrl!);
-    }
-    if (updatedUser.bio != null) {
-      await prefs.setString('melsava_user_bio', updatedUser.bio!);
-    }
-    if (updatedUser.primaryIntent != null) {
-      await prefs.setString('melsava_user_intent', updatedUser.primaryIntent!);
-    }
-    _controller.add(_cachedUser);
-  }
-
-  @override
-  Future<void> restoreSession() async {
-    await _initAuth();
-  }
-
-  @override
-  Stream<AppUser?> get authStateChanges => _controller.stream;
-
-  @override
-  AppUser? get currentUser => _cachedUser;
 
   @override
   Future<AppUser> signInWithEmail({
     required String email,
     required String password,
   }) async {
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
       final res = await SupabaseService.client!.auth.signInWithPassword(
         email: email,
         password: password,
       );
       final user = res.user;
-      if (user == null) throw Exception('Sign in failed');
-      _cachedUser = _mapSupabaseUser(
+      if (user == null) throw Exception('Sign in failed. Please try again.');
+      _cachedUser = await _hydrateUserFromSupabase(
         user,
         fallbackName: email.split('@').first,
       );
-    } else {
-      await Future.delayed(const Duration(milliseconds: 500));
+      if (!_cachedUser!.isEmailVerified) {
+        _pendingVerificationEmail = email;
+      } else {
+        _pendingVerificationEmail = null;
+      }
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
       _cachedUser = AppUser(
-        id: 'user-${email.hashCode}',
+        id: 'debug-user-${email.hashCode}',
         email: email,
         displayName: email.split('@').first,
-        city: 'Mumbai',
         isEmailVerified: true,
-        onboardingCompleted: true,
+        ageVerified: false,
+        onboardingCompleted: false,
       );
+    } else {
+      throw Exception('Authentication service unavailable in release mode.');
     }
 
-    await _persistUserLocally(_cachedUser!);
     _controller.add(_cachedUser);
     return _cachedUser!;
   }
@@ -283,42 +499,157 @@ class SupabaseAuthRepository implements AuthRepository {
     required String email,
     required String password,
   }) async {
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
       final res = await SupabaseService.client!.auth.signUp(
         email: email,
         password: password,
         data: {'display_name': email.split('@').first},
       );
       final user = res.user;
-      if (user == null) throw Exception('Sign up failed');
-      _cachedUser = _mapSupabaseUser(
-        user,
-        fallbackName: email.split('@').first,
-      );
-    } else {
-      await Future.delayed(const Duration(milliseconds: 500));
+      if (user == null) {
+        throw Exception('Could not create account. Please try again.');
+      }
+
+      final isVerified = user.emailConfirmedAt != null;
+      if (res.session != null) {
+        _cachedUser = await _hydrateUserFromSupabase(
+          user,
+          fallbackName: email.split('@').first,
+        );
+      } else {
+        // Supabase requires email confirmation before issuing a session
+        _cachedUser = AppUser(
+          id: user.id,
+          email: user.email ?? email,
+          displayName: email.split('@').first,
+          isEmailVerified: isVerified,
+          ageVerified: false,
+          onboardingCompleted: false,
+        );
+      }
+
+      _pendingVerificationEmail = isVerified ? null : email;
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
       _cachedUser = AppUser(
-        id: 'user-${email.hashCode}',
+        id: 'debug-user-${email.hashCode}',
         email: email,
         displayName: email.split('@').first,
-        city: 'Mumbai',
-        isEmailVerified: true,
-        onboardingCompleted: true,
+        isEmailVerified: false, // Never silently bypass email verification
+        ageVerified: false,
+        onboardingCompleted: false,
       );
+      _pendingVerificationEmail = email;
+    } else {
+      throw Exception('Authentication service unavailable in release mode.');
     }
 
-    await _persistUserLocally(_cachedUser!);
     _controller.add(_cachedUser);
     return _cachedUser!;
   }
 
   @override
-  Future<void> sendPasswordResetEmail({required String email}) async {
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
-      await SupabaseService.client!.auth.resetPasswordForEmail(email);
-    } else {
-      await Future.delayed(const Duration(milliseconds: 400));
+  Future<void> sendMagicLinkEmail({required String email}) async {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!.auth.signInWithOtp(email: email);
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
     }
+  }
+
+  @override
+  Future<void> sendPasswordResetEmail({required String email}) async {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!.auth.resetPasswordForEmail(email);
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
+    }
+  }
+
+  @override
+  Future<void> resendVerificationEmail({required String email}) async {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!.auth.resend(
+        type: OtpType.signup,
+        email: email,
+      );
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
+    }
+  }
+
+  @override
+  Future<AppUser?> refreshEmailVerificationStatus() async {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
+      final client = SupabaseService.client!;
+      final session = client.auth.currentSession;
+      if (session == null) {
+        return _cachedUser;
+      }
+
+      try {
+        await client.auth.refreshSession();
+      } catch (_) {
+        // Proceed to check getUser() even if refreshSession did not rotate
+      }
+
+      final userRes = await client.auth.getUser();
+      final user = userRes.user;
+      if (user == null) return _cachedUser;
+
+      _cachedUser = await _hydrateUserFromSupabase(user);
+      if (_cachedUser!.isEmailVerified) {
+        _pendingVerificationEmail = null;
+      }
+      _controller.add(_cachedUser);
+      return _cachedUser;
+    }
+
+    // In debug mock mode, do not silently auto-verify without explicit user action
+    return _cachedUser;
+  }
+
+  @override
+  Future<AppUser?> debugVerifyEmailIfAllowed() async {
+    if (!isDebugMockMode || _cachedUser == null) {
+      return null;
+    }
+    _cachedUser = _cachedUser!.copyWith(isEmailVerified: true);
+    _pendingVerificationEmail = null;
+    _controller.add(_cachedUser);
+    return _cachedUser;
+  }
+
+  @override
+  Future<void> updateProfile(AppUser updatedUser) async {
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!
+          .from('profiles')
+          .update({
+            if (updatedUser.displayName != null)
+              'display_name': updatedUser.displayName,
+            if (updatedUser.avatarUrl != null)
+              'avatar_url': updatedUser.avatarUrl,
+            if (updatedUser.bio != null) 'bio': updatedUser.bio,
+            if (updatedUser.city != null) 'city': updatedUser.city,
+            'onboarding_completed': updatedUser.onboardingCompleted,
+            'updated_at': DateTime.now().toUtc().toIso8601String(),
+          })
+          .eq('id', updatedUser.id);
+    }
+
+    _cachedUser = updatedUser;
+    _controller.add(_cachedUser);
   }
 
   @override
@@ -329,21 +660,19 @@ class SupabaseAuthRepository implements AuthRepository {
       } catch (_) {}
     }
 
-    if (SupabaseService.isConfigured && SupabaseService.client != null) {
+    if (_hasLiveSupabase) {
       try {
         await SupabaseService.client!.auth.signOut();
       } catch (_) {}
     }
 
-    // Clear local persistence
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('melsava_user_id');
-    await prefs.remove('melsava_user_email');
-    await prefs.remove('melsava_user_name');
-    await prefs.remove('melsava_user_avatar');
-    await prefs.remove('melsava_user_city');
-
     _cachedUser = null;
+    _pendingVerificationEmail = null;
     _controller.add(null);
+  }
+
+  void dispose() {
+    _authSubscription?.cancel();
+    _controller.close();
   }
 }

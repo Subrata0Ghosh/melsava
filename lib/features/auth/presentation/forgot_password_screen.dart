@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
+import '../../../core/utils/auth_validators.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/glass_back_button.dart';
@@ -33,8 +35,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
 
   Future<void> _handleReset() async {
     final email = _emailController.text.trim();
-    if (email.isEmpty) {
-      setState(() => _errorMessage = 'Please enter your account email');
+    final emailErr = AuthValidators.validateEmail(email);
+    if (emailErr != null) {
+      setState(() => _errorMessage = emailErr);
       return;
     }
 
@@ -54,8 +57,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
       }
     } catch (e) {
       if (mounted) {
+        String msg = e.toString().replaceAll('Exception: ', '');
+        if (e is AuthException) {
+          msg = e.message;
+        }
         setState(() {
-          _errorMessage = e.toString().replaceAll('Exception: ', '');
+          _errorMessage = msg;
           _isLoading = false;
         });
       }
@@ -65,8 +72,12 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final primaryTextColor = isDark ? AppColors.darkTextPrimary : AppColors.deepPlum;
-    final mutedTextColor = isDark ? AppColors.darkMutedText : AppColors.mutedText;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : const Color(0xFFFBF8F5),
@@ -99,12 +110,7 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                 const SizedBox(height: 6),
 
                 // ── Centered Melsava Logo ───────────────────────────────────
-                const Center(
-                  child: MelsavaLogo(
-                    size: 58,
-                    showWordmark: false,
-                  ),
-                ),
+                const Center(child: MelsavaLogo(size: 58, showWordmark: false)),
                 const SizedBox(height: 18),
 
                 // ── Header Titles ───────────────────────────────────────────
@@ -144,7 +150,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       ),
                       boxShadow: [
                         BoxShadow(
-                          color: Colors.black.withValues(alpha: isDark ? 0.25 : 0.05),
+                          color: Colors.black.withValues(
+                            alpha: isDark ? 0.25 : 0.05,
+                          ),
                           blurRadius: 14,
                           offset: const Offset(0, 4),
                         ),
@@ -157,13 +165,18 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                           height: 60,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
-                            color: (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
-                                .withValues(alpha: 0.12),
+                            color:
+                                (isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple)
+                                    .withValues(alpha: 0.12),
                           ),
                           child: Icon(
                             Icons.mark_email_read_outlined,
                             size: 32,
-                            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                            color: isDark
+                                ? AppColors.brightViolet
+                                : AppColors.primaryPurple,
                           ),
                         ),
                         const SizedBox(height: AppConstants.spacingMD),
@@ -268,7 +281,9 @@ class _ForgotPasswordScreenState extends ConsumerState<ForgotPasswordScreen> {
                       child: Text(
                         'Sign In',
                         style: AppTypography.labelLarge.copyWith(
-                          color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
+                          color: isDark
+                              ? AppColors.brightViolet
+                              : AppColors.primaryPurple,
                           fontWeight: FontWeight.w800,
                         ),
                       ),
