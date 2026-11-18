@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MELSAVA — Meet Through Moments</title>
+  <meta name="description" content="MELSAVA is an activity-first social connection app by TechnOrchid. Discover real-world micro-group experiences, meet amazing people, and reconnect privately.">
+  <style>
+    :root {
+      --bg: #FBF8F5;
+      --surface: #FFFFFF;
+      --plum: #292332;
+      --muted: #6C6378;
+      --purple: #7C3AED;
+      --coral: #F43F5E;
+      --border: #EAE3F0;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Inter, sans-serif;
+      color: var(--plum);
+      background:
+        radial-gradient(circle at 12% 10%, rgba(254, 243, 199, 0.7), transparent 36%),
+        radial-gradient(circle at 88% 18%, rgba(221, 214, 254, 0.55), transparent 40%),
+        var(--bg);
+      line-height: 1.65;
+      min-height: 100vh;
+    }
+    header {
+      max-width: 960px;
+      margin: 0 auto;
+      padding: 24px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      text-decoration: none;
+      color: var(--plum);
+      font-weight: 800;
+      font-size: 20px;
+      letter-spacing: 1.4px;
+    }
+    .brand-mark {
+      width: 36px;
+      height: 36px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--purple), var(--coral));
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 900;
+      font-size: 18px;
+      box-shadow: 0 6px 18px rgba(124, 58, 237, 0.25);
+    }
+    nav {
+      display: flex;
+      gap: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    nav a {
+      color: var(--muted);
+      text-decoration: none;
+    }
+    nav a:hover { color: var(--purple); }
+    main {
+      max-width: 960px;
+      margin: 24px auto 64px;
+      padding: 0 20px;
+    }
+    .hero {
+      background: rgba(255, 255, 255, 0.9);
+      border: 1px solid var(--border);
+      border-radius: 28px;
+      padding: 48px 32px;
+      text-align: center;
+      box-shadow: 0 12px 36px rgba(41, 35, 50, 0.06);
+    }
+    .pill {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(124, 58, 237, 0.1);
+      color: var(--purple);
+      font-size: 12.5px;
+      font-weight: 700;
+      margin-bottom: 16px;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 44px);
+      line-height: 1.2;
+      font-weight: 900;
+      margin-bottom: 16px;
+    }
+    .subtitle {
+      max-width: 620px;
+      margin: 0 auto 28px;
+      color: var(--muted);
+      font-size: 16.5px;
+    }
+    .cta-row {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-block;
+      padding: 13px 26px;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--purple), var(--coral));
+      color: #fff;
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14.5px;
+      box-shadow: 0 8px 20px rgba(124, 58, 237, 0.25);
+    }
+    .btn-secondary {
+      display: inline-block;
+      padding: 13px 26px;
+      border-radius: 999px;
+      background: #fff;
+      color: var(--plum);
+      border: 1px solid var(--border);
+      text-decoration: none;
+      font-weight: 700;
+      font-size: 14.5px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+      gap: 18px;
+      margin-top: 28px;
+    }
+    .feature {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 24px;
+      box-shadow: 0 6px 20px rgba(41, 35, 50, 0.04);
+    }
+    .feature h3 {
+      font-size: 17px;
+      margin-bottom: 8px;
+    }
+    .feature p {
+      font-size: 14px;
+      color: var(--muted);
+    }
+    footer {
+      max-width: 960px;
+      margin: 0 auto 36px;
+      padding: 20px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--muted);
+    }
+    footer a {
+      color: var(--purple);
+      text-decoration: none;
+      margin: 0 10px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <a class="brand" href="./">
+      <span class="brand-mark">M</span>
+      <span>MELSAVA</span>
+    </a>
+    <nav>
+      <a href="./privacy.html">Privacy Policy</a>
+      <a href="./terms.html">Terms of Service</a>
+      <a href="mailto:technorchid.dev@gmail.com">Support</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <span class="pill">18+ Activity-First Social Discovery</span>
+      <h1>Meet people through experiences,<br>not endless swiping.</h1>
+      <p class="subtitle">
+        MELSAVA connects adults through curated small-group real-world activities — from weekend treks and artisan coffee meetups to creative workshops — in vetted public venues worldwide.
+      </p>
+      <div class="cta-row">
+        <a class="btn-primary" href="./privacy.html">Read Privacy Policy</a>
+        <a class="btn-secondary" href="./terms.html">Terms of Service</a>
+      </div>
+    </section>
+
+    <section class="grid">
+      <div class="feature">
+        <h3>Vetted Public Venues</h3>
+        <p>Every experience takes place in safe, public, community-friendly locations with global search and local radar discovery.</p>
+      </div>
+      <div class="feature">
+        <h3>3–5 Micro-Groups</h3>
+        <p>Intimate small-group meetups with guided icebreakers make genuine conversation effortless and welcoming.</p>
+      </div>
+      <div class="feature">
+        <h3>Private Mutual Reconnect</h3>
+        <p>After meeting in person, choose privately who you'd like to stay in touch with. Choices are never revealed unless mutual.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>&copy; 2026 TechnOrchid. All rights reserved.</p>
+    <p style="margin-top: 8px;">
+      <a href="./privacy.html">Privacy Policy</a>
+      <a href="./terms.html">Terms of Service</a>
+      <a href="mailto:technorchid.dev@gmail.com">technorchid.dev@gmail.com</a>
+    </p>
+  </footer>
+</body>
+</html>
