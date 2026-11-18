@@ -1,14 +1,55 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../../shared/widgets/google_sign_in_button.dart';
 import '../../../shared/widgets/melsava_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
+import 'auth_providers.dart';
 
-class WelcomeScreen extends StatelessWidget {
+class WelcomeScreen extends ConsumerStatefulWidget {
   const WelcomeScreen({super.key});
+
+  @override
+  ConsumerState<WelcomeScreen> createState() => _WelcomeScreenState();
+}
+
+class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
+  bool _isGoogleLoading = false;
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() => _isGoogleLoading = true);
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final user = await authRepo.signInWithGoogle();
+      if (user == null) {
+        if (mounted) setState(() => _isGoogleLoading = false);
+        return;
+      }
+      ref.read(currentUserProvider.notifier).state = user;
+      if (mounted) {
+        context.go('/discover');
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = e.toString().replaceAll('Exception: ', '');
+        if (e is AuthException) {
+          msg = e.message;
+        }
+        setState(() => _isGoogleLoading = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(msg),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -75,7 +116,16 @@ class WelcomeScreen extends StatelessWidget {
                   onPressed: () => context.push('/sign-up'),
                 ),
 
-                const SizedBox(height: 14),
+                const SizedBox(height: 12),
+
+                // Native Google Sign-In CTA
+                GoogleSignInButton(
+                  label: 'Continue with Google',
+                  isLoading: _isGoogleLoading,
+                  onPressed: _handleGoogleSignIn,
+                ),
+
+                const SizedBox(height: 12),
 
                 // Frosted Glass "I already have an account" Button
                 Container(

@@ -7,6 +7,7 @@ import '../../../core/constants/app_constants.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/glass_back_button.dart';
+import '../../../shared/widgets/google_sign_in_button.dart';
 import '../../../shared/widgets/melsava_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
@@ -23,6 +24,7 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
   final _emailController = TextEditingController(text: 'admin@melsava.com');
   final _passwordController = TextEditingController(text: 'Melsava2026');
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   @override
@@ -65,6 +67,39 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
         setState(() {
           _errorMessage = msg;
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignIn() async {
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final user = await authRepo.signInWithGoogle();
+      if (user == null) {
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+        }
+        return;
+      }
+      ref.read(currentUserProvider.notifier).state = user;
+      if (mounted) {
+        context.go('/discover');
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = e.toString().replaceAll('Exception: ', '');
+        if (e is AuthException) {
+          msg = e.message;
+        }
+        setState(() {
+          _errorMessage = msg;
+          _isGoogleLoading = false;
         });
       }
     }
@@ -244,6 +279,14 @@ class _SignInScreenState extends ConsumerState<SignInScreen> {
                 ],
               ),
               const SizedBox(height: 18),
+
+              // ── "Continue with Google" Button ───────────────────────────
+              GoogleSignInButton(
+                label: 'Continue with Google',
+                isLoading: _isGoogleLoading,
+                onPressed: _isLoading ? null : _handleGoogleSignIn,
+              ),
+              const SizedBox(height: 12),
 
               // ── "Continue with Email Link" Button ───────────────────────
               Container(

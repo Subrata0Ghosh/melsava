@@ -8,6 +8,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/custom_text_field.dart';
 import '../../../shared/widgets/glass_back_button.dart';
+import '../../../shared/widgets/google_sign_in_button.dart';
 import '../../../shared/widgets/melsava_logo.dart';
 import '../../../shared/widgets/primary_button.dart';
 import 'auth_providers.dart';
@@ -25,6 +26,7 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
   final _confirmPasswordController = TextEditingController();
   bool _isAdultConfirmed = false;
   bool _isLoading = false;
+  bool _isGoogleLoading = false;
   String? _errorMessage;
 
   @override
@@ -87,6 +89,47 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
         setState(() {
           _errorMessage = msg;
           _isLoading = false;
+        });
+      }
+    }
+  }
+
+  Future<void> _handleGoogleSignUp() async {
+    if (!_isAdultConfirmed) {
+      setState(
+        () => _errorMessage =
+            'You must certify that you are 18 or older to join MELSAVA',
+      );
+      return;
+    }
+
+    setState(() {
+      _isGoogleLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final authRepo = ref.read(authRepositoryProvider);
+      final user = await authRepo.signInWithGoogle();
+      if (user == null) {
+        if (mounted) {
+          setState(() => _isGoogleLoading = false);
+        }
+        return;
+      }
+      ref.read(currentUserProvider.notifier).state = user;
+      if (mounted) {
+        context.go('/discover');
+      }
+    } catch (e) {
+      if (mounted) {
+        String msg = e.toString().replaceAll('Exception: ', '');
+        if (e is AuthException) {
+          msg = e.message;
+        }
+        setState(() {
+          _errorMessage = msg;
+          _isGoogleLoading = false;
         });
       }
     }
@@ -293,6 +336,41 @@ class _SignUpScreenState extends ConsumerState<SignUpScreen> {
                   isLoading: _isLoading,
                   gradient: AppColors.sunsetCtaGradient,
                   onPressed: _handleSignUp,
+                ),
+                const SizedBox(height: 16),
+
+                // ── "or" Divider ────────────────────────────────────────────
+                Row(
+                  children: [
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? Colors.white12 : AppColors.divider,
+                      ),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      child: Text(
+                        'or',
+                        style: AppTypography.bodySmall.copyWith(
+                          color: mutedTextColor,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ),
+                    Expanded(
+                      child: Divider(
+                        color: isDark ? Colors.white12 : AppColors.divider,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+
+                // ── "Continue with Google" Button ───────────────────────────
+                GoogleSignInButton(
+                  label: 'Continue with Google',
+                  isLoading: _isGoogleLoading,
+                  onPressed: _isLoading ? null : _handleGoogleSignUp,
                 ),
                 const SizedBox(height: 22),
 
