@@ -22,7 +22,9 @@ import '../../../shared/widgets/stacked_trending_cards_deck.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
+import '../../experiences/presentation/experience_hub_sheet.dart';
 import '../../experiences/presentation/join_experience_sheet.dart';
+import '../../experiences/presentation/post_experience_choice_screen.dart';
 
 /// Screen 1: Discover Screen
 ///
@@ -66,9 +68,15 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
   }
 
   Future<void> _openJoinFlow(ExperienceModel experience) async {
-    if (experience.hasJoined ||
-        experience.isWaitlisted ||
-        experience.isAttended) {
+    if (experience.hasJoined) {
+      ExperienceHubSheet.show(context, experience: experience);
+      return;
+    }
+    if (experience.isAttended || experience.isCompleted) {
+      PostExperienceChoiceScreen.show(context, experience);
+      return;
+    }
+    if (experience.isWaitlisted) {
       ExperienceDetailSheet.show(context, experience: experience);
       return;
     }

@@ -66,8 +66,26 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
     try {
       ref.invalidate(circleParticipantsProvider(expId));
       await ref.read(circleParticipantsProvider(expId).future);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Participant roster refreshed!'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } catch (e) {
       debugPrint('[ExperienceHubSheet] Retry failed: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not refresh roster. Check connection.'),
+            duration: Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
     } finally {
       if (mounted) {
         setState(() => _isRetryingRoster = false);
@@ -78,7 +96,10 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
   @override
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    final exp = widget.experience;
+    final liveExp =
+        ref.watch(experienceDetailProvider(widget.experience.id)).valueOrNull ??
+        widget.experience;
+    final exp = liveExp;
     final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
 
     final sheetBg = isDark ? const Color(0xFF130F1E) : AppColors.white;
@@ -822,13 +843,29 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                                         ),
                                         const SizedBox(height: 12),
                                         ElevatedButton.icon(
-                                          onPressed: () =>
-                                              _handleRetryRoster(exp.id),
-                                          icon: const Icon(
-                                            Icons.refresh_rounded,
-                                            size: 16,
+                                          onPressed: _isRetryingRoster
+                                              ? null
+                                              : () =>
+                                                    _handleRetryRoster(exp.id),
+                                          icon: _isRetryingRoster
+                                              ? const SizedBox(
+                                                  width: 14,
+                                                  height: 14,
+                                                  child:
+                                                      CircularProgressIndicator(
+                                                        strokeWidth: 2,
+                                                        color: Colors.white,
+                                                      ),
+                                                )
+                                              : const Icon(
+                                                  Icons.refresh_rounded,
+                                                  size: 16,
+                                                ),
+                                          label: Text(
+                                            _isRetryingRoster
+                                                ? 'Retrying...'
+                                                : 'Retry',
                                           ),
-                                          label: const Text('Retry'),
                                           style: ElevatedButton.styleFrom(
                                             backgroundColor: isDark
                                                 ? AppColors.brightViolet
@@ -1473,7 +1510,9 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
-                    content: Text('Waved hello to $name!'),
+                    content: Text(
+                      'Waved hello to $name! 👋 (Live event icebreaker)',
+                    ),
                     duration: const Duration(seconds: 2),
                     behavior: SnackBarBehavior.floating,
                   ),

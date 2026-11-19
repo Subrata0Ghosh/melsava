@@ -12,6 +12,7 @@ import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/experience_share_sheet.dart';
 import '../../../shared/widgets/trending_badge.dart';
 import '../data/experiences_repository.dart';
+import 'experience_hub_sheet.dart';
 import 'join_experience_sheet.dart';
 
 /// Full-Screen Experience Detail Screen (Screen 6 from master design)
@@ -879,40 +880,45 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
       return Row(
         children: [
           Expanded(
-            child: Container(
-              height: 52,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: isDark
-                    ? AppColors.darkElevated
-                    : const Color(0xFFECE6F5),
-                borderRadius: BorderRadius.circular(26),
-                border: Border.all(
-                  color: isDark ? AppColors.darkBorder : AppColors.divider,
-                ),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.check_circle_rounded,
-                    size: 18,
-                    color: isDark
-                        ? AppColors.brightViolet
-                        : AppColors.primaryPurple,
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'Joined',
-                    style: AppTypography.labelLarge.copyWith(
-                      color: isDark
-                          ? AppColors.brightViolet
-                          : AppColors.primaryPurple,
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(26),
+              onTap: () {
+                Navigator.of(context).pop();
+                ExperienceHubSheet.show(context, experience: exp);
+              },
+              child: Container(
+                height: 52,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  gradient: AppColors.purpleGradient,
+                  borderRadius: BorderRadius.circular(26),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                      blurRadius: 12,
+                      offset: const Offset(0, 4),
                     ),
-                  ),
-                ],
+                  ],
+                ),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.hub_rounded,
+                      size: 18,
+                      color: Colors.white,
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      'Open Hub',
+                      style: AppTypography.labelLarge.copyWith(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
           ),

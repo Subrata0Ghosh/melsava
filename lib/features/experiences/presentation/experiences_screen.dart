@@ -68,9 +68,15 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
   }
 
   Future<void> _openJoinFlow(ExperienceModel experience) async {
-    if (experience.hasJoined ||
-        experience.isWaitlisted ||
-        experience.isAttended) {
+    if (experience.hasJoined) {
+      ExperienceHubSheet.show(context, experience: experience);
+      return;
+    }
+    if (experience.isAttended || experience.isCompleted) {
+      PostExperienceChoiceScreen.show(context, experience);
+      return;
+    }
+    if (experience.isWaitlisted) {
       ExperienceDetailSheet.show(context, experience: experience);
       return;
     }

@@ -579,7 +579,9 @@ class _ExperienceCardState extends State<ExperienceCard>
 
   Widget _buildJoinButton(ExperienceModel exp, bool isDark) {
     final isJoined = exp.hasJoined;
-    final isMember = isJoined || exp.isWaitlisted || exp.isAttended;
+    final isAttended = exp.isAttended;
+    final isWaitlisted = exp.isWaitlisted;
+    final isMember = isJoined || isWaitlisted || isAttended;
 
     return Material(
       color: Colors.transparent,
@@ -588,47 +590,55 @@ class _ExperienceCardState extends State<ExperienceCard>
         onTap: widget.onJoinTap,
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 9),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8.5),
           decoration: BoxDecoration(
-            gradient: isMember ? null : AppColors.sunsetCtaGradient,
-            color: isMember
+            gradient: (isJoined || !isMember)
+                ? (isJoined
+                      ? AppColors.purpleGradient
+                      : AppColors.sunsetCtaGradient)
+                : null,
+            color: isMember && !isJoined
                 ? (isDark ? AppColors.darkElevated : AppColors.creamElevated)
                 : null,
             borderRadius: BorderRadius.circular(18),
-            border: isMember
+            border: isMember && !isJoined
                 ? Border.all(
                     color: isDark ? AppColors.darkBorder : AppColors.divider,
                   )
                 : null,
-            boxShadow: isMember
-                ? null
-                : [
+            boxShadow: isJoined || !isMember
+                ? [
                     BoxShadow(
-                      color: AppColors.primaryPurple.withValues(alpha: 0.40),
-                      blurRadius: 12,
-                      offset: const Offset(0, 4),
+                      color: AppColors.primaryPurple.withValues(alpha: 0.35),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                  ],
+                  ]
+                : null,
           ),
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
+              if (isJoined) ...[
+                const Icon(Icons.hub_rounded, size: 14, color: Colors.white),
+                const SizedBox(width: 5),
+              ],
               Text(
-                exp.isAttended
-                    ? 'Attended ✓'
+                isAttended
+                    ? 'Reconnect →'
                     : (isJoined
-                          ? 'Joined ✓'
-                          : (exp.isWaitlisted
+                          ? 'Open Hub'
+                          : (isWaitlisted
                                 ? 'Waitlisted'
                                 : (exp.isFull ? 'Waitlist' : 'Join'))),
                 style: AppTypography.labelSmall.copyWith(
-                  color: isMember
+                  color: isMember && !isJoined
                       ? (isDark
                             ? AppColors.brightViolet
                             : AppColors.primaryPurple)
                       : Colors.white,
                   fontWeight: FontWeight.w900,
-                  fontSize: 13,
+                  fontSize: 12.5,
                 ),
               ),
               if (!isMember) ...[

@@ -33,7 +33,7 @@ class MainShellScreen extends ConsumerWidget {
     if (activeExp != null) {
       ExperienceHubSheet.show(context, experience: activeExp);
     } else {
-      context.go('/experiences');
+      navigationShell.goBranch(1, initialLocation: true);
     }
   }
 
