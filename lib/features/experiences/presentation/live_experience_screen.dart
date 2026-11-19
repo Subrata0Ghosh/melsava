@@ -1,10 +1,13 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/app_smart_image.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/post_experience_repository.dart';
 
 /// Screen 8 (from Image 3): Live Experience Screen
 ///
@@ -14,7 +17,7 @@ import '../../../shared/widgets/app_smart_image.dart';
 /// - Frosted glass card with dynamic event cover art preview
 /// - "View Participants" button with interactive sheet
 /// - Interactive floating reaction bar (❤️ 👏 😂 👍) with floating emoji physics
-class LiveExperienceScreen extends StatefulWidget {
+class LiveExperienceScreen extends ConsumerStatefulWidget {
   final ExperienceModel experience;
 
   const LiveExperienceScreen({super.key, required this.experience});
@@ -28,20 +31,13 @@ class LiveExperienceScreen extends StatefulWidget {
   }
 
   @override
-  State<LiveExperienceScreen> createState() => _LiveExperienceScreenState();
+  ConsumerState<LiveExperienceScreen> createState() =>
+      _LiveExperienceScreenState();
 }
 
-class _LiveExperienceScreenState extends State<LiveExperienceScreen>
+class _LiveExperienceScreenState extends ConsumerState<LiveExperienceScreen>
     with TickerProviderStateMixin {
   final List<_FloatingEmoji> _activeEmojis = [];
-
-  final List<String> _attendeeAvatars = [
-    'assets/images/sneha_avatar.png',
-    'assets/images/rohan_avatar.png',
-    'assets/images/aditi_avatar.png',
-    'assets/images/priya_avatar.png',
-    'assets/images/vikram_avatar.png',
-  ];
 
   void _triggerReaction(String emoji) {
     HapticFeedback.lightImpact();
@@ -65,230 +61,343 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
     });
   }
 
-  void _showParticipantsSheet(BuildContext context, ExperienceModel exp) {
+  void _showParticipantsSheet(
+    BuildContext context,
+    ExperienceModel exp,
+    List<MeetupCircleParticipant> attendees,
+  ) {
     HapticFeedback.mediumImpact();
+    final currentUser = ref.read(currentUserProvider);
+    final currentUserId = currentUser?.id;
+    final Set<String> wavedUserIds = {};
+
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.transparent,
       isScrollControlled: true,
-      builder: (context) {
-        final attendees = [
-          {'name': exp.hostName, 'role': 'Host', 'avatar': exp.hostAvatar},
-          {
-            'name': 'Sneha Roy',
-            'role': 'Attendee',
-            'avatar': 'assets/images/sneha_avatar.png',
-          },
-          {
-            'name': 'Rohan Sen',
-            'role': 'Attendee',
-            'avatar': 'assets/images/rohan_avatar.png',
-          },
-          {
-            'name': 'Aditi Sharma',
-            'role': 'Attendee',
-            'avatar': 'assets/images/aditi_avatar.png',
-          },
-          {
-            'name': 'Priya Patel',
-            'role': 'Attendee',
-            'avatar': 'assets/images/priya_avatar.png',
-          },
-          {
-            'name': 'Vikram Joshi',
-            'role': 'Attendee',
-            'avatar': 'assets/images/vikram_avatar.png',
-          },
-        ];
+      builder: (sheetContext) {
+        return StatefulBuilder(
+          builder: (sheetContext, setSheetState) {
+            final totalCount = attendees.length;
 
-        final totalCount = exp.currentParticipants > 0
-            ? exp.currentParticipants
-            : 12;
-
-        return Container(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1B1429),
-            borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.5),
-                blurRadius: 32,
-                offset: const Offset(0, -6),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4.5,
-                  decoration: BoxDecoration(
-                    color: Colors.white24,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
+            return Container(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 34),
+              decoration: BoxDecoration(
+                color: const Color(0xFF1B1429),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(28),
                 ),
-              ),
-              const SizedBox(height: 18),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Meetup Circle',
-                        style: AppTypography.titleMedium.copyWith(
-                          color: Colors.white,
-                          fontWeight: FontWeight.w800,
-                          fontSize: 18,
-                        ),
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        '$totalCount participants in this session',
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: 0.7),
-                          fontSize: 12.5,
-                        ),
-                      ),
-                    ],
-                  ),
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 10,
-                      vertical: 4.5,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.2),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: const Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(Icons.circle, color: Color(0xFF10B981), size: 7),
-                        SizedBox(width: 5),
-                        Text(
-                          'LIVE NOW',
-                          style: TextStyle(
-                            color: Color(0xFF34D399),
-                            fontSize: 10.5,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
-                      ],
-                    ),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.5),
+                    blurRadius: 32,
+                    offset: const Offset(0, -6),
                   ),
                 ],
               ),
-              const SizedBox(height: 18),
-              ...attendees.map(
-                (attendee) => Container(
-                  margin: const EdgeInsets.only(bottom: 10),
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 12,
-                    vertical: 8,
-                  ),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withValues(alpha: 0.06),
-                    borderRadius: BorderRadius.circular(14),
-                    border: Border.all(
-                      color: Colors.white.withValues(alpha: 0.08),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 18),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      SizedBox(
-                        width: 38,
-                        height: 38,
-                        child: ClipOval(
-                          child: AppSmartImage(
-                            imagePath: attendee['avatar'],
-                            isAvatar: true,
-                            nameHint: attendee['name'],
-                            fit: BoxFit.cover,
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Meetup Circle',
+                            style: AppTypography.titleMedium.copyWith(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w800,
+                              fontSize: 18,
+                            ),
+                          ),
+                          const SizedBox(height: 3),
+                          Text(
+                            '$totalCount participant${totalCount == 1 ? '' : 's'} in this session',
+                            style: TextStyle(
+                              color: Colors.white.withValues(alpha: 0.7),
+                              fontSize: 12.5,
+                            ),
+                          ),
+                        ],
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF10B981).withValues(alpha: 0.2),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: const Color(
+                              0xFF10B981,
+                            ).withValues(alpha: 0.5),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
+                        child: const Row(
+                          mainAxisSize: MainAxisSize.min,
                           children: [
-                            Text(
-                              attendee['name']!,
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w700,
-                                fontSize: 14,
-                              ),
+                            Icon(
+                              Icons.circle,
+                              color: Color(0xFF10B981),
+                              size: 7,
                             ),
+                            SizedBox(width: 5),
                             Text(
-                              attendee['role']!,
+                              'LIVE NOW',
                               style: TextStyle(
-                                color: attendee['role'] == 'Host'
-                                    ? const Color(0xFFFBBF24)
-                                    : Colors.white60,
-                                fontWeight: FontWeight.w500,
-                                fontSize: 11.5,
+                                color: Color(0xFF34D399),
+                                fontSize: 10.5,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.4,
                               ),
                             ),
                           ],
                         ),
                       ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 5,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(
-                            0xFF8B5CF6,
-                          ).withValues(alpha: 0.25),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
-                            color: const Color(
-                              0xFF8B5CF6,
-                            ).withValues(alpha: 0.5),
-                          ),
-                        ),
-                        child: const Text(
-                          'Say Hi 👋',
+                    ],
+                  ),
+                  const SizedBox(height: 18),
+                  if (attendees.isEmpty)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: Center(
+                        child: Text(
+                          'No participants in this session yet.',
                           style: TextStyle(
-                            color: Color(0xFFDDD6FE),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w700,
+                            color: Colors.white.withValues(alpha: 0.6),
+                            fontSize: 13,
                           ),
                         ),
                       ),
-                    ],
-                  ),
-                ),
+                    )
+                  else
+                    ...attendees.map((attendee) {
+                      final isMe =
+                          (currentUserId != null &&
+                              attendee.userId.isNotEmpty &&
+                              attendee.userId == currentUserId) ||
+                          (currentUser != null &&
+                              (currentUser.displayName ?? '')
+                                  .trim()
+                                  .isNotEmpty &&
+                              attendee.displayName.trim().toLowerCase() ==
+                                  currentUser.displayName!
+                                      .trim()
+                                      .toLowerCase()) ||
+                          attendee.displayName == 'You';
+
+                      final attendeeKey = attendee.userId.isNotEmpty
+                          ? attendee.userId
+                          : attendee.displayName;
+                      final isWaved = wavedUserIds.contains(attendeeKey);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 10),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.08),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            SizedBox(
+                              width: 38,
+                              height: 38,
+                              child: ClipOval(
+                                child: AppSmartImage(
+                                  imagePath: attendee.avatarUrl,
+                                  isAvatar: true,
+                                  nameHint: attendee.displayName,
+                                  fit: BoxFit.cover,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    isMe
+                                        ? '${attendee.displayName} (You)'
+                                        : attendee.displayName,
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  Text(
+                                    attendee.role,
+                                    style: TextStyle(
+                                      color: attendee.role == 'Host'
+                                          ? const Color(0xFFFBBF24)
+                                          : Colors.white60,
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 11.5,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            if (isMe)
+                              Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4.5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withValues(alpha: 0.08),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: Colors.white.withValues(alpha: 0.16),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Container(
+                                      width: 6,
+                                      height: 6,
+                                      decoration: const BoxDecoration(
+                                        color: Color(0xFF10B981),
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 5),
+                                    const Text(
+                                      'You',
+                                      style: TextStyle(
+                                        color: Colors.white70,
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              )
+                            else
+                              GestureDetector(
+                                onTap: () {
+                                  HapticFeedback.mediumImpact();
+                                  setSheetState(() {
+                                    wavedUserIds.add(attendeeKey);
+                                  });
+                                  _triggerReaction('👋');
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Sent a wave to ${attendee.displayName}! 👋',
+                                      ),
+                                      duration: const Duration(seconds: 2),
+                                      behavior: SnackBarBehavior.floating,
+                                      backgroundColor: const Color(0xFF2E1A47),
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                    ),
+                                  );
+                                },
+                                child: AnimatedContainer(
+                                  duration: const Duration(milliseconds: 200),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 11,
+                                    vertical: 5.5,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isWaved
+                                        ? const Color(
+                                            0xFF10B981,
+                                          ).withValues(alpha: 0.22)
+                                        : const Color(
+                                            0xFF8B5CF6,
+                                          ).withValues(alpha: 0.25),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: isWaved
+                                          ? const Color(
+                                              0xFF10B981,
+                                            ).withValues(alpha: 0.6)
+                                          : const Color(
+                                              0xFF8B5CF6,
+                                            ).withValues(alpha: 0.5),
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        isWaved ? 'Waved! ' : 'Say Hi ',
+                                        style: TextStyle(
+                                          color: isWaved
+                                              ? const Color(0xFF34D399)
+                                              : const Color(0xFFDDD6FE),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      Text(
+                                        isWaved ? '✅' : '👋',
+                                        style: const TextStyle(fontSize: 11),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                          ],
+                        ),
+                      );
+                    }),
+                ],
               ),
-            ],
-          ),
+            );
+          },
         );
       },
     );
   }
 
-  Widget _buildAttendeeStack(int totalCount, ExperienceModel exp) {
+  Widget _buildAttendeeStack(
+    int totalCount,
+    ExperienceModel exp,
+    List<MeetupCircleParticipant> attendees,
+  ) {
     const double avatarSize = 28;
     const double overlap = 18;
-    final displayAvatars = _attendeeAvatars.take(3).toList();
-    final remainingCount = (totalCount - displayAvatars.length).clamp(1, 99);
-    final totalItems = displayAvatars.length + 1;
-    final totalWidth = ((totalItems - 1) * overlap) + avatarSize;
+
+    final displayAttendees = attendees.take(3).toList();
+    final remainingCount = totalCount - displayAttendees.length;
+    final hasRemaining = remainingCount > 0;
+    final totalItems =
+        (displayAttendees.isNotEmpty ? displayAttendees.length : 1) +
+        (hasRemaining ? 1 : 0);
+    final totalWidth = totalItems > 1
+        ? (((totalItems - 1) * overlap) + avatarSize)
+        : avatarSize;
 
     return GestureDetector(
-      onTap: () => _showParticipantsSheet(context, exp),
+      onTap: () => _showParticipantsSheet(context, exp, attendees),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
         decoration: BoxDecoration(
@@ -304,9 +413,40 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
           height: avatarSize,
           child: Stack(
             children: [
-              for (int i = 0; i < displayAvatars.length; i++)
+              if (displayAttendees.isNotEmpty)
+                for (int i = 0; i < displayAttendees.length; i++)
+                  Positioned(
+                    left: (i * overlap).toDouble(),
+                    child: Container(
+                      width: avatarSize,
+                      height: avatarSize,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: const Color(0xFF161C19),
+                          width: 1.8,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.35),
+                            blurRadius: 4,
+                            offset: const Offset(1, 1),
+                          ),
+                        ],
+                      ),
+                      child: ClipOval(
+                        child: AppSmartImage(
+                          imagePath: displayAttendees[i].avatarUrl,
+                          nameHint: displayAttendees[i].displayName,
+                          isAvatar: true,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  )
+              else
                 Positioned(
-                  left: (i * overlap).toDouble(),
+                  left: 0,
                   child: Container(
                     width: avatarSize,
                     height: avatarSize,
@@ -316,59 +456,56 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                         color: const Color(0xFF161C19),
                         width: 1.8,
                       ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.35),
-                          blurRadius: 4,
-                          offset: const Offset(1, 1),
-                        ),
-                      ],
                     ),
                     child: ClipOval(
                       child: AppSmartImage(
-                        imagePath: displayAvatars[i],
+                        imagePath: exp.hostAvatar,
+                        nameHint: exp.hostName,
                         isAvatar: true,
                         fit: BoxFit.cover,
                       ),
                     ),
                   ),
                 ),
-              Positioned(
-                left: (displayAvatars.length * overlap).toDouble(),
-                child: Container(
-                  width: avatarSize,
-                  height: avatarSize,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
-                    border: Border.all(
-                      color: const Color(0xFF161C19),
-                      width: 1.8,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF8B5CF6).withValues(alpha: 0.45),
-                        blurRadius: 6,
-                        offset: const Offset(1, 1),
+              if (hasRemaining)
+                Positioned(
+                  left: (displayAttendees.length * overlap).toDouble(),
+                  child: Container(
+                    width: avatarSize,
+                    height: avatarSize,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [Color(0xFF8B5CF6), Color(0xFF6D28D9)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ],
-                  ),
-                  child: Center(
-                    child: Text(
-                      '+$remainingCount',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w800,
+                      border: Border.all(
+                        color: const Color(0xFF161C19),
+                        width: 1.8,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(
+                            0xFF8B5CF6,
+                          ).withValues(alpha: 0.45),
+                          blurRadius: 6,
+                          offset: const Offset(1, 1),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Text(
+                        '+$remainingCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w800,
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
@@ -387,9 +524,44 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
   @override
   Widget build(BuildContext context) {
     final exp = widget.experience;
-    final totalParticipants = exp.currentParticipants > 0
-        ? exp.currentParticipants
-        : 12;
+    final currentUser = ref.watch(currentUserProvider);
+    final participantsAsync = ref.watch(circleParticipantsProvider(exp.id));
+    final liveParticipants = participantsAsync.valueOrNull;
+
+    final List<MeetupCircleParticipant> attendees;
+    if (liveParticipants != null && liveParticipants.isNotEmpty) {
+      attendees = liveParticipants;
+    } else {
+      // Dynamic fallback based on exp and current user session
+      final list = <MeetupCircleParticipant>[];
+      if (exp.hostName.isNotEmpty) {
+        list.add(
+          MeetupCircleParticipant(
+            userId: exp.hostId ?? '',
+            displayName: exp.hostName,
+            avatarUrl: exp.hostAvatar,
+            bio: exp.hostBio ?? '',
+            role: 'Host',
+          ),
+        );
+      }
+      if (currentUser != null && currentUser.id != exp.hostId) {
+        list.add(
+          MeetupCircleParticipant(
+            userId: currentUser.id,
+            displayName: currentUser.displayName ?? 'You',
+            avatarUrl: currentUser.avatarUrl ?? '',
+            bio: currentUser.bio ?? '',
+            role: 'Attendee',
+          ),
+        );
+      }
+      attendees = list;
+    }
+
+    final totalParticipants = attendees.isNotEmpty
+        ? attendees.length
+        : (exp.currentParticipants > 0 ? exp.currentParticipants : 1);
 
     return Scaffold(
       backgroundColor: const Color(0xFF161C19),
@@ -517,7 +689,7 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
                         ),
                       ),
                       const SizedBox(width: 8),
-                      _buildAttendeeStack(totalParticipants, exp),
+                      _buildAttendeeStack(totalParticipants, exp, attendees),
                     ],
                   ),
                 ),
@@ -735,7 +907,11 @@ class _LiveExperienceScreenState extends State<LiveExperienceScreen>
 
                             // "View Participants" Gradient Button
                             GestureDetector(
-                              onTap: () => _showParticipantsSheet(context, exp),
+                              onTap: () => _showParticipantsSheet(
+                                context,
+                                exp,
+                                attendees,
+                              ),
                               child: Container(
                                 height: 48,
                                 padding: const EdgeInsets.symmetric(

@@ -81,9 +81,14 @@ supabase/migrations/001_initial_schema.sql
 supabase/migrations/002_rls_policies.sql
 supabase/migrations/003_functions.sql
 supabase/migrations/004_seed_data.sql
-supabase/migrations/005_storage_bucket.sql
+supabase/migrations/005_onboarding_preferences_and_storage.sql
 supabase/migrations/006_phase2_experiences_rls_and_rpc.sql
+supabase/migrations/007_fix_experience_members_recursion.sql
+supabase/migrations/008_set_distinct_experience_covers.sql
+supabase/migrations/009_phase3_attendance_and_mutual_choices.sql
 ```
+
+*(Alternatively, for Phase 3 directly execute `supabase/PHASE_3_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
 
 ### 5. Run the App
 
@@ -131,7 +136,7 @@ supabase/
 |---|---|---|
 | 1 | Foundation, Authentication & Hardened Onboarding | ✅ Completed |
 | 2 | Live Experience Discovery, Joining & My Circles | ✅ Completed |
-| 3 | Post-Experience Mutual Choice System | ⬜ Planned |
+| 3 | Real Attendance, Private Mutual Choice & Connection Creation | ✅ Completed |
 | 4 | Connections & Realtime Messaging | ⬜ Planned |
 | 5 | Safety, Moderation & Account Settings | ⬜ Planned |
 | 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |

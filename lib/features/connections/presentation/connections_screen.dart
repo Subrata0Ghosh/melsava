@@ -1,131 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../auth/presentation/auth_providers.dart';
+import '../data/connections_repository.dart';
 import 'orbital_connections_view.dart';
 
-class ConnectionItem {
-  final String id;
-  final String name;
-  final String avatarUrl;
-  final String connectionType; // 'Friends', 'Activity', 'Dates'
-  final String experienceName;
-  final String lastMessage;
-  final String timeAgo;
-  final bool isOnline;
-  final int compatibilityScore;
-
-  const ConnectionItem({
-    required this.id,
-    required this.name,
-    required this.avatarUrl,
-    required this.connectionType,
-    required this.experienceName,
-    required this.lastMessage,
-    required this.timeAgo,
-    this.isOnline = true,
-    this.compatibilityScore = 94,
-  });
-}
+typedef ConnectionItem = ConnectionModel;
 
 /// Screen 8 (from Image 8): My Connections Screen
 ///
 /// Clean, high-fidelity connections directory:
-/// - Filter tabs: All (8), Friends (4), Activity (2), Dates (2)
-/// - Contact cards with green online indicator, intent badge, last message preview
+/// - Filter tabs: All, Friends, Activity, Dates (with live count badges)
+/// - Contact cards with online indicator, intent badge, last message preview
 /// - Direct chat action bubble button
-/// - Optional Cosmic Orbit view toggle (inspired by Proxima)
-class ConnectionsScreen extends StatefulWidget {
+/// - Optional Cosmic Orbit view toggle
+class ConnectionsScreen extends ConsumerStatefulWidget {
   const ConnectionsScreen({super.key});
 
   @override
-  State<ConnectionsScreen> createState() => _ConnectionsScreenState();
+  ConsumerState<ConnectionsScreen> createState() => _ConnectionsScreenState();
 }
 
-class _ConnectionsScreenState extends State<ConnectionsScreen> {
+class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
   String _selectedFilter = 'All';
   bool _isOrbitView = false;
-  final TextEditingController _searchController = TextEditingController();
-  final String _searchQuery = '';
-
-  final List<ConnectionItem> _allConnections = [
-    const ConnectionItem(
-      id: 'conn-1',
-      name: 'Sneha',
-      avatarUrl: 'assets/images/sneha_avatar.png',
-      connectionType: 'Friends',
-      experienceName: 'Trekking to Mukutmanipur',
-      lastMessage: 'Great trekking experience! Let\'s go again soon.',
-      timeAgo: '2h ago',
-      isOnline: true,
-      compatibilityScore: 96,
-    ),
-    const ConnectionItem(
-      id: 'conn-2',
-      name: 'Rohan',
-      avatarUrl: 'assets/images/rohan_avatar.png',
-      connectionType: 'Activity',
-      experienceName: 'Cycling Club Ride',
-      lastMessage: 'Shall we plan for next weekend ride at Salt Lake?',
-      timeAgo: '1d ago',
-      isOnline: true,
-      compatibilityScore: 91,
-    ),
-    const ConnectionItem(
-      id: 'conn-3',
-      name: 'Aditi',
-      avatarUrl: 'assets/images/aditi_avatar.png',
-      connectionType: 'Dates',
-      experienceName: 'Coffee & Conversation',
-      lastMessage: 'Had a lovely time discussing books yesterday!',
-      timeAgo: '2d ago',
-      isOnline: false,
-      compatibilityScore: 94,
-    ),
-    const ConnectionItem(
-      id: 'conn-4',
-      name: 'Priya',
-      avatarUrl: 'assets/images/priya_avatar.png',
-      connectionType: 'Friends',
-      experienceName: 'Morning Yoga & Wellness',
-      lastMessage: 'Let\'s catch up soon 😊 The herbal tea was amazing.',
-      timeAgo: '3d ago',
-      isOnline: true,
-      compatibilityScore: 89,
-    ),
-    const ConnectionItem(
-      id: 'conn-5',
-      name: 'Vikram',
-      avatarUrl: 'assets/images/vikram_avatar.png',
-      connectionType: 'Activity',
-      experienceName: 'Badminton Doubles League',
-      lastMessage: 'That rally strategy was brilliant!',
-      timeAgo: '4d ago',
-      isOnline: false,
-      compatibilityScore: 88,
-    ),
-    const ConnectionItem(
-      id: 'conn-6',
-      name: 'Sneha R.',
-      avatarUrl: 'assets/images/sneha_avatar.png',
-      connectionType: 'Dates',
-      experienceName: 'Coffee & Conversation',
-      lastMessage: 'Loved our conversation on heritage architecture.',
-      timeAgo: '5d ago',
-      isOnline: true,
-      compatibilityScore: 93,
-    ),
-  ];
-
-  @override
-  void dispose() {
-    _searchController.dispose();
-    super.dispose();
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -137,33 +41,31 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         ? AppColors.darkMutedText
         : AppColors.mutedText;
 
-    final filtered = _allConnections.where((c) {
-      final matchesSearch =
-          _searchQuery.isEmpty ||
-          c.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
-          c.experienceName.toLowerCase().contains(_searchQuery.toLowerCase());
+    final currentUser = ref.watch(currentUserProvider);
+    final connectionsAsync = ref.watch(userConnectionsProvider);
+    final allConnections = connectionsAsync.valueOrNull ?? const [];
+    final isLoading = connectionsAsync.isLoading && !connectionsAsync.hasValue;
 
-      final matchesFilter =
-          _selectedFilter == 'All' ||
-          (_selectedFilter == 'Friends' && c.connectionType == 'Friends') ||
-          (_selectedFilter == 'Activity' && c.connectionType == 'Activity') ||
-          (_selectedFilter == 'Dates' && c.connectionType == 'Dates');
-
-      return matchesSearch && matchesFilter;
+    final filtered = allConnections.where((c) {
+      if (_selectedFilter == 'All') return true;
+      if (_selectedFilter == 'Friends') return c.connectionType == 'Friends';
+      if (_selectedFilter == 'Activity') return c.connectionType == 'Activity';
+      if (_selectedFilter == 'Dates') return c.connectionType == 'Dates';
+      return true;
     }).toList();
 
-    final friendsCount = _allConnections
+    final friendsCount = allConnections
         .where((c) => c.connectionType == 'Friends')
         .length;
-    final activityCount = _allConnections
+    final activityCount = allConnections
         .where((c) => c.connectionType == 'Activity')
         .length;
-    final datesCount = _allConnections
+    final datesCount = allConnections
         .where((c) => c.connectionType == 'Dates')
         .length;
 
     final filterTabs = [
-      {'name': 'All', 'count': _allConnections.length},
+      {'name': 'All', 'count': allConnections.length},
       {'name': 'Friends', 'count': friendsCount},
       {'name': 'Activity', 'count': activityCount},
       {'name': 'Dates', 'count': datesCount},
@@ -206,7 +108,18 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
         leafStyle: BotanicalLeafStyle.wildGrass,
         leafColors: BotanicalLeafDecoration.warmOlive,
         child: _isOrbitView
-            ? OrbitalConnectionsView(connections: filtered)
+            ? (filtered.isEmpty
+                  ? const EmptyStateWidget(
+                      icon: Icons.bubble_chart_outlined,
+                      title: 'Your Orbit is quiet',
+                      message:
+                          'Join experiences and make mutual choices to see your cosmic connections in orbit!',
+                    )
+                  : OrbitalConnectionsView(
+                      connections: filtered,
+                      userAvatarUrl: currentUser?.avatarUrl ?? '',
+                      userName: currentUser?.displayName ?? 'You',
+                    ))
             : Column(
                 children: [
                   // Filter Tabs (Image 8 Screen 8)
@@ -279,35 +192,50 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
 
                   // Connections List
                   Expanded(
-                    child: filtered.isEmpty
-                        ? const EmptyStateWidget(
-                            icon: Icons.people_outline_rounded,
-                            title: 'No connections in this category',
-                            message:
-                                'Join more public experiences to meet people and unlock mutual connections!',
-                          )
-                        : ListView.separated(
-                            padding: const EdgeInsets.only(
-                              left: 18,
-                              right: 18,
-                              top: 6,
-                              bottom:
-                                  120, // Guaranteed 120dp clearance for floating navbar
+                    child: isLoading
+                        ? const Center(
+                            child: CircularProgressIndicator(
+                              color: AppColors.primaryPurple,
                             ),
-                            physics: const ClampingScrollPhysics(),
-                            itemCount: filtered.length,
-                            separatorBuilder: (context, index) =>
-                                const SizedBox(height: 12),
-                            itemBuilder: (context, index) {
-                              final conn = filtered[index];
-                              return _buildConnectionCard(
-                                context,
-                                conn,
-                                isDark,
-                                primaryTextColor,
-                                mutedTextColor,
-                              );
-                            },
+                          )
+                        : filtered.isEmpty
+                        ? EmptyStateWidget(
+                            icon: Icons.people_outline_rounded,
+                            title: allConnections.isEmpty
+                                ? 'No mutual connections yet'
+                                : 'No connections in this category',
+                            message: allConnections.isEmpty
+                                ? 'Join public experiences, attend in person, and select mutual intentions to unlock your connections!'
+                                : 'Try selecting a different filter above to see your connections.',
+                          )
+                        : RefreshIndicator(
+                            onRefresh: () async =>
+                                ref.refresh(userConnectionsProvider.future),
+                            child: ListView.separated(
+                              padding: const EdgeInsets.only(
+                                left: 18,
+                                right: 18,
+                                top: 6,
+                                bottom:
+                                    120, // Guaranteed 120dp clearance for floating navbar
+                              ),
+                              physics: const AlwaysScrollableScrollPhysics(
+                                parent: ClampingScrollPhysics(),
+                              ),
+                              itemCount: filtered.length,
+                              separatorBuilder: (context, index) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final conn = filtered[index];
+                                return _buildConnectionCard(
+                                  context,
+                                  conn,
+                                  isDark,
+                                  primaryTextColor,
+                                  mutedTextColor,
+                                );
+                              },
+                            ),
                           ),
                   ),
                 ],
@@ -326,7 +254,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
     return GestureDetector(
       onTap: () {
         HapticFeedback.lightImpact();
-        context.push('/chat/${conn.name}');
+        context.push(
+          '/chat/${conn.name}',
+          extra: {
+            'connectionId': conn.id,
+            'conversationId': conn.conversationId,
+            'partnerId': conn.partnerId,
+            'partnerAvatar': conn.avatarUrl,
+          },
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(14),
@@ -450,7 +386,15 @@ class _ConnectionsScreenState extends State<ConnectionsScreen> {
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
-                context.push('/chat/${conn.name}');
+                context.push(
+                  '/chat/${conn.name}',
+                  extra: {
+                    'connectionId': conn.id,
+                    'conversationId': conn.conversationId,
+                    'partnerId': conn.partnerId,
+                    'partnerAvatar': conn.avatarUrl,
+                  },
+                );
               },
               child: Container(
                 width: 42,

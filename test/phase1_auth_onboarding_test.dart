@@ -128,6 +128,22 @@ class _InMemoryAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> deactivateAccount() async {
+    signOutCalled = true;
+    _user = null;
+    _pendingEmail = null;
+    _controller.add(null);
+  }
+
+  @override
+  Future<void> deleteAccountPermanent() async {
+    signOutCalled = true;
+    _user = null;
+    _pendingEmail = null;
+    _controller.add(null);
+  }
+
+  @override
   Future<void> updateProfile(AppUser updatedUser) async {
     _user = updatedUser;
     _controller.add(_user);

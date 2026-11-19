@@ -28,6 +28,8 @@ abstract class AuthRepository {
   Future<AppUser?> refreshCurrentUser();
   Future<AppUser?> debugVerifyEmailIfAllowed();
   Future<void> signOut();
+  Future<void> deactivateAccount();
+  Future<void> deleteAccountPermanent();
   Future<void> restoreSession();
   Future<void> updateProfile(AppUser updatedUser);
   void syncCachedUser(AppUser user);
@@ -669,6 +671,48 @@ class SupabaseAuthRepository implements AuthRepository {
     _cachedUser = null;
     _pendingVerificationEmail = null;
     _controller.add(null);
+  }
+
+  @override
+  Future<void> deactivateAccount() async {
+    _ensureBackendAvailable();
+    if (_hasLiveSupabase) {
+      try {
+        await SupabaseService.client!.rpc('deactivate_user_account');
+      } catch (e) {
+        debugPrint('[AuthRepository] deactivateAccount RPC error: $e');
+        try {
+          if (_cachedUser != null) {
+            await SupabaseService.client!
+                .from('profiles')
+                .update({'is_deactivated': true})
+                .eq('id', _cachedUser!.id);
+          }
+        } catch (_) {}
+      }
+    }
+    await signOut();
+  }
+
+  @override
+  Future<void> deleteAccountPermanent() async {
+    _ensureBackendAvailable();
+    if (_hasLiveSupabase) {
+      try {
+        await SupabaseService.client!.rpc('delete_user_account');
+      } catch (e) {
+        debugPrint('[AuthRepository] deleteAccountPermanent RPC error: $e');
+        try {
+          if (_cachedUser != null) {
+            await SupabaseService.client!
+                .from('profiles')
+                .delete()
+                .eq('id', _cachedUser!.id);
+          }
+        } catch (_) {}
+      }
+    }
+    await signOut();
   }
 
   void dispose() {

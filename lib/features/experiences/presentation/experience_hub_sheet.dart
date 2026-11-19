@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
@@ -7,6 +8,8 @@ import '../../../shared/models/experience_model.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../auth/presentation/auth_providers.dart';
+import 'host_attendance_sheet.dart';
 import 'live_experience_screen.dart';
 
 /// Experience Hub (Pre-Meetup Group Space)
@@ -19,7 +22,7 @@ import 'live_experience_screen.dart';
 /// - Quick action pills (Calendar, Safety, Venue Guide)
 /// - Conversation starter icebreakers with copy & shuffle
 /// - Confidential post-event reconnect guarantee
-class ExperienceHubSheet extends StatefulWidget {
+class ExperienceHubSheet extends ConsumerStatefulWidget {
   final ExperienceModel experience;
 
   const ExperienceHubSheet({super.key, required this.experience});
@@ -38,10 +41,10 @@ class ExperienceHubSheet extends StatefulWidget {
   }
 
   @override
-  State<ExperienceHubSheet> createState() => _ExperienceHubSheetState();
+  ConsumerState<ExperienceHubSheet> createState() => _ExperienceHubSheetState();
 }
 
-class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
+class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
   final List<String> _icebreakerPrompts = [
     'What is a favorite book or creative project you enjoyed recently?',
     'What is something you have always wanted to try in the city?',
@@ -67,6 +70,9 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
         : AppColors.mutedText;
     final cardBg = isDark ? AppColors.darkSurface : AppColors.warmIvory;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
+
+    final currentUser = ref.watch(currentUserProvider);
+    final isHost = currentUser != null && currentUser.id == exp.hostId;
 
     // Calculate countdown label
     final now = DateTime.now();
@@ -859,6 +865,19 @@ class _ExperienceHubSheetState extends State<ExperienceHubSheet> {
                       ),
 
                       const SizedBox(height: 24),
+
+                      // ── Host Attendance Confirmation (Host-Only) ──
+                      if (isHost) ...[
+                        PrimaryButton(
+                          label: 'Host: Manage Event Attendance →',
+                          backgroundColor: const Color(0xFF10B981),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            HostAttendanceSheet.show(context, experience: exp);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
 
                       // ── Enter Live Experience Mode ──
                       PrimaryButton(

@@ -257,6 +257,77 @@ class SettingsScreen extends ConsumerWidget {
                       ),
                     ),
 
+                    const SizedBox(height: 12),
+
+                    // Deactivate or Delete Account Card
+                    Container(
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: const Color(0xFFF43F5E).withValues(alpha: 0.3),
+                          width: 0.9,
+                        ),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withValues(alpha: 0.02),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          ),
+                        ],
+                      ),
+                      child: ListTile(
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 18,
+                          vertical: 4,
+                        ),
+                        leading: Container(
+                          width: 40,
+                          height: 40,
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFF43F5E,
+                            ).withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Icon(
+                            Icons.person_off_rounded,
+                            color: Color(0xFFF43F5E),
+                            size: 20,
+                          ),
+                        ),
+                        title: Text(
+                          'Deactivate or Delete Account',
+                          style: AppTypography.labelLarge.copyWith(
+                            fontWeight: FontWeight.w700,
+                            color: isDark
+                                ? const Color(0xFFFB7185)
+                                : const Color(0xFFE11D48),
+                            fontSize: 14.5,
+                          ),
+                        ),
+                        subtitle: Text(
+                          'Temporary break or permanent account removal',
+                          style: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                        trailing: Icon(
+                          Icons.chevron_right_rounded,
+                          color: isDark
+                              ? const Color(0xFFFB7185)
+                              : const Color(0xFFE11D48),
+                          size: 20,
+                        ),
+                        onTap: () => _showAccountDeactivationOrDeletionSheet(
+                          context,
+                          ref,
+                          isDark,
+                        ),
+                      ),
+                    ),
+
                     const SizedBox(height: 28),
                     Center(
                       child: Text(
@@ -758,12 +829,452 @@ class SettingsScreen extends ConsumerWidget {
                     ),
                   ),
 
+                  const SizedBox(height: 12),
+
+                  // Deactivate or Delete Account Button
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      _showAccountDeactivationOrDeletionSheet(
+                        context,
+                        ref,
+                        isDark,
+                      );
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: const Color(
+                            0xFFF43F5E,
+                          ).withValues(alpha: 0.35),
+                          width: 0.9,
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF43F5E,
+                              ).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              Icons.person_off_rounded,
+                              size: 18,
+                              color: Color(0xFFF43F5E),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  'Deactivate or Delete Account',
+                                  style: TextStyle(
+                                    color: isDark
+                                        ? const Color(0xFFFB7185)
+                                        : const Color(0xFFE11D48),
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                Text(
+                                  'Temporary pause or permanent removal',
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: mutedTextColor,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 18),
                 ],
               ),
             ),
           );
         },
+      ),
+    );
+  }
+
+  void _showAccountDeactivationOrDeletionSheet(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+  ) {
+    HapticFeedback.lightImpact();
+    final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : const Color(0xFF1E1435);
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : const Color(0xFF7E7394);
+    final borderColor = isDark
+        ? const Color(0xFF382E4D)
+        : const Color(0xFFEDE9FE);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: isDark
+          ? const Color(0xFF1D142E)
+          : const Color(0xFFFAF7F4),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
+      ),
+      builder: (bottomSheetContext) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(bottomSheetContext).viewInsets.bottom + 28,
+          left: 20,
+          right: 20,
+          top: 14,
+        ),
+        child: SingleChildScrollView(
+          physics: const ClampingScrollPhysics(),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Pull pill
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 4.5,
+                  decoration: BoxDecoration(
+                    color: mutedTextColor.withValues(alpha: 0.35),
+                    borderRadius: BorderRadius.circular(3),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              // Title Header
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.person_off_rounded,
+                      color: Color(0xFFF43F5E),
+                      size: 22,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Deactivate or Delete',
+                          style: AppTypography.titleMedium.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 18,
+                            color: primaryTextColor,
+                          ),
+                        ),
+                        Text(
+                          'Choose between a temporary break or permanent removal',
+                          style: TextStyle(
+                            color: mutedTextColor,
+                            fontSize: 11.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close_rounded, color: mutedTextColor),
+                    onPressed: () => Navigator.of(bottomSheetContext).pop(),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+
+              // ── Option 1: Temporary Deactivation ──
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(color: borderColor, width: 1.0),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.03),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFF59E0B,
+                            ).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.pause_circle_outline_rounded,
+                            color: Color(0xFFF59E0B),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Deactivate Temporarily',
+                                style: TextStyle(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const Text(
+                                'Take a break • Reactivate anytime',
+                                style: TextStyle(
+                                  color: Color(0xFFF59E0B),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Your profile, photo, and experiences will be hidden from everyone on MELSAVA. Your connections and chat history remain safe. Simply sign back in whenever you are ready to reactivate.',
+                      style: TextStyle(
+                        color: mutedTextColor,
+                        fontSize: 12.5,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: OutlinedButton(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFFF59E0B),
+                          side: const BorderSide(
+                            color: Color(0xFFF59E0B),
+                            width: 1.2,
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          Navigator.of(bottomSheetContext).pop();
+                          final confirm = await ConfirmationDialog.show(
+                            context,
+                            title: 'Deactivate Account?',
+                            message:
+                                'Your profile will be hidden from other members. You will be signed out, and you can reactivate anytime simply by logging back in.',
+                            confirmLabel: 'Deactivate',
+                            isDestructive: false,
+                          );
+                          if (confirm != true || !context.mounted) return;
+                          final messenger = ScaffoldMessenger.of(context);
+                          await ref
+                              .read(authRepositoryProvider)
+                              .deactivateAccount();
+                          ref.read(currentUserProvider.notifier).state = null;
+                          if (context.mounted) {
+                            context.go('/welcome');
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Account deactivated. Log back in anytime to reactivate! 👋',
+                                ),
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'Deactivate Account',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
+              // ── Option 2: Permanent Deletion ──
+              Container(
+                padding: const EdgeInsets.all(18),
+                decoration: BoxDecoration(
+                  color: cardBg,
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.4),
+                    width: 1.0,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFFF43F5E).withValues(alpha: 0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: BoxDecoration(
+                            color: const Color(
+                              0xFFF43F5E,
+                            ).withValues(alpha: 0.15),
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          child: const Icon(
+                            Icons.delete_forever_rounded,
+                            color: Color(0xFFF43F5E),
+                            size: 20,
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                'Delete Account Permanently',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? const Color(0xFFFB7185)
+                                      : const Color(0xFFE11D48),
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 15,
+                                ),
+                              ),
+                              const Text(
+                                'Irreversible • Immediate wipe',
+                                style: TextStyle(
+                                  color: Color(0xFFF43F5E),
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'All your personal data, profile photos, connections, chat history, and RSVPs will be permanently erased. You will not be able to recover this account.',
+                      style: TextStyle(
+                        color: mutedTextColor,
+                        fontSize: 12.5,
+                        height: 1.45,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFF43F5E),
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(14),
+                          ),
+                        ),
+                        onPressed: () async {
+                          Navigator.of(bottomSheetContext).pop();
+                          final confirm = await ConfirmationDialog.show(
+                            context,
+                            title: 'Permanently Delete Account?',
+                            message:
+                                'Are you sure you want to permanently delete your MELSAVA account? All your photos, messages, mutual connections, and RSVP history will be immediately erased. This action CANNOT be undone.',
+                            confirmLabel: 'Delete Permanently',
+                            isDestructive: true,
+                          );
+                          if (confirm != true || !context.mounted) return;
+                          final messenger = ScaffoldMessenger.of(context);
+                          await ref
+                              .read(authRepositoryProvider)
+                              .deleteAccountPermanent();
+                          ref.read(currentUserProvider.notifier).state = null;
+                          if (context.mounted) {
+                            context.go('/welcome');
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text(
+                                  'Your MELSAVA account and personal data have been permanently deleted.',
+                                ),
+                                duration: Duration(seconds: 4),
+                              ),
+                            );
+                          }
+                        },
+                        child: const Text(
+                          'Delete Account Permanently',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w700,
+                            fontSize: 13.5,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+
+              const SizedBox(height: 12),
+            ],
+          ),
+        ),
       ),
     );
   }

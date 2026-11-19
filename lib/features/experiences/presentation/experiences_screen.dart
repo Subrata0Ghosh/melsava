@@ -10,8 +10,10 @@ import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/experiences_repository.dart';
+import '../../auth/presentation/auth_providers.dart';
 import 'experience_detail_sheet.dart';
 import 'experience_hub_sheet.dart';
+import 'host_attendance_sheet.dart';
 import 'join_experience_sheet.dart';
 import 'post_experience_choice_screen.dart';
 
@@ -660,6 +662,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                         );
                       }
 
+                      final currentUser = ref.watch(currentUserProvider);
                       final activeList = switch (_selectedMyCircleTab) {
                         0 => myBundle.upcoming,
                         1 => myBundle.waitlisted,
@@ -748,72 +751,154 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                           : AppColors.divider,
                                     ),
                                   ),
-                                  child: Row(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.stretch,
                                     children: [
-                                      Expanded(
-                                        child: Text(
-                                          'Confirmed RSVP',
-                                          style: AppTypography.titleSmall
-                                              .copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                fontSize: 12.5,
-                                                color: const Color(0xFF10B981),
+                                      Row(
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 8,
+                                              vertical: 4,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: const Color(
+                                                0xFF10B981,
+                                              ).withValues(alpha: 0.12),
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                const Icon(
+                                                  Icons.check_circle_rounded,
+                                                  size: 14,
+                                                  color: Color(0xFF10B981),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Confirmed RSVP',
+                                                  style: AppTypography
+                                                      .titleSmall
+                                                      .copyWith(
+                                                        fontWeight:
+                                                            FontWeight.w700,
+                                                        fontSize: 12,
+                                                        color: const Color(
+                                                          0xFF10B981,
+                                                        ),
+                                                      ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          const Spacer(),
+                                          TextButton(
+                                            onPressed: () =>
+                                                _handleCancelMembership(exp),
+                                            style: TextButton.styleFrom(
+                                              foregroundColor: const Color(
+                                                0xFFEF4444,
                                               ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            _handleCancelMembership(exp),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: const Color(
-                                            0xFFEF4444,
-                                          ),
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Cancel RSVP',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      ElevatedButton.icon(
-                                        onPressed: () =>
-                                            ExperienceHubSheet.show(
-                                              context,
-                                              experience: exp,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 8,
+                                                  ),
                                             ),
-                                        icon: const Icon(
-                                          Icons.hub_rounded,
-                                          size: 14,
-                                        ),
-                                        label: const Text(
-                                          'Open Hub',
-                                          style: TextStyle(
-                                            fontSize: 11.5,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple,
-                                          foregroundColor: Colors.white,
-                                          elevation: 0,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 10,
-                                            vertical: 6,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
+                                            child: const Text(
+                                              'Cancel RSVP',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                fontWeight: FontWeight.w600,
+                                              ),
                                             ),
                                           ),
-                                        ),
+                                        ],
+                                      ),
+                                      const SizedBox(height: 10),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: ElevatedButton.icon(
+                                              onPressed: () =>
+                                                  ExperienceHubSheet.show(
+                                                    context,
+                                                    experience: exp,
+                                                  ),
+                                              icon: const Icon(
+                                                Icons.hub_rounded,
+                                                size: 15,
+                                              ),
+                                              label: const Text(
+                                                'Open Hub',
+                                                style: TextStyle(
+                                                  fontSize: 12,
+                                                  fontWeight: FontWeight.w700,
+                                                ),
+                                              ),
+                                              style: ElevatedButton.styleFrom(
+                                                backgroundColor: isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple,
+                                                foregroundColor: Colors.white,
+                                                elevation: 0,
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      vertical: 8,
+                                                      horizontal: 10,
+                                                    ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          if (currentUser?.id ==
+                                              exp.hostId) ...[
+                                            const SizedBox(width: 8),
+                                            Expanded(
+                                              child: ElevatedButton.icon(
+                                                onPressed: () =>
+                                                    HostAttendanceSheet.show(
+                                                      context,
+                                                      experience: exp,
+                                                    ),
+                                                icon: const Icon(
+                                                  Icons.fact_check_rounded,
+                                                  size: 15,
+                                                ),
+                                                label: const Text(
+                                                  'Attendance',
+                                                  style: TextStyle(
+                                                    fontSize: 12,
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                style: ElevatedButton.styleFrom(
+                                                  backgroundColor: const Color(
+                                                    0xFF10B981,
+                                                  ),
+                                                  foregroundColor: Colors.white,
+                                                  elevation: 0,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        vertical: 8,
+                                                        horizontal: 10,
+                                                      ),
+                                                  shape: RoundedRectangleBorder(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   ),

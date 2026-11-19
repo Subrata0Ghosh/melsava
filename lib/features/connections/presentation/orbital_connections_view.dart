@@ -378,8 +378,16 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
                     ),
                   ),
                   onPressed: () {
-                    // Navigate to Inbox conversation
-                    context.go('/inbox');
+                    HapticFeedback.lightImpact();
+                    context.push(
+                      '/chat/${_selectedConnection!.name}',
+                      extra: {
+                        'connectionId': _selectedConnection!.id,
+                        'conversationId': _selectedConnection!.conversationId,
+                        'partnerId': _selectedConnection!.partnerId,
+                        'partnerAvatar': _selectedConnection!.avatarUrl,
+                      },
+                    );
                   },
                   icon: const Icon(Icons.chat_bubble_outline_rounded, size: 16),
                   label: const Text(

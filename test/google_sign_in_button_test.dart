@@ -81,6 +81,16 @@ class _FakeGoogleAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> deactivateAccount() async {
+    _user = null;
+  }
+
+  @override
+  Future<void> deleteAccountPermanent() async {
+    _user = null;
+  }
+
+  @override
   Future<AppUser> signUpWithEmail({
     required String email,
     required String password,

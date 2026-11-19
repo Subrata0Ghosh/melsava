@@ -1,36 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
+import '../../connections/data/connections_repository.dart';
 
-class ChatThreadPreview {
-  final String id;
-  final String participantName;
-  final String participantAvatar;
-  final String lastMessage;
-  final String timestamp;
-  final bool isUnread;
-  final String
-  connectionType; // 'Friendship', 'Activity Partner', 'Exploring Dating'
-  final String experienceName;
-  final bool isOnline;
-
-  const ChatThreadPreview({
-    required this.id,
-    required this.participantName,
-    required this.participantAvatar,
-    required this.lastMessage,
-    required this.timestamp,
-    this.isUnread = false,
-    required this.connectionType,
-    required this.experienceName,
-    this.isOnline = true,
-  });
-}
+typedef ChatThreadPreview = InboxThreadModel;
 
 /// Screen 5: Inbox Screen
 ///
@@ -40,43 +19,17 @@ class ChatThreadPreview {
 /// - Segmented conversation filters (All, Unread, Experiences)
 /// - Rich chat tiles with activity context tags and verified indicators
 /// - Complete Dark and Light theme adaptability
-class InboxScreen extends StatefulWidget {
+class InboxScreen extends ConsumerStatefulWidget {
   const InboxScreen({super.key});
 
   @override
-  State<InboxScreen> createState() => _InboxScreenState();
+  ConsumerState<InboxScreen> createState() => _InboxScreenState();
 }
 
-class _InboxScreenState extends State<InboxScreen> {
+class _InboxScreenState extends ConsumerState<InboxScreen> {
   int _selectedFilterIndex = 0; // 0: All, 1: Unread, 2: Experiences
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
-
-  final List<ChatThreadPreview> _threads = [
-    const ChatThreadPreview(
-      id: 'thread-1',
-      participantName: 'Aditi Sen',
-      participantAvatar: 'assets/images/aditi_avatar.png',
-      lastMessage:
-          'It was great chatting about architectural photography today! Have you tried that lens?',
-      timestamp: '2h ago',
-      isUnread: true,
-      connectionType: 'Exploring Dating',
-      experienceName: 'Coffee & Conversation: Weekend Musings',
-      isOnline: true,
-    ),
-    const ChatThreadPreview(
-      id: 'thread-2',
-      participantName: 'Vikram Mehta',
-      participantAvatar: 'assets/images/vikram_avatar.png',
-      lastMessage: 'Let\'s rally at the wooden court next Tuesday evening?',
-      timestamp: '1d ago',
-      isUnread: false,
-      connectionType: 'Activity Partner',
-      experienceName: 'Beginner Badminton & Court Rally',
-      isOnline: false,
-    ),
-  ];
 
   @override
   void dispose() {
@@ -96,9 +49,14 @@ class _InboxScreenState extends State<InboxScreen> {
     final cardBg = isDark ? AppColors.darkSurface : AppColors.white;
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
+    final threadsAsync = ref.watch(inboxThreadsProvider);
+    final allThreads = threadsAsync.valueOrNull ?? const [];
+    final isLoading = threadsAsync.isLoading && !threadsAsync.hasValue;
+
     // Filter threads
-    final filteredThreads = _threads.where((t) {
+    final filteredThreads = allThreads.where((t) {
       if (_selectedFilterIndex == 1 && !t.isUnread) return false;
+      if (_selectedFilterIndex == 2 && t.experienceName.isEmpty) return false;
       if (_searchQuery.isNotEmpty) {
         return t.participantName.toLowerCase().contains(
               _searchQuery.toLowerCase(),
@@ -283,7 +241,7 @@ class _InboxScreenState extends State<InboxScreen> {
                       const SizedBox(width: 14),
 
                       // Active Connections Bubbles
-                      ..._threads.map((thread) {
+                      ...allThreads.take(8).map((thread) {
                         final isDating = thread.connectionType
                             .toLowerCase()
                             .contains('dating');
@@ -301,8 +259,14 @@ class _InboxScreenState extends State<InboxScreen> {
                               );
 
                         return GestureDetector(
-                          onTap: () =>
-                              context.push('/chat/${thread.participantName}'),
+                          onTap: () => context.push(
+                            '/chat/${thread.participantName}',
+                            extra: {
+                              'conversationId': thread.conversationId,
+                              'partnerId': thread.partnerId,
+                              'partnerAvatar': thread.participantAvatar,
+                            },
+                          ),
                           child: Container(
                             margin: const EdgeInsets.only(right: 14),
                             child: Column(
@@ -393,255 +357,284 @@ class _InboxScreenState extends State<InboxScreen> {
 
               // ── Conversations List ──
               Expanded(
-                child: filteredThreads.isEmpty
-                    ? const EmptyStateWidget(
-                        icon: Icons.chat_bubble_outline_rounded,
-                        title: 'No conversations found',
-                        message:
-                            'Enjoyed meeting someone at an event? Your mutual connections and messages will appear here.',
-                      )
-                    : ListView.separated(
-                        physics: const ClampingScrollPhysics(),
-                        padding: const EdgeInsets.only(
-                          left: 20,
-                          right: 20,
-                          top: 6,
-                          bottom: 120, // Buffer for floating navbar
+                child: isLoading
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.primaryPurple,
                         ),
-                        itemCount: filteredThreads.length,
-                        separatorBuilder: (context, index) =>
-                            const SizedBox(height: 12),
-                        itemBuilder: (context, index) {
-                          final thread = filteredThreads[index];
-                          final badgeColor = _getBadgeColor(
-                            thread.connectionType,
-                            isDark,
-                          );
+                      )
+                    : filteredThreads.isEmpty
+                    ? EmptyStateWidget(
+                        icon: Icons.chat_bubble_outline_rounded,
+                        title: allThreads.isEmpty
+                            ? 'No conversations yet'
+                            : 'No conversations found',
+                        message: allThreads.isEmpty
+                            ? 'Enjoyed meeting someone at an event? Your mutual connections and messages will appear here.'
+                            : 'Try searching for another name or changing filters.',
+                      )
+                    : RefreshIndicator(
+                        onRefresh: () async =>
+                            ref.refresh(inboxThreadsProvider.future),
+                        child: ListView.separated(
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: ClampingScrollPhysics(),
+                          ),
+                          padding: const EdgeInsets.only(
+                            left: 20,
+                            right: 20,
+                            top: 6,
+                            bottom: 120, // Buffer for floating navbar
+                          ),
+                          itemCount: filteredThreads.length,
+                          separatorBuilder: (context, index) =>
+                              const SizedBox(height: 12),
+                          itemBuilder: (context, index) {
+                            final thread = filteredThreads[index];
+                            final badgeColor = _getBadgeColor(
+                              thread.connectionType,
+                              isDark,
+                            );
 
-                          return GestureDetector(
-                            onTap: () {
-                              HapticFeedback.lightImpact();
-                              context.push('/chat/${thread.participantName}');
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.all(14),
-                              decoration: BoxDecoration(
-                                color: cardBg,
-                                borderRadius: BorderRadius.circular(20),
-                                border: Border.all(
-                                  color: thread.isUnread
-                                      ? (isDark
-                                            ? AppColors.luminousMauve
-                                                  .withValues(alpha: 0.5)
-                                            : AppColors.mauve.withValues(
-                                                alpha: 0.4,
-                                              ))
-                                      : borderColor,
-                                  width: thread.isUnread ? 1.4 : 0.9,
+                            return GestureDetector(
+                              onTap: () {
+                                HapticFeedback.lightImpact();
+                                context.push(
+                                  '/chat/${thread.participantName}',
+                                  extra: {
+                                    'conversationId': thread.conversationId,
+                                    'partnerId': thread.partnerId,
+                                    'partnerAvatar': thread.participantAvatar,
+                                  },
+                                );
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.all(14),
+                                decoration: BoxDecoration(
+                                  color: cardBg,
+                                  borderRadius: BorderRadius.circular(20),
+                                  border: Border.all(
+                                    color: thread.isUnread
+                                        ? (isDark
+                                              ? AppColors.luminousMauve
+                                                    .withValues(alpha: 0.5)
+                                              : AppColors.mauve.withValues(
+                                                  alpha: 0.4,
+                                                ))
+                                        : borderColor,
+                                    width: thread.isUnread ? 1.4 : 0.9,
+                                  ),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: isDark
+                                          ? Colors.black26
+                                          : AppColors.deepPlum.withValues(
+                                              alpha: 0.04,
+                                            ),
+                                      blurRadius: 14,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: isDark
-                                        ? Colors.black26
-                                        : AppColors.deepPlum.withValues(
-                                            alpha: 0.04,
-                                          ),
-                                    blurRadius: 14,
-                                    offset: const Offset(0, 3),
-                                  ),
-                                ],
-                              ),
-                              child: Row(
-                                children: [
-                                  // Avatar with status ring
-                                  Stack(
-                                    children: [
-                                      Container(
-                                        width: 52,
-                                        height: 52,
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: badgeColor,
-                                            width: 1.8,
-                                          ),
-                                        ),
-                                        child: ClipOval(
-                                          child: AppSmartImage(
-                                            imagePath: thread.participantAvatar,
-                                            isAvatar: true,
-                                            nameHint: thread.participantName,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
-                                      ),
-                                      if (thread.isOnline)
-                                        Positioned(
-                                          right: 1,
-                                          bottom: 1,
-                                          child: Container(
-                                            width: 12,
-                                            height: 12,
-                                            decoration: BoxDecoration(
-                                              color: AppColors.mintAccent,
-                                              shape: BoxShape.circle,
-                                              border: Border.all(
-                                                color: cardBg,
-                                                width: 2,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                    ],
-                                  ),
-                                  const SizedBox(width: 14),
-
-                                  // Text contents
-                                  Expanded(
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
+                                child: Row(
+                                  children: [
+                                    // Avatar with status ring
+                                    Stack(
                                       children: [
-                                        // Name + Timestamp
-                                        Row(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.spaceBetween,
-                                          children: [
-                                            Row(
-                                              children: [
-                                                Text(
-                                                  thread.participantName,
-                                                  style: AppTypography
-                                                      .titleSmall
-                                                      .copyWith(
-                                                        color: primaryTextColor,
-                                                        fontWeight:
-                                                            thread.isUnread
-                                                            ? FontWeight.w800
-                                                            : FontWeight.w700,
-                                                        fontSize: 14.5,
-                                                      ),
-                                                ),
-                                                const SizedBox(width: 6),
-                                                Container(
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        horizontal: 6,
-                                                        vertical: 1.5,
-                                                      ),
-                                                  decoration: BoxDecoration(
-                                                    color: badgeColor
-                                                        .withValues(
-                                                          alpha: 0.15,
-                                                        ),
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          6,
-                                                        ),
-                                                  ),
-                                                  child: Text(
-                                                    thread.connectionType,
-                                                    style: AppTypography
-                                                        .labelSmall
-                                                        .copyWith(
-                                                          color: badgeColor,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          fontSize: 9.5,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ],
+                                        Container(
+                                          width: 52,
+                                          height: 52,
+                                          decoration: BoxDecoration(
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: badgeColor,
+                                              width: 1.8,
                                             ),
-                                            Text(
-                                              thread.timestamp,
-                                              style: AppTypography.bodySmall
-                                                  .copyWith(
-                                                    color: thread.isUnread
-                                                        ? (isDark
-                                                              ? AppColors
-                                                                    .softCoral
-                                                              : AppColors.mauve)
-                                                        : mutedTextColor,
-                                                    fontSize: 11,
-                                                    fontWeight: thread.isUnread
-                                                        ? FontWeight.w700
-                                                        : FontWeight.w400,
-                                                  ),
+                                          ),
+                                          child: ClipOval(
+                                            child: AppSmartImage(
+                                              imagePath:
+                                                  thread.participantAvatar,
+                                              isAvatar: true,
+                                              nameHint: thread.participantName,
+                                              fit: BoxFit.cover,
                                             ),
-                                          ],
+                                          ),
                                         ),
-                                        const SizedBox(height: 3),
-
-                                        // Activity context pill
-                                        Row(
-                                          children: [
-                                            Icon(
-                                              Icons.event_outlined,
-                                              size: 11,
-                                              color: mutedTextColor,
-                                            ),
-                                            const SizedBox(width: 4),
-                                            Expanded(
-                                              child: Text(
-                                                thread.experienceName,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
-                                                style: AppTypography.bodySmall
-                                                    .copyWith(
-                                                      color: mutedTextColor,
-                                                      fontSize: 11,
-                                                    ),
+                                        if (thread.isOnline)
+                                          Positioned(
+                                            right: 1,
+                                            bottom: 1,
+                                            child: Container(
+                                              width: 12,
+                                              height: 12,
+                                              decoration: BoxDecoration(
+                                                color: AppColors.mintAccent,
+                                                shape: BoxShape.circle,
+                                                border: Border.all(
+                                                  color: cardBg,
+                                                  width: 2,
+                                                ),
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                        const SizedBox(height: 5),
+                                          ),
+                                      ],
+                                    ),
+                                    const SizedBox(width: 14),
 
-                                        // Message preview & unread dot
-                                        Row(
-                                          children: [
-                                            Expanded(
-                                              child: Text(
-                                                thread.lastMessage,
-                                                maxLines: 1,
-                                                overflow: TextOverflow.ellipsis,
+                                    // Text contents
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          // Name + Timestamp
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    thread.participantName,
+                                                    style: AppTypography
+                                                        .titleSmall
+                                                        .copyWith(
+                                                          color:
+                                                              primaryTextColor,
+                                                          fontWeight:
+                                                              thread.isUnread
+                                                              ? FontWeight.w800
+                                                              : FontWeight.w700,
+                                                          fontSize: 14.5,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(width: 6),
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.symmetric(
+                                                          horizontal: 6,
+                                                          vertical: 1.5,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: badgeColor
+                                                          .withValues(
+                                                            alpha: 0.15,
+                                                          ),
+                                                      borderRadius:
+                                                          BorderRadius.circular(
+                                                            6,
+                                                          ),
+                                                    ),
+                                                    child: Text(
+                                                      thread.connectionType,
+                                                      style: AppTypography
+                                                          .labelSmall
+                                                          .copyWith(
+                                                            color: badgeColor,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            fontSize: 9.5,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              Text(
+                                                thread.timestamp,
                                                 style: AppTypography.bodySmall
                                                     .copyWith(
                                                       color: thread.isUnread
-                                                          ? primaryTextColor
+                                                          ? (isDark
+                                                                ? AppColors
+                                                                      .softCoral
+                                                                : AppColors
+                                                                      .mauve)
                                                           : mutedTextColor,
+                                                      fontSize: 11,
                                                       fontWeight:
                                                           thread.isUnread
                                                           ? FontWeight.w700
                                                           : FontWeight.w400,
-                                                      fontSize: 12.5,
                                                     ),
                                               ),
-                                            ),
-                                            if (thread.isUnread) ...[
-                                              const SizedBox(width: 8),
-                                              Container(
-                                                width: 9,
-                                                height: 9,
-                                                decoration: BoxDecoration(
-                                                  shape: BoxShape.circle,
-                                                  color: isDark
-                                                      ? AppColors.luminousMauve
-                                                      : AppColors.mauve,
+                                            ],
+                                          ),
+                                          const SizedBox(height: 3),
+
+                                          // Activity context pill
+                                          Row(
+                                            children: [
+                                              Icon(
+                                                Icons.event_outlined,
+                                                size: 11,
+                                                color: mutedTextColor,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Expanded(
+                                                child: Text(
+                                                  thread.experienceName,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: AppTypography.bodySmall
+                                                      .copyWith(
+                                                        color: mutedTextColor,
+                                                        fontSize: 11,
+                                                      ),
                                                 ),
                                               ),
                                             ],
-                                          ],
-                                        ),
-                                      ],
+                                          ),
+                                          const SizedBox(height: 5),
+
+                                          // Message preview & unread dot
+                                          Row(
+                                            children: [
+                                              Expanded(
+                                                child: Text(
+                                                  thread.lastMessage,
+                                                  maxLines: 1,
+                                                  overflow:
+                                                      TextOverflow.ellipsis,
+                                                  style: AppTypography.bodySmall
+                                                      .copyWith(
+                                                        color: thread.isUnread
+                                                            ? primaryTextColor
+                                                            : mutedTextColor,
+                                                        fontWeight:
+                                                            thread.isUnread
+                                                            ? FontWeight.w700
+                                                            : FontWeight.w400,
+                                                        fontSize: 12.5,
+                                                      ),
+                                                ),
+                                              ),
+                                              if (thread.isUnread) ...[
+                                                const SizedBox(width: 8),
+                                                Container(
+                                                  width: 9,
+                                                  height: 9,
+                                                  decoration: BoxDecoration(
+                                                    shape: BoxShape.circle,
+                                                    color: isDark
+                                                        ? AppColors
+                                                              .luminousMauve
+                                                        : AppColors.mauve,
+                                                  ),
+                                                ),
+                                              ],
+                                            ],
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
-                            ),
-                          );
-                        },
+                            );
+                          },
+                        ),
                       ),
               ),
             ],

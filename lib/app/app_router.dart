@@ -228,7 +228,27 @@ class AppRouter {
           path: '/chat/:name',
           builder: (context, state) {
             final name = state.pathParameters['name'] ?? 'Friend';
-            return ConversationScreen(participantName: name);
+            final extra = state.extra;
+            final String? conversationId = extra is Map
+                ? extra['conversationId']?.toString()
+                : null;
+            final String? connectionId = extra is Map
+                ? extra['connectionId']?.toString()
+                : null;
+            final String? partnerAvatar = extra is Map
+                ? extra['partnerAvatar']?.toString()
+                : null;
+            final String? partnerId = extra is Map
+                ? extra['partnerId']?.toString()
+                : null;
+
+            return ConversationScreen(
+              participantName: name,
+              conversationId: conversationId,
+              connectionId: connectionId,
+              partnerAvatar: partnerAvatar,
+              partnerId: partnerId,
+            );
           },
         ),
 

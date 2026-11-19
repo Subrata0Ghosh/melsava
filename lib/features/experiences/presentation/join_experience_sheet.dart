@@ -322,7 +322,8 @@ class _JoinExperienceSheetState extends ConsumerState<JoinExperienceSheet> {
                                 height: 68,
                                 child: AppSmartImage(
                                   imagePath: exp.coverImageUrl,
-                                  categoryHint: '${exp.title} ${exp.categoryName}',
+                                  categoryHint:
+                                      '${exp.title} ${exp.categoryName}',
                                   fit: BoxFit.cover,
                                 ),
                               ),

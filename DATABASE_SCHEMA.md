@@ -257,6 +257,42 @@ After an experience, each user chooses how they feel about each other participan
 
 ---
 
+### 13.1. `post_experience_submissions` (Migration 009)
+
+Tracks final submitted status per user per experience to guarantee idempotent submissions and prevent resubmissions.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID (PK) | DEFAULT gen_random_uuid() | Submission ID |
+| `experience_id` | UUID | FK → experiences(id) ON DELETE CASCADE | Associated experience |
+| `user_id` | UUID | FK → profiles(id) ON DELETE CASCADE | Submitting user |
+| `submitted_at` | TIMESTAMPTZ | DEFAULT now() | Time submitted |
+
+**Unique:** (experience_id, user_id)  
+**Index:** `idx_pes_exp_user` on `(experience_id, user_id)`
+
+---
+
+### 13.2. `app_notifications` (Migration 009)
+
+Stores in-app notifications (e.g. mutual connection alerts) without external paid push dependencies.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `id` | UUID (PK) | DEFAULT gen_random_uuid() | Notification ID |
+| `user_id` | UUID | FK → profiles(id) ON DELETE CASCADE | Recipient user |
+| `type` | TEXT | NOT NULL | Notification type (e.g. `mutual_connection`) |
+| `title` | TEXT | NOT NULL | Alert title |
+| `message` | TEXT | NOT NULL | Alert message content |
+| `connection_id` | UUID | FK → connections(id) ON DELETE SET NULL | Associated connection |
+| `experience_id` | UUID | FK → experiences(id) ON DELETE SET NULL | Associated experience |
+| `read_at` | TIMESTAMPTZ | NULL | Timestamp when read |
+| `created_at` | TIMESTAMPTZ | DEFAULT now() | Row creation time |
+
+**Index:** `idx_notifications_user_created` on `(user_id, created_at DESC)`
+
+---
+
 ### 14. `connections`
 
 Mutual connections created from matching post-experience choices.
@@ -423,21 +459,28 @@ Push notification tokens.
 |----------|-----------|-------------|
 | `create_profile_on_signup()` | 001 | Trigger on `auth.users` INSERT — auto-creates profile + profile_private |
 | `check_experience_capacity(UUID)` | 003 | Returns JSON with capacity status for an experience |
-| `process_mutual_connections(UUID)` | 003 | Atomic: finds mutual choices, creates connections + conversations |
+| `process_mutual_connections(UUID)` | 003 | Legacy mutual connections processor (superseded by migration 009) |
 | `handle_updated_at()` | 001 | Trigger function to auto-update `updated_at` timestamps |
 | `complete_profile_onboarding(...)` | 006 | Atomic: saves profile, private data, interests, intentions; verifies age |
 | `get_experience_participant_counts(UUID[])` | 006 | Aggregate: returns joined & waitlisted counts without exposing PII |
 | `join_experience(UUID)` | 006 | Atomic: row-locked (`FOR UPDATE`) capacity check, join or FIFO waitlist |
 | `cancel_experience_membership(UUID)` | 006 | Atomic: row-locked (`FOR UPDATE`) cancellation with FIFO waitlist promotion |
+| `complete_experience_and_mark_attendance(UUID, UUID[])` | 009 | Atomic: host-only validation, completes experience and marks verified attendees |
+| `get_host_joined_participants(UUID)` | 009 | Host-only: lists joined participants for attendance review |
+| `fetch_eligible_reconnect_attendees(UUID)` | 009 | Privacy-safe: returns only attended peers, excludes blocked/suspended, zero PII |
+| `fetch_reconnect_submission_status(UUID)` | 009 | Gating: returns completion, attendance, host, and submission status |
+| `submit_post_experience_choices(UUID, JSONB)` | 009 | Atomic: exact matching (Friendship=Friendship, Dating=Dating), creates canonical connections, conversations, and notifications |
 
 ---
 
-## Performance & Concurrency Indexes (Migration 006)
+## Performance & Concurrency Indexes (Migrations 006 & 009)
 
 | Index Name | Table | Columns | Purpose |
 |------------|-------|---------|---------|
 | `idx_experiences_published_starts_at` | `experiences` | `(status, starts_at)` | Accelerates published upcoming feed queries |
 | `idx_experience_members_exp_status_fifo` | `experience_members` | `(experience_id, status, joined_at, created_at, id)` | Ensures indexed FIFO waitlist promotion and fast capacity calculation |
+| `idx_pes_exp_user` | `post_experience_submissions` | `(experience_id, user_id)` | Fast lookup and uniqueness verification for submission gating |
+| `idx_notifications_user_created` | `app_notifications` | `(user_id, created_at DESC)` | Efficient in-app notification feed sorting and badge counts |
 
 ---
 

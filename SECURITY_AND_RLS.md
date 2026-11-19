@@ -46,7 +46,9 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 | `activity_categories`| Public (all users) | Admin only | Admin only | Admin only |
 | `experiences` | Public (published/completed) + member history | Approved host / Admin | Host (`host_id = auth.uid()`) | Host / Admin |
 | `experience_members` | Co-attendees & self & host | RPC only (`join_experience`) | Host only (`mark_attended`) / RPC | Disabled |
-| `post_experience_choices` | Own user (`chooser_id = auth.uid()`) | Own user | Own user | Disabled |
+| `post_experience_choices` | Own user (`chooser_id = auth.uid()`) | RPC only (`submit_post_experience_choices`) | Disabled | Disabled |
+| `post_experience_submissions` | Own user (`user_id = auth.uid()`) | RPC only (`submit_post_experience_choices`) | Disabled | Disabled |
+| `app_notifications` | Own user (`user_id = auth.uid()`) | Server / RPC only | Own user (`mark read`) | Disabled |
 | `connections` | Members (`user_a = auth.uid() OR user_b = auth.uid()`) | Server function only | Disabled | Members (break connection) |
 | `conversations` | Conversation members only | Server function only | Server / Members (touch updated_at) | Disabled |
 | `conversation_members`| Conversation members only | Server function only | Disabled | Disabled |
@@ -93,3 +95,46 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 ### 6. `handle_new_user()`
 - Automated trigger upon `auth.users` insertion.
 - Initializes placeholder `public.profiles` and `public.profile_private` rows safely.
+
+---
+
+## Server-Side Database Functions — Phase 3 Attendance & Mutual Choice (`009_phase3_attendance_and_mutual_choices.sql`)
+
+### 7. `complete_experience_and_mark_attendance(p_experience_id UUID, p_attended_user_ids UUID[])`
+- `SECURITY DEFINER` atomic procedure with explicit `auth.uid()` host validation.
+- Validates:
+  1. Caller is the verified `experiences.host_id`.
+  2. Experience is in `published` status and has completed or reached start time.
+  3. Only previously `joined` participants can be marked `attended`.
+  4. Waitlisted, cancelled, or external users cannot be marked attended.
+- Atomically marks `experiences.status = 'completed'` and updates verified participants to `attended`.
+
+### 8. `get_host_joined_participants(p_experience_id UUID)`
+- `SECURITY DEFINER` host-only review function.
+- Enforces `host_id = auth.uid()`.
+- Returns only joined participants for the host's attendance review sheet (display name, avatar, bio, join date).
+
+### 9. `fetch_eligible_reconnect_attendees(p_experience_id UUID)`
+- `SECURITY DEFINER` attendee discovery function.
+- Enforces:
+  1. Caller must have `attended` status on the completed experience.
+  2. Returns only other verified `attended` co-participants.
+  3. Excludes caller, blocked users in either direction, and suspended accounts.
+  4. Zero private PII (email, phone, birth date) and zero private choice leakage.
+
+### 10. `fetch_reconnect_submission_status(p_experience_id UUID)`
+- `SECURITY DEFINER` gating status helper.
+- Returns `is_completed`, `is_attended`, `is_submitted`, `is_host`, and `attended_count`.
+- Drives clean Flutter UI state transitions (Not Eligible, Not Completed, Already Submitted, Ready).
+
+### 11. `submit_post_experience_choices(p_experience_id UUID, p_choices JSONB)`
+- `SECURITY DEFINER` atomic matching and connection engine.
+- Replaces legacy 003 logic with **exact matching consent**:
+  - `Friendship + Friendship` = `Friendship` connection.
+  - `Activity Partner + Activity Partner` = `Activity Partner` connection.
+  - `Explore Dating + Explore Dating` = `Explore Dating` connection.
+  - Any mismatch (e.g. Friendship + Dating) produces **NO MATCH** (strictly zero auto-promotion to dating).
+  - Any `No Connection` or one-sided selection produces **NO MATCH** with zero negative feedback.
+- Atomically creates canonical `public.connections` (`user_a_id < user_b_id`), `public.conversations`, `public.conversation_members`, and in-app alerts in `public.app_notifications`.
+- Idempotently records completion in `public.post_experience_submissions`.
+- Returns only the authenticated caller's own new mutual connections.

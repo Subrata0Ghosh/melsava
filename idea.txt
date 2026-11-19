@@ -1,312 +1,631 @@
-# MELSAVA — PHASE 2: LIVE EXPERIENCE DISCOVERY, JOINING & MY CIRCLES
+# MELSAVA — PHASE 3: REAL ATTENDANCE, PRIVATE MUTUAL CHOICE & CONNECTION CREATION
 
-## Main Objective
+Work on my existing MELSAVA Flutter project.
 
-Implement a fully working, Supabase-powered experience discovery and joining system.
+Repository: https://github.com/Subrata0Ghosh/melsava
 
-Users must be able to discover real published experiences, view their details, join or join a waitlist, cancel participation, and manage their upcoming and past experiences.
+## MAIN OBJECTIVE
 
-**Keep the current MELSAVA UI, design system, navigation structure and existing architecture. Do not rebuild the app.**
+Implement the complete real post-experience connection workflow using Flutter, Riverpod, Supabase and PostgreSQL.
 
-This phase should turn the existing Discover and Experiences screens from demo/local-data screens into real, working features.
+Phase 1 and Phase 2 are marked completed in DEVELOPMENT_ROADMAP.md.
+
+Do not rebuild or redesign the existing application.
+
+Do not repeat Phase 1 or Phase 2.
+
+The current product flow is:
+
+Authentication → Profile Onboarding → Discover → Experience Details → Join/Waitlist → My Circles.
+
+The next flow must be:
+
+Experience Ends → Host Confirms Attendance → Experience Completed → Attended Members Select People Privately → Mutual Compatible Choice → Connection Created → Conversation Record Created → Notification/Celebration.
+
+The existing screen designs, database tables and business logic must be reused wherever possible.
 
 ---
 
-## 1. First Inspect the Existing Project
+# 1. INSPECT THE CURRENT IMPLEMENTATION FIRST
 
-Before changing anything, inspect:
+Read these files before coding:
 
 - README.md
 - APP_WORKFLOW.md
 - DEVELOPMENT_ROADMAP.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
-- Existing experience models and repositories
-- Discover and Experiences screens
-- Experience details screen and join confirmation sheet
-- Supabase migrations, tables, indexes, RLS policies and database functions
-- Riverpod providers and GoRouter configuration
-- Existing design tokens and reusable widgets
-- Current tests
-
-Understand the existing implementation before writing code.
-
-Do not assume table columns, enum values, relationships or function signatures. Read the actual migrations and models first.
-
-## 2. Fix the Small Remaining Phase 1 Data-Integrity Issue
-
-Before starting Phase 2, check the profile onboarding completion logic.
-
-Currently, failures while saving profile interests or intentions may be caught and logged without preventing onboarding from being marked complete.
-
-Fix this carefully:
-
-- Required profile data must be saved successfully before onboarding is marked complete.
-- Do not silently ignore failed interest or intention saves.
-- Display a useful error and allow the user to retry.
-- Avoid creating duplicate interests or intentions on retry.
-- Do not send users to Discover if required onboarding data is missing.
-- Use a database transaction/RPC if appropriate for the existing schema. Otherwise, only set the completion flag after every required save succeeds.
-
-Do not redesign or rebuild onboarding.
-
-## 3. Connect Discover to Real Supabase Data
-
-Replace the local sample experience repository with a real Supabase-backed repository.
-
-Requirements:
-
-- Fetch only published experiences.
-- Exclude cancelled, draft and already-passed experiences from the upcoming discovery feed.
-- Load real experience titles, descriptions, categories, cover images, dates, times, city, venue or online status, host information and available capacity, according to the existing schema.
-- Show the current user's actual membership status.
-- Use proper pagination or a sensible query limit.
-- Avoid loading unnecessary data.
-- Handle missing images and optional fields gracefully.
-- Use the existing Riverpod provider/repository architecture.
-
-Both Discover and Experiences must use the same source of real experience data.
-
-Do not leave fake sample data as a production fallback.
-
-Development seed data is acceptable for local testing, but keep it clearly separated from real production content.
-
-## 4. Implement Useful Discovery Filters
-
-Use simple, understandable filters that work with the real database:
-
-- Search by experience title or description.
-- Category.
-- City.
-- Upcoming date.
-- Online or in-person.
-- Experiences with available places.
-
-Use the city and interests already saved in the user's profile where appropriate.
-
-Recommendations should be simple and inexpensive:
-
-- Give priority to experiences matching the user's saved interests and city.
-- Show other upcoming experiences when there are no direct matches.
-- Never hide all experiences just because there is no exact match.
-- No paid AI API, external recommendation service, GPS service or map API.
-
-Do not add complicated filters or redesign the Discover UI.
-
-## 5. Experience Details
-
-Make the existing experience details screen display real Supabase information.
-
-Show the fields available in the actual schema:
-
-- Experience name and description.
-- Category.
-- Date and time.
-- Duration, when available.
-- City and venue, or online status.
-- Host information.
-- Participant count and available places.
-- Cancellation information.
-- Clear Join or Waitlist action.
-
-The displayed capacity and membership status must reflect the latest database state, not a hard-coded number.
-
-Use the existing design components and maintain the current visual style.
-
-## 6. Real Join and Capacity Management
-
-Replace local `toggleJoin()` behaviour and simulated success delays with real database operations.
-
-Joining must be handled securely on the server.
-
-Inspect the existing migrations and implement a new migration for an atomic database join operation if one does not already exist.
-
-The join operation must:
-
-- Require an authenticated user.
-- Confirm that the user's profile and adult eligibility are complete.
-- Confirm the experience is published and still eligible for joining.
-- Prevent duplicate membership.
-- Check capacity using the current database state.
-- Add the user as joined when a place is available.
-- Add the user as waitlisted when the experience is full, if waitlisting is supported by the existing schema.
-- Return a clear result to the app.
-
-Capacity checks must be atomic and safe when multiple users try to join at the same time. Do not depend only on a client-side participant count.
-
-Use the existing `experience_members` statuses and database design where possible.
-
-If the existing waitlist model supports it, implement FIFO waitlist promotion when a joined member cancels.
-
-Cancellation and waitlist promotion must be handled safely on the server to avoid duplicate promotions or overbooking.
-
-Tighten RLS so users cannot bypass the capacity rules by directly inserting or changing membership records from the client.
-
-Use a new numbered migration based on the latest existing migration. Never edit migrations that may already have been applied.
-
-Do not use a Supabase service-role key in Flutter.
-
-## 7. Improve the Join Confirmation Flow
-
-Reuse the current join confirmation sheet and preserve its design.
-
-- Show the selected experience clearly.
-- Confirm the action before joining.
-- Show actual joining progress.
-- Show success only after Supabase confirms the operation.
-- Show a clear error and retry option if it fails.
-- Display the correct Joined or Waitlisted result.
-- Prevent repeated taps while the operation is processing.
-
-Inspect the existing “Your Intent” selection. Do not show a choice that is not actually saved or used. If the current schema does not support an experience-specific intention, keep the join confirmation simple and rely on the user's saved profile intentions. Do not default users to a romantic or dating intention.
-
-## 8. Make My Experiences / My Circles Functional
-
-Turn the existing screen into the user's real experience-management area.
-
-Use actual membership records from Supabase.
-
-Organize the screen into simple sections or tabs:
-
-- Upcoming: experiences the user has joined.
-- Waitlisted: experiences where the user is waiting for a place.
-- Attended: completed experiences the user attended.
-- Past: relevant completed or expired experiences.
-
-Show useful status labels and allow the user to open the corresponding details.
-
-Allow cancellation of upcoming participation with confirmation.
-
-Do not display hard-coded participants or fake membership records.
-
-Keep the experience-management UI simple and consistent with the existing app.
-
-## 9. Loading, Empty and Error States
-
-Every database-powered screen must support:
-
-- Loading state.
-- Empty state.
-- Error state.
-- Retry.
-- Successful action feedback.
-- No internet or connection failure.
-
-Use natural, friendly messages.
-
-Examples:
-
-- "No experiences found yet."
-- "Try another category or check back soon."
-- "You have joined this experience."
-- "You're on the waitlist."
-- "We couldn't complete that action. Please try again."
-
-Do not use fake success messages.
-
-Avoid unnecessary animations and expensive dependencies.
-
-## 10. Security and Database Requirements
-
-Review all relevant RLS policies before implementing the features.
-
-Ensure:
-
-- Users can only manage their own memberships.
-- Users cannot create memberships for another user.
-- Users cannot directly change their own membership to attended.
-- Capacity cannot be bypassed.
-- Only eligible users can join.
-- Only published experiences can be joined.
-- Waitlist order is preserved if implemented.
-- Public experience details do not expose private user information.
-- Database functions have appropriate permissions.
-- No service-role key or secret is included in the Flutter app.
-
-Reuse existing tables and functions where possible.
-
-Create only the migrations and indexes genuinely needed for this phase.
-
-## 11. Keep the Existing UI and App Architecture
-
-Preserve:
-
-- Warm Ivory background.
-- Deep Plum typography and surfaces.
-- Mauve and Soft Coral accents.
-- Sage secondary surfaces.
-- Manrope and Inter typography.
-- Existing light and dark themes.
-- Current bottom navigation and routing.
-- Existing reusable buttons, cards, chips, sheets and components.
-
-No complete UI redesign.
-
-No new paid service.
-
-No paid AI API.
-
-No maps, video calls, complex animations or unnecessary packages.
-
-Keep the code clean and suitable for a solo developer to maintain.
-
-## 12. Testing and Acceptance Criteria
-
-Before declaring Phase 2 complete:
-
-- Run dart format.
-- Run flutter analyze.
-- Run flutter test.
-- Add repository and provider tests for real experience loading, filtering and membership state.
-- Test join success.
-- Test duplicate join prevention.
-- Test full-capacity waitlist behaviour.
-- Test cancellation.
-- Test waitlist promotion if implemented.
-- Test database permission and capacity rules.
-- Test loading, empty and error states.
-- Check both light and dark themes.
-- Check that Discover and Experiences no longer rely on local demo data in production.
-
-Also manually verify using two different authenticated test accounts:
-
-1. Account A discovers and joins an available experience.
-2. Account B sees the updated participant count.
-3. Account B cannot overbook the experience.
-4. Account B is waitlisted when the experience is full.
-5. Account A cancels.
-6. The correct waitlisted user is promoted, if waitlisting is enabled.
-7. Both accounts see the correct membership status.
-
-Do not claim that a test passed unless it was actually executed.
-
-## 13. Update Project Documentation
-
-After implementation:
-
-- Update APP_WORKFLOW.md.
-- Update DATABASE_SCHEMA.md.
-- Update SECURITY_AND_RLS.md.
-- Update DEVELOPMENT_ROADMAP.md.
-- Reconcile phase numbering in README.md and DEVELOPMENT_ROADMAP.md.
-
-Clearly record what is implemented, what is tested, and what remains incomplete.
-
-Do not mark a feature complete merely because its UI exists.
+- lib/features/experiences/presentation/post_experience_choice_screen.dart
+- lib/features/experiences/presentation/experience_hub_sheet.dart
+- lib/features/experiences/presentation/experiences_screen.dart
+- lib/features/experiences/data/experiences_repository.dart
+- lib/features/connections/presentation/connections_screen.dart
+- lib/features/chat/presentation/inbox_screen.dart
+- lib/shared/widgets/mutual_match_celebration_dialog.dart
+- supabase/migrations/001_initial_schema.sql
+- supabase/migrations/002_rls_policies.sql
+- supabase/migrations/003_functions.sql
+- supabase/migrations/006_phase2_experiences_rls_and_rpc.sql
+- Existing test files
+
+Inspect the actual database schema and deployed migration history before making changes.
+
+Important existing database entities:
+
+- experience_members
+- experiences
+- post_experience_choices
+- connections
+- conversations
+- conversation_members
+- messages
+- blocks
+- profiles
+- device_tokens
+
+Do not duplicate existing tables or create another version of already implemented features.
+
+Create a new migration numbered 007 for Phase 3. Never edit migrations that may already have been applied.
 
 ---
 
-## Important Scope Limit
+# 2. FIX THE EXISTING DEMO-ONLY SELECTION SCREEN
 
-This phase is ONLY for:
+Current file:
 
-1. Fixing the remaining onboarding data-integrity issue.
-2. Live experience discovery.
-3. Experience details.
-4. Secure joining and waitlisting.
-5. Cancellation.
-6. My Experiences / My Circles.
+lib/features/experiences/presentation/post_experience_choice_screen.dart
 
-Do not start one-to-one chat, post-experience mutual matching, advanced social features, payments, subscriptions, AI matching or an admin panel in this phase.
+The current implementation contains:
+- Hard-coded attendee names.
+- Hard-coded profile photographs.
+- Preselected positive connection choices.
+- Artificial Future.delayed submission.
+- Simulated matching.
+- A celebration dialog that can appear without a real mutual selection.
 
-**Work in the existing project. Implement this phase, run the checks, report changed files and migration instructions, and STOP. Do not continue to Phase 3 automatically.**
+Remove all these demo behaviours from production.
+
+Convert the existing screen into a real Supabase-backed ConsumerStatefulWidget.
+
+Use the existing MELSAVA visual design.
+
+Preserve:
+- Warm ivory and deep plum.
+- Mauve, coral and sage accents.
+- Botanical decoration.
+- Existing typography.
+- Rounded cards.
+- Light and Dark theme support.
+- Existing celebration component where appropriate.
+
+Do not replace the current screen with a generic dating-app layout.
+
+---
+
+# 3. EXPERIENCE COMPLETION AND HOST-CONFIRMED ATTENDANCE
+
+The reconnect selection must never be available to users who merely joined an experience but did not attend.
+
+Implement a secure host attendance confirmation workflow.
+
+### Host workflow
+
+When an experience has ended:
+
+1. The host opens the Experience Hub or host management view.
+2. A host-only attendance action becomes available.
+3. Show the actual joined participants.
+4. The host marks the people who attended.
+5. The host reviews the attendance list.
+6. The host submits attendance confirmation.
+7. The experience becomes completed.
+8. Confirmed members receive the attended membership status.
+
+Use the existing `experiences.host_id`, `experience_members.status`, and `experience_status` schema where possible.
+
+### Security requirements
+
+- Only the actual experience host can submit attendance.
+- The experience must have ended before it can be completed.
+- Cancelled or draft experiences cannot be completed through this operation.
+- Only users who previously had an eligible joined membership may be marked attended.
+- Waitlisted and cancelled members cannot be marked attended without a valid prior membership.
+- The host cannot mark members from another experience.
+- Regular participants must never be allowed to set their own attendance status directly.
+- Prevent arbitrary membership changes by modifying IDs or other membership fields.
+
+Use a new transactional SECURITY DEFINER database function with a fixed search_path and explicit auth.uid() validation.
+
+Suggested function:
+
+complete_experience_and_mark_attendance(
+    p_experience_id UUID,
+    p_attended_user_ids UUID[]
+)
+
+You may adjust the function signature after checking the existing schema.
+
+Use row locking where necessary.
+
+The operation must be atomic and idempotent.
+
+Replace broad client-side attendance update permissions with a controlled server-side operation where appropriate.
+
+Do not trust Flutter to enforce attendance eligibility.
+
+Only explicitly confirmed attendees can continue to post-experience selections.
+
+---
+
+# 4. REAL ATTENDED PARTICIPANT DISCOVERY
+
+On opening the reconnect screen:
+
+Fetch actual attendees from Supabase.
+
+Requirements:
+
+- Experience must be completed.
+- Current authenticated user must have status = attended.
+- Retrieve other members with status = attended.
+- Exclude the current user.
+- Exclude blocked relationships in either direction.
+- Exclude suspended or unavailable accounts.
+- Return only profile information approved for sharing.
+
+Show:
+- Actual profile photograph.
+- Display name.
+- Short bio.
+- Shared experience context.
+
+Never show:
+- Email.
+- Phone number.
+- Date of birth.
+- Private profile details.
+- Another person's private reconnect choices.
+
+Do not use any hard-coded demo participants.
+
+If nobody else attended, display:
+
+"You attended this experience, but there are no other eligible participants to reconnect with."
+
+Handle loading, error, retry and empty states.
+
+---
+
+# 5. PRIVATE CONNECTION CHOICE UI
+
+Heading:
+
+"Who would you like to meet again?"
+
+Supporting text:
+
+"Your choices are private. A connection happens only when both people choose each other with compatible intentions."
+
+For each eligible participant, provide:
+
+1. Friendship
+2. Activity Partner
+3. Explore Dating
+4. No Connection
+
+Rules:
+
+- Never preselect a positive connection choice.
+- Default to no connection or no selection.
+- Each participant is handled independently.
+- Users can choose different intentions for different people.
+- No romantic intention is assumed from profile preferences alone.
+- Provide a confirmation screen before final submission.
+- Explain that submitted choices are private.
+- Do not reveal who selected or rejected whom.
+- Do not show a public rejection message.
+- Prevent duplicate submission.
+
+For a final submission, represent no-connection choices explicitly or use another secure way to record that the user has completed their choices.
+
+Inspect whether the existing table is sufficient to determine submission completion. If necessary, add a minimal `post_experience_submissions` table to migration 007.
+
+If adding the table, include:
+- experience_id
+- user_id
+- submitted_at
+
+Use a unique constraint on experience_id and user_id.
+
+The user should be able to submit even if every choice is No Connection.
+
+Make submission idempotent. A network retry must not create duplicate choices or multiple connections.
+
+After submission, show:
+
+"Your choices have been submitted privately."
+
+The user should see a submitted status and should not be able to resubmit after final confirmation unless a carefully defined, secure edit window is implemented.
+
+---
+
+# 6. FIX THE EXISTING MUTUAL MATCHING SQL FUNCTION
+
+IMPORTANT: Review the existing `process_mutual_connections()` function in migration 003.
+
+The current function has two serious problems:
+
+1. It treats any two positive choices as a match, even if the connection intentions differ.
+2. It prioritizes the more romantic choice if either person selects dating.
+
+This violates mutual consent.
+
+Replace or supersede the old implementation using migration 007.
+
+### Correct matching logic
+
+Create a connection ONLY when:
+
+- User A attended the same completed experience.
+- User B attended the same completed experience.
+- User A submitted a final selection.
+- User B submitted a final selection.
+- A selected B.
+- B selected A.
+- Both selected the same compatible connection type.
+- Neither user blocked the other.
+- Both accounts remain eligible.
+- No duplicate connection already exists.
+
+For the initial MVP, use exact matching:
+
+A selects Friendship + B selects Friendship = Friendship connection.
+
+A selects Activity Partner + B selects Activity Partner = Activity Partner connection.
+
+A selects Explore Dating + B selects Explore Dating = Explore Dating connection.
+
+A selects Friendship + B selects Explore Dating = NO CONNECTION.
+
+A selects No Connection + B selects any option = NO CONNECTION.
+
+Do not choose the stronger or more romantic option automatically.
+
+Do not expose private choice records.
+
+### Server-side connection creation
+
+For a valid mutual connection:
+
+1. Create a canonical connection record using the existing user_a_id < user_b_id constraint.
+2. Create a conversation record if one does not already exist.
+3. Create both conversation membership records.
+4. Associate the original experience.
+5. Insert an in-app notification for each user if the existing notification system supports it.
+6. Return the actual mutual connection result.
+
+All database writes must happen inside one transaction.
+
+Prevent duplicate connection records and duplicate conversations.
+
+If the users were already connected from a previous experience, do not create another connection or another conversation.
+
+Return only the authenticated user's legitimate connection results. Never return every pair of matches in the group to one caller.
+
+### Function permissions
+
+Review the SECURITY DEFINER function permissions.
+
+Restrict execution explicitly.
+
+Do not leave an unrestricted function callable by anonymous clients or arbitrary authenticated users.
+
+Check grants, revoke unnecessary execution rights, validate auth.uid(), and ensure that the function cannot be used to process another group's selections or reveal other people's preferences.
+
+Do not trust client-supplied chooser_id values. Derive the chooser identity from auth.uid().
+
+---
+
+# 7. PRIVATE SUBMISSION RPC
+
+Implement a secure server operation for submitting selections.
+
+Suggested function:
+
+submit_post_experience_choices(
+    p_experience_id UUID,
+    p_choices JSONB
+)
+
+The exact interface can change if necessary after schema inspection.
+
+The function must:
+
+- Require an authenticated user.
+- Verify completed experience status.
+- Verify the caller is an attended member.
+- Validate all chosen participant IDs.
+- Ensure each chosen participant attended the same experience.
+- Reject self-selection.
+- Reject duplicate participant entries.
+- Validate allowed choice values.
+- Prevent direct submission on behalf of another user.
+- Record the final submission.
+- Prevent duplicate final submissions.
+- Process eligible mutual selections atomically.
+- Create only valid mutual connections.
+- Return only results belonging to the current caller.
+
+Ensure private choices remain private under RLS.
+
+Do not allow Flutter direct INSERT or UPDATE access to bypass the RPC validation.
+
+If existing direct choice policies need tightening, create the necessary new migration.
+
+Keep the SQL secure, readable and maintainable.
+
+---
+
+# 8. CONNECT FLUTTER TO REAL SUPABASE FUNCTIONS
+
+Create or extend a repository using the existing feature-first architecture.
+
+Suggested:
+
+lib/features/experiences/data/post_experience_repository.dart
+
+Implement operations:
+
+- fetchEligibleAttendees(experienceId)
+- submitChoices(experienceId, choices)
+- fetchSubmissionStatus(experienceId)
+- completeExperienceAndMarkAttendance(experienceId, attendeeIds)
+
+Use Riverpod providers and controllers.
+
+Never execute direct database business logic inside UI widgets.
+
+Use typed models for attendees, choices, submission results and mutual connections.
+
+The existing selection screen must consume these providers.
+
+Do not change the visual design to simplify backend work.
+
+---
+
+# 9. POST-EXPERIENCE SCREEN STATES
+
+Implement the following states:
+
+### Loading
+"Loading your experience participants..."
+
+### Available attendees
+Display actual attended members.
+
+### Submitting
+Disable all choice controls and show a real loading state.
+
+### Successful submission without a match
+"Your choices have been submitted privately. When another person's choice is mutual and compatible, you'll be notified."
+
+### Successful mutual connection
+Use the existing MutualMatchCelebrationDialog with actual profile and experience information returned from Supabase.
+
+### Already submitted
+"Your choices for this experience have already been submitted."
+
+### Not eligible
+"This reconnect activity is available only to confirmed attendees."
+
+### Experience not completed
+"Reconnect choices will become available after the experience is completed."
+
+### Network error
+"We couldn't submit your choices. Please check your connection and try again."
+
+Never display an artificial mutual-match celebration.
+
+Never show a fake profile or fake match.
+
+---
+
+# 10. IN-APP NOTIFICATION
+
+Check whether a persistent notifications table exists before creating another.
+
+If the project has no suitable table, create a minimal `app_notifications` table in migration 007.
+
+Store:
+- notification ID
+- user ID
+- notification type
+- title
+- message
+- relevant connection ID
+- read_at
+- created_at
+
+Insert notifications for both users when a real mutual connection is created.
+
+Use appropriate RLS so users can only read and manage their own notifications.
+
+Do not introduce FCM or paid push-notification providers during this phase.
+
+The immediate in-app celebration should be based on the actual RPC response.
+
+Push notifications can be added later.
+
+---
+
+# 11. KEEP EXISTING SCREENS AND VISUAL DESIGN
+
+Preserve:
+
+- MELSAVA branding.
+- Existing botanical backgrounds.
+- Warm Ivory and Deep Plum.
+- Mauve, Coral and Sage accents.
+- Manrope and Inter typography.
+- Existing light and dark themes.
+- Existing shared components.
+- Existing mutual celebration dialog.
+
+Do not rebuild the entire Discover or Experiences screens.
+
+The My Circles → Attended experience section should provide access to private reconnect choices only when the backend says the user is eligible.
+
+If the user already submitted, display the correct submitted state.
+
+The host should see the attendance-management action only for their own eligible experiences.
+
+---
+
+# 12. TESTING REQUIREMENTS
+
+Add unit, widget and database/RLS tests.
+
+Mandatory scenarios:
+
+### Attendance
+1. Host can confirm eligible attendee IDs.
+2. Non-host cannot complete another host's experience.
+3. Event cannot be completed before its end time.
+4. Cancelled event cannot be completed.
+5. Waitlisted user cannot be marked attended.
+6. Unrelated user cannot be marked attended.
+7. Ordinary member cannot mark themselves attended.
+8. Repeating host attendance submission does not corrupt records.
+
+### Connection choices
+9. Friendship + Friendship creates a friendship connection.
+10. Activity Partner + Activity Partner creates an activity connection.
+11. Explore Dating + Explore Dating creates a dating connection.
+12. Friendship + Explore Dating creates no connection.
+13. One-sided positive choice creates no connection.
+14. No Connection + positive choice creates no connection.
+15. Participants from different experiences cannot match.
+16. Non-attending users cannot submit or be selected.
+17. Duplicate choice records are prevented.
+18. Retry of a final submission is idempotent.
+19. Blocked users cannot create a connection.
+20. Suspended users cannot participate in matching.
+
+### Privacy and security
+21. A user can read only their own private choices.
+22. A user cannot read another person's private selection.
+23. An unauthorised caller cannot invoke connection processing for another experience.
+24. Connection creation cannot be triggered by a direct client-side insert.
+25. An RPC result reveals only the caller's own new matches.
+26. Duplicate conversations cannot be created.
+27. Existing connections are not duplicated.
+
+### Flutter tests
+- Attendee loading.
+- Participant list rendering.
+- Choice selection.
+- All-no-connection submission.
+- Form review.
+- Submission progress.
+- Failure and Retry.
+- Already-submitted state.
+- Actual mutual success dialog.
+- Light and Dark theme.
+- Navigation from My Circles.
+
+Test using separate authenticated users.
+
+Do not treat a UI mock test as a real database security test.
+
+Run existing tests as well.
+
+---
+
+# 13. UPDATE DOCUMENTATION
+
+Update:
+
+- APP_WORKFLOW.md
+- DATABASE_SCHEMA.md
+- SECURITY_AND_RLS.md
+- DEVELOPMENT_ROADMAP.md
+- README.md
+
+Document:
+
+- Host attendance flow.
+- Reconnect eligibility.
+- Private submission logic.
+- Matching compatibility rules.
+- RLS policies.
+- New RPCs.
+- New migration 007.
+- Notification behavior.
+- Tests completed.
+
+Important: The existing README still has outdated phase status labels. Reconcile it with the current DEVELOPMENT_ROADMAP.md.
+
+Only mark Phase 3 completed when the required code and tests actually pass.
+
+---
+
+# 14. ACCEPTANCE CRITERIA
+
+Phase 3 is finished only if:
+
+1. The current demo-only selection screen uses real attended participants.
+2. Host attendance confirmation works securely.
+3. Only attended users can submit choices.
+4. Choices are private.
+5. Choices are saved to Supabase.
+6. Mutual intent compatibility is enforced exactly.
+7. No accidental romantic connections can occur.
+8. A real mutual connection creates one connection record.
+9. A real mutual connection creates one conversation record and both memberships.
+10. A real mutual connection creates suitable in-app notifications.
+11. Duplicate submissions cannot create duplicate records.
+12. Blocked users cannot connect.
+13. Database permissions are correctly restricted.
+14. All relevant tests pass.
+15. Flutter analysis has no new issues.
+16. The existing MELSAVA UI is preserved.
+
+Run:
+
+dart format .
+flutter analyze
+flutter test
+
+Also execute appropriate Supabase database tests if the local project supports them.
+
+Do not claim tests passed without executing them.
+
+Report:
+- Changed files.
+- New SQL migration.
+- RPC names and purpose.
+- Database security changes.
+- Tests executed and actual results.
+- Manual Supabase dashboard steps required.
+- Remaining limitations.
+
+## STRICT SCOPE
+
+This is Phase 3 only.
+
+Do not rebuild:
+- Authentication.
+- Profile onboarding.
+- Discover.
+- Experience discovery.
+- Atomic joining.
+- My Circles.
+- Realtime messaging.
+
+Do not add subscriptions, paid APIs, AI matching or paid hosting.
+
+Reuse the current repository and code.
+
+Implement Phase 3 incrementally, verify the result, and STOP before Phase 4.
+
+**Core rule: A MELSAVA connection must never be created unless both users attended the same completed experience and independently selected the same compatible connection intention.**

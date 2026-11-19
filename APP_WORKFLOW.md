@@ -296,46 +296,76 @@ Located under Tab 2 of the Experiences screen, organized into four functional se
 
 ---
 
-## J. Post-Experience Connection Selection
+## J. Post-Experience Connection Selection (Phase 3 Implemented)
 
 > [!IMPORTANT]
-> This is the core differentiating feature of MELSAVA. Every aspect of this flow must protect privacy and enforce mutual consent.
+> This is the core differentiating feature of MELSAVA. Every aspect of this flow protects privacy, guarantees non-negotiable mutual consent, and prevents unrequited or accidental romantic connections.
 
-### Flow
-1. After an experience is completed, each participant receives a notification
-2. They open a **private selection page**
-3. **Heading:** *"Who would you like to meet again?"*
-4. **Explanation:** *"Your choices are private. A connection happens only when the feeling is mutual."*
+### 1. Host Attendance Confirmation Workflow
+1. Once an experience concludes, the experience host opens the **Experience Hub** or taps the **Attendance** button from **My Circles**.
+2. The host reviews the verified list of joined participants via `get_host_joined_participants`.
+3. The host marks who actually attended (with "Select All" / per-person toggles).
+4. Upon review, the host submits confirmation via atomic `complete_experience_and_mark_attendance` RPC:
+   - Experience status transitions to `completed`.
+   - Selected members have their membership status updated to `attended`.
+   - Waitlisted, cancelled, or unjoined users cannot be marked attended.
+   - Non-hosts and normal members cannot mark attendance or alter membership records.
 
-### For Each Fellow Participant
-The user sees:
-- Participant's display name
-- Profile photo
-- Brief info
+### 2. Participant Eligibility & Attendee Discovery
+1. A participant navigates to **My Circles → Attended** and selects **Choose Connections**.
+2. The system checks server gating status via `fetch_reconnect_submission_status`:
+   - Must be authenticated.
+   - Experience must be marked `completed`.
+   - User must have confirmed `attended` status.
+   - Resubmissions are rejected if the user already submitted (`post_experience_submissions` table).
+3. Eligible peer discovery via `fetch_eligible_reconnect_attendees`:
+   - Returns only fellow attendees who attended the exact same completed experience.
+   - Excludes the caller themselves.
+   - Excludes blocked relationships in either direction and suspended accounts.
+   - Zero sensitive PII exposed (only display name, avatar, bio, and shared experience context).
+   - Other users' private choices are NEVER returned or visible.
 
-And selects one of:
-| Choice | Meaning |
-|---|---|
-| **Friendship** | Connect as friends |
-| **Activity Partner** | Connect for future activities |
-| **Explore Dating** | Explore a romantic connection |
-| **No Connection** | Pass (private, no consequence) |
+### 3. Private Connection Choices Screen (`PostExperienceChoiceScreen`)
+- **Heading:** *"Who would you like to meet again?"*
+- **Supporting Text:** *"Your choices are private. A connection happens only when both people choose each other with compatible intentions."*
+- **Default State:** Defaults to `No Connection` for every attendee (no pre-selected positive choices; no assumed romantic intent).
+- **Available Intentions:**
+  1. **Friendship** (`friendship`) — Connect as friends
+  2. **Activity Partner** (`activity_partner`) — Connect for future activities
+  3. **Explore Dating** (`explore_dating`) — Explore a romantic connection
+  4. **No Connection** (`no_connection`) — Pass privately without notification
+- **Pre-Submission Confirmation Sheet:** Users review their choices before final submission, with a clear privacy reminder.
 
-### What Happens Next
-- Selections are saved privately
-- System processes each **pair** of participants:
-  - **Mutual + Compatible** → Connection created, conversation opened
-  - **One-sided** → Nothing happens
-  - **Both pass** → Nothing happens
-- **No rejection notifications** are ever sent
-- **Selections are never exposed** to other users
-- A friendship selection **never** automatically becomes a romantic match
+### 4. Exact Matching Consent Rule
+Connections are processed server-side via `submit_post_experience_choices`:
+- **Friendship + Friendship** → Mutual Friendship Connection
+- **Activity Partner + Activity Partner** → Mutual Activity Partner Connection
+- **Explore Dating + Explore Dating** → Mutual Dating Connection
+- **Friendship + Explore Dating** → **NO CONNECTION** (strictly no auto-promotion to dating)
+- **Activity Partner + Explore Dating** → **NO CONNECTION**
+- **No Connection + Any Option** → **NO CONNECTION**
+- **One-Sided Selections** → **NO CONNECTION** (silent, zero rejection feedback)
 
-### Technical Safeguards
-- Operation is **atomic** and **transactional** on the server
-- Duplicate submissions prevented
-- Concurrent selections handled safely
-- Blocked users excluded from selections
+### 5. Atomic Connection & Conversation Creation
+When an exact match is confirmed:
+1. Canonical row inserted into `public.connections` (`user_a_id < user_b_id`).
+2. Unique conversation record inserted into `public.conversations`.
+3. Bidirectional membership records added to `public.conversation_members`.
+4. In-app notifications generated for both users in `public.app_notifications`.
+5. Idempotent submission logged in `public.post_experience_submissions`.
+6. Only the caller's own mutual connections are returned to Flutter.
+
+### 6. Screen States & Celebratory Feedback
+- **Loading:** Shimmer / spinner loading participants.
+- **Available Attendees:** Independent participant cards with intention selector chips.
+- **Submitting:** Choice controls disabled with progress indicator.
+- **Submitted Without Match:** *"Your choices have been submitted privately. When another person's choice is mutual and compatible, you'll be notified."*
+- **Mutual Match Unlocked:** Triggers the botanical `MutualMatchCelebrationDialog` displaying the matched peer's photo, name, and connection type.
+- **Already Submitted:** Informative screen preventing resubmission.
+- **Not Eligible:** Clear message that only confirmed attendees may reconnect.
+- **Experience Not Completed:** Informs user to wait until the host confirms completion.
+- **Empty State:** When no other attendees are eligible to reconnect.
+- **Network Error:** Retry banner preserving selected choices.
 
 ---
 
