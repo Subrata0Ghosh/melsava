@@ -495,10 +495,231 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
       return const [];
     } catch (e) {
       debugPrint(
-        '[PostExperienceRepository] fetchCircleParticipants error: $e',
+        '[PostExperienceRepository] fetchCircleParticipants RPC error: $e. Falling back to direct database query.',
       );
-      rethrow;
+      try {
+        return await _fetchCircleParticipantsFallback(client, experienceId);
+      } catch (fallbackError) {
+        debugPrint(
+          '[PostExperienceRepository] fetchCircleParticipants fallback failed: $fallbackError',
+        );
+        rethrow;
+      }
     }
+  }
+
+  /// Resilient fallback when the server-side RPC is not available in the schema cache.
+  Future<List<MeetupCircleParticipant>> _fetchCircleParticipantsFallback(
+    SupabaseClient client,
+    String experienceId,
+  ) async {
+    final participants = <MeetupCircleParticipant>[];
+    final seenUserIds = <String>{};
+
+    // 1. Fetch host from experiences table
+    try {
+      final expRow = await client
+          .from('experiences')
+          .select(
+            'id, host_id, created_at, profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
+          )
+          .eq('id', experienceId)
+          .maybeSingle();
+
+      if (expRow != null) {
+        final hostId = expRow['host_id']?.toString() ?? '';
+        final profileMap = expRow['profiles'];
+        if (profileMap is Map) {
+          final hostProfile = Map<String, dynamic>.from(profileMap);
+          final hostParticipant = MeetupCircleParticipant(
+            userId: hostProfile['id']?.toString() ?? hostId,
+            displayName:
+                (hostProfile['display_name'] as String?)?.trim().isNotEmpty ==
+                        true
+                    ? (hostProfile['display_name'] as String).trim()
+                    : 'Host',
+            avatarUrl: (hostProfile['avatar_url'] as String?)?.trim() ?? '',
+            bio: (hostProfile['bio'] as String?)?.trim() ?? '',
+            role: 'Host',
+            joinedAt: expRow['created_at'] != null
+                ? DateTime.tryParse(expRow['created_at'].toString())
+                : null,
+          );
+          if (hostParticipant.userId.isNotEmpty) {
+            participants.add(hostParticipant);
+            seenUserIds.add(hostParticipant.userId);
+          }
+        } else if (hostId.isNotEmpty) {
+          final hostProfRow = await client
+              .from('profiles')
+              .select('id, display_name, avatar_url, bio')
+              .eq('id', hostId)
+              .maybeSingle();
+          if (hostProfRow != null) {
+            final hp = Map<String, dynamic>.from(hostProfRow);
+            participants.add(
+              MeetupCircleParticipant(
+                userId: hp['id']?.toString() ?? hostId,
+                displayName:
+                    (hp['display_name'] as String?)?.trim().isNotEmpty == true
+                        ? (hp['display_name'] as String).trim()
+                        : 'Host',
+                avatarUrl: (hp['avatar_url'] as String?)?.trim() ?? '',
+                bio: (hp['bio'] as String?)?.trim() ?? '',
+                role: 'Host',
+                joinedAt: expRow['created_at'] != null
+                    ? DateTime.tryParse(expRow['created_at'].toString())
+                    : null,
+              ),
+            );
+            seenUserIds.add(hostId);
+          }
+        }
+      }
+    } catch (e) {
+      debugPrint('[PostExperienceRepository] fallback host query error: $e');
+    }
+
+    // 2. Fetch joined attendees from experience_members table
+    try {
+      final memberRows = await client
+          .from('experience_members')
+          .select(
+            'user_id, status, joined_at, profiles!experience_members_user_id_fkey(id, display_name, avatar_url, bio)',
+          )
+          .eq('experience_id', experienceId)
+          .inFilter('status', ['joined', 'attended'])
+          .order('joined_at', ascending: true);
+
+      for (final row in memberRows) {
+        final uid = row['user_id']?.toString() ?? '';
+        if (uid.isEmpty || seenUserIds.contains(uid)) continue;
+
+        final profMap = row['profiles'];
+        if (profMap is Map) {
+          final p = Map<String, dynamic>.from(profMap);
+          participants.add(
+            MeetupCircleParticipant(
+              userId: uid,
+              displayName:
+                  (p['display_name'] as String?)?.trim().isNotEmpty == true
+                      ? (p['display_name'] as String).trim()
+                      : 'Participant',
+              avatarUrl: (p['avatar_url'] as String?)?.trim() ?? '',
+              bio: (p['bio'] as String?)?.trim() ?? '',
+              role: 'Attendee',
+              joinedAt: row['joined_at'] != null
+                  ? DateTime.tryParse(row['joined_at'].toString())
+                  : null,
+            ),
+          );
+          seenUserIds.add(uid);
+        }
+      }
+    } catch (e) {
+      debugPrint(
+        '[PostExperienceRepository] fallback attendee join query error: $e, trying separate queries',
+      );
+      try {
+        final simpleRows = await client
+            .from('experience_members')
+            .select('user_id, status, joined_at')
+            .eq('experience_id', experienceId)
+            .inFilter('status', ['joined', 'attended']);
+
+        if (simpleRows.isNotEmpty) {
+          final uids = simpleRows
+              .map((r) => r['user_id']?.toString())
+              .whereType<String>()
+              .where((id) => !seenUserIds.contains(id))
+              .toList();
+
+          if (uids.isNotEmpty) {
+            final profs = await client
+                .from('profiles')
+                .select('id, display_name, avatar_url, bio')
+                .inFilter('id', uids);
+
+            final profMap = <String, Map<String, dynamic>>{};
+            for (final p in profs) {
+              if (p['id'] != null) {
+                profMap[p['id'].toString()] = Map<String, dynamic>.from(p);
+              }
+            }
+
+            for (final r in simpleRows) {
+              final uid = r['user_id']?.toString() ?? '';
+              if (uid.isEmpty || seenUserIds.contains(uid)) continue;
+              final p = profMap[uid];
+              participants.add(
+                MeetupCircleParticipant(
+                  userId: uid,
+                  displayName:
+                      (p?['display_name'] as String?)?.trim().isNotEmpty == true
+                          ? (p!['display_name'] as String).trim()
+                          : 'Participant',
+                  avatarUrl: (p?['avatar_url'] as String?)?.trim() ?? '',
+                  bio: (p?['bio'] as String?)?.trim() ?? '',
+                  role: 'Attendee',
+                  joinedAt: r['joined_at'] != null
+                      ? DateTime.tryParse(r['joined_at'].toString())
+                      : null,
+                ),
+              );
+              seenUserIds.add(uid);
+            }
+          }
+        }
+      } catch (innerErr) {
+        debugPrint(
+          '[PostExperienceRepository] fallback separate queries error: $innerErr',
+        );
+      }
+    }
+
+    // 3. Ensure current authenticated user is included if they have joined
+    final currentUid = client.auth.currentUser?.id;
+    if (currentUid != null && !seenUserIds.contains(currentUid)) {
+      try {
+        final myMemberRow = await client
+            .from('experience_members')
+            .select('user_id, status, joined_at')
+            .eq('experience_id', experienceId)
+            .eq('user_id', currentUid)
+            .maybeSingle();
+
+        if (myMemberRow != null &&
+            (myMemberRow['status'] == 'joined' ||
+                myMemberRow['status'] == 'attended')) {
+          final myProf = await client
+              .from('profiles')
+              .select('id, display_name, avatar_url, bio')
+              .eq('id', currentUid)
+              .maybeSingle();
+
+          final p = myProf != null ? Map<String, dynamic>.from(myProf) : null;
+          participants.add(
+            MeetupCircleParticipant(
+              userId: currentUid,
+              displayName:
+                  (p?['display_name'] as String?)?.trim().isNotEmpty == true
+                      ? (p!['display_name'] as String).trim()
+                      : 'You',
+              avatarUrl: (p?['avatar_url'] as String?)?.trim() ?? '',
+              bio: (p?['bio'] as String?)?.trim() ?? '',
+              role: 'Attendee',
+              joinedAt: myMemberRow['joined_at'] != null
+                  ? DateTime.tryParse(myMemberRow['joined_at'].toString())
+                  : null,
+            ),
+          );
+        }
+      } catch (e) {
+        debugPrint('[PostExperienceRepository] current user check error: $e');
+      }
+    }
+
+    return participants;
   }
 }
 

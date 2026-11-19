@@ -435,7 +435,7 @@ class _ExperienceCardState extends State<ExperienceCard>
                                     Color(0xFFFF5252),
                                   ],
                                 )),
-                    color: isFull ? AppColors.mutedText : null,
+                    color: (!exp.hasJoined && isFull) ? AppColors.mutedText : null,
                     borderRadius: BorderRadius.circular(12),
                     boxShadow: [
                       BoxShadow(

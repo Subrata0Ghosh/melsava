@@ -712,5 +712,97 @@ void main() {
         expect(find.text('No upcoming experiences joined yet'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'ExperiencesScreen renders Upcoming cards in My Circles when joined',
+      (tester) async {
+        final fakeRepo = FakeExperiencesRepository(
+          initialExperiences: [samplePublished1, samplePublished2],
+        );
+        fakeRepo.currentUserId = 'user-account-a';
+        await fakeRepo.joinExperience('exp-1');
+        await fakeRepo.joinExperience('exp-2');
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              experiencesRepositoryProvider.overrideWithValue(fakeRepo),
+              currentUserProvider.overrideWith(
+                (ref) => AppUser(
+                  id: 'user-account-a',
+                  email: 'test@melsava.com',
+                  displayName: 'Account A',
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              home: const ExperiencesScreen(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Switch to My Circles tab
+        await tester.tap(find.text('My Circles'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Upcoming (2)'), findsOneWidget);
+        expect(find.text('Weekend Trek to Mukutmanipur'), findsOneWidget);
+        // Scroll down in the My Circles ListView to reveal the second card
+        await tester.drag(find.byType(ListView), const Offset(0, -400));
+        await tester.pumpAndSettle();
+        expect(find.text('Artisan Coffee Tasting & Social'), findsOneWidget);
+      },
+    );
+    testWidgets(
+      'ExperiencesScreen Tab 1 scroll offset does not cause Tab 2 to be blank',
+      (tester) async {
+        final fakeRepo = FakeExperiencesRepository(
+          initialExperiences: [
+            samplePublished1,
+            samplePublished2,
+            sampleOnlineExp,
+            samplePastExp,
+            sampleDraftExp,
+          ],
+        );
+        fakeRepo.currentUserId = 'user-account-a';
+        await fakeRepo.joinExperience('exp-1');
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              experiencesRepositoryProvider.overrideWithValue(fakeRepo),
+              currentUserProvider.overrideWith(
+                (ref) => AppUser(
+                  id: 'user-account-a',
+                  email: 'test@melsava.com',
+                  displayName: 'Account A',
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              theme: ThemeData.light(),
+              home: const ExperiencesScreen(),
+            ),
+          ),
+        );
+
+        await tester.pumpAndSettle();
+
+        // Scroll Tab 1 down
+        await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+        await tester.pumpAndSettle();
+
+        // Switch to My Circles tab
+        await tester.tap(find.text('My Circles'));
+        await tester.pumpAndSettle();
+
+        // Check if the joined card is visible
+        expect(find.text('Weekend Trek to Mukutmanipur'), findsOneWidget);
+      },
+    );
   });
 }

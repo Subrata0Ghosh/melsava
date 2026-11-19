@@ -298,14 +298,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
         controller: _tabController,
         children: [
           // ── Tab 1: Explore All ──
-          RefreshIndicator(
-            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-            onRefresh: () async {
-              ref.invalidate(publishedExperiencesProvider);
-              ref.invalidate(activityCategoriesProvider);
-              await ref.read(publishedExperiencesProvider.future);
-            },
-            child: Column(
+          Column(
               children: [
                 // Search Input
                 Padding(
@@ -482,107 +475,114 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
 
                 // Experiences List or States
                 Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      if (publishedAsync.isLoading && allPublished.isEmpty) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
-
-                      if (publishedAsync.hasError && allPublished.isEmpty) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 40,
-                                  color: Color(0xFFEF4444),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'We couldn\'t load experiences right now.',
-                                  style: AppTypography.titleMedium.copyWith(
-                                    color: primaryTextColor,
-                                    fontWeight: FontWeight.w800,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  'Please check your internet connection and try again.',
-                                  textAlign: TextAlign.center,
-                                  style: AppTypography.bodySmall.copyWith(
-                                    color: mutedTextColor,
-                                  ),
-                                ),
-                                const SizedBox(height: 16),
-                                PrimaryButton(
-                                  label: 'Retry',
-                                  height: 40,
-                                  backgroundColor: isDark
-                                      ? AppColors.brightViolet
-                                      : AppColors.primaryPurple,
-                                  onPressed: () => ref.invalidate(
-                                    publishedExperiencesProvider,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      if (filteredPublished.isEmpty) {
-                        return Center(
-                          child: EmptyStateWidget(
-                            icon: Icons.explore_off_outlined,
-                            title: 'No experiences found yet.',
-                            message:
-                                'Try another category or check back soon for newly published experiences.',
-                            actionLabel: 'Clear Filters',
-                            onActionPressed: _clearFilters,
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(
-                          left: 18,
-                          right: 18,
-                          bottom: 120,
-                        ),
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: ClampingScrollPhysics(),
-                        ),
-                        itemCount: filteredPublished.length,
-                        itemBuilder: (context, index) {
-                          final exp = filteredPublished[index];
-                          return ExperienceCard(
-                            experience: exp,
-                            onTap: () => ExperienceDetailSheet.show(
-                              context,
-                              experience: exp,
-                            ),
-                            onJoinTap: () => _openJoinFlow(exp),
-                          );
-                        },
-                      );
+                  child: RefreshIndicator(
+                    color: isDark
+                        ? AppColors.brightViolet
+                        : AppColors.primaryPurple,
+                    onRefresh: () async {
+                      ref.invalidate(publishedExperiencesProvider);
+                      ref.invalidate(activityCategoriesProvider);
+                      await ref.read(publishedExperiencesProvider.future);
                     },
+                    child: Builder(
+                      builder: (context) {
+                        if (publishedAsync.isLoading && allPublished.isEmpty) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
+
+                        if (publishedAsync.hasError && allPublished.isEmpty) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 40,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'We couldn\'t load experiences right now.',
+                                    style: AppTypography.titleMedium.copyWith(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Please check your internet connection and try again.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: mutedTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  PrimaryButton(
+                                    label: 'Retry',
+                                    height: 40,
+                                    backgroundColor: isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple,
+                                    onPressed: () => ref.invalidate(
+                                      publishedExperiencesProvider,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        if (filteredPublished.isEmpty) {
+                          return Center(
+                            child: EmptyStateWidget(
+                              icon: Icons.explore_off_outlined,
+                              title: 'No experiences found yet.',
+                              message:
+                                  'Try another category or check back soon for newly published experiences.',
+                              actionLabel: 'Clear Filters',
+                              onActionPressed: _clearFilters,
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          key: const PageStorageKey('explore_all_list'),
+                          primary: false,
+                          padding: const EdgeInsets.only(
+                            left: 18,
+                            right: 18,
+                            bottom: 120,
+                          ),
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          itemCount: filteredPublished.length,
+                          itemBuilder: (context, index) {
+                            final exp = filteredPublished[index];
+                            return ExperienceCard(
+                              experience: exp,
+                              onTap: () => ExperienceDetailSheet.show(
+                                context,
+                                experience: exp,
+                              ),
+                              onJoinTap: () => _openJoinFlow(exp),
+                            );
+                          },
+                        );
+                      },
+                    ),
                   ),
                 ),
               ],
             ),
-          ),
 
           // ── Tab 2: My Circles ──
-          RefreshIndicator(
-            color: isDark ? AppColors.brightViolet : AppColors.primaryPurple,
-            onRefresh: () async {
-              ref.invalidate(myExperiencesProvider);
-              await ref.read(myExperiencesProvider.future);
-            },
-            child: Column(
+          Column(
               children: [
                 // Sub-Tabs: Upcoming, Waitlisted, Attended, Past
                 Padding(
@@ -626,182 +626,217 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
 
                 // Sub-Tab Content
                 Expanded(
-                  child: Builder(
-                    builder: (context) {
-                      if (myAsync.isLoading && !myAsync.hasValue) {
-                        return const Center(child: CircularProgressIndicator());
-                      }
+                  child: RefreshIndicator(
+                    color: isDark
+                        ? AppColors.brightViolet
+                        : AppColors.primaryPurple,
+                    onRefresh: () async {
+                      ref.invalidate(myExperiencesProvider);
+                      await ref.read(myExperiencesProvider.future);
+                    },
+                    child: Builder(
+                      builder: (context) {
+                        if (myAsync.isLoading && !myAsync.hasValue) {
+                          return const Center(
+                            child: CircularProgressIndicator(),
+                          );
+                        }
 
-                      if (myAsync.hasError && !myAsync.hasValue) {
-                        return Center(
-                          child: Padding(
-                            padding: const EdgeInsets.all(24),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.error_outline_rounded,
-                                  size: 40,
-                                  color: Color(0xFFEF4444),
-                                ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  'Unable to load your experiences.',
-                                  style: AppTypography.titleMedium.copyWith(
-                                    color: primaryTextColor,
-                                    fontWeight: FontWeight.w800,
+                        if (myAsync.hasError && !myAsync.hasValue) {
+                          return Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 40,
+                                    color: Color(0xFFEF4444),
                                   ),
-                                ),
-                                const SizedBox(height: 16),
-                                PrimaryButton(
-                                  label: 'Retry',
-                                  height: 40,
-                                  backgroundColor: isDark
-                                      ? AppColors.brightViolet
-                                      : AppColors.primaryPurple,
-                                  onPressed: () =>
-                                      ref.invalidate(myExperiencesProvider),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }
-
-                      final currentUser = ref.watch(currentUserProvider);
-                      final activeList = switch (_selectedMyCircleTab) {
-                        0 => myBundle.upcoming,
-                        1 => myBundle.waitlisted,
-                        2 => myBundle.attended,
-                        3 => myBundle.past,
-                        _ => myBundle.upcoming,
-                      };
-
-                      if (activeList.isEmpty) {
-                        final emptyTitle = switch (_selectedMyCircleTab) {
-                          0 => 'No upcoming experiences joined yet',
-                          1 => 'No waitlisted experiences',
-                          2 => 'No attended experiences yet',
-                          3 => 'No past experiences yet',
-                          _ => 'No experiences found',
-                        };
-
-                        final emptyMsg = switch (_selectedMyCircleTab) {
-                          0 =>
-                            'Your next great connection starts with your next experience. Browse activities to join your first micro-group!',
-                          1 =>
-                            'When a popular experience is full, joining its waitlist will queue you up for automatic spots if someone cancels.',
-                          2 =>
-                            'Once you attend a micro-group meetup, you\'ll find it here to make private reconnect choices.',
-                          _ =>
-                            'Experiences that have concluded will be archived here.',
-                        };
-
-                        return Center(
-                          child: EmptyStateWidget(
-                            icon: _selectedMyCircleTab == 1
-                                ? Icons.hourglass_empty_rounded
-                                : Icons.calendar_today_outlined,
-                            title: emptyTitle,
-                            message: emptyMsg,
-                            actionLabel: _selectedMyCircleTab == 0
-                                ? 'Discover Activities'
-                                : null,
-                            onActionPressed: () => _tabController.animateTo(0),
-                          ),
-                        );
-                      }
-
-                      return ListView.builder(
-                        padding: const EdgeInsets.only(
-                          left: 18,
-                          right: 18,
-                          top: 6,
-                          bottom: 120,
-                        ),
-                        physics: const AlwaysScrollableScrollPhysics(
-                          parent: ClampingScrollPhysics(),
-                        ),
-                        itemCount: activeList.length,
-                        itemBuilder: (context, index) {
-                          final exp = activeList[index];
-
-                          Widget? cardFooter;
-                          if (_selectedMyCircleTab == 0) {
-                            cardFooter = Row(
-                              children: [
-                                TextButton(
-                                  onPressed: () => _handleCancelMembership(exp),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFFEF4444),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 6,
-                                    ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: const Text(
-                                    'Cancel RSVP',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w600,
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Unable to load your experiences.',
+                                    style: AppTypography.titleMedium.copyWith(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w800,
                                     ),
                                   ),
-                                ),
-                                const Spacer(),
-                                if (currentUser?.id == exp.hostId) ...[
-                                  ElevatedButton.icon(
-                                    onPressed: () => HostAttendanceSheet.show(
-                                      context,
-                                      experience: exp,
-                                    ),
-                                    icon: const Icon(
-                                      Icons.fact_check_rounded,
-                                      size: 14,
-                                    ),
-                                    label: const Text('Attendance'),
-                                    style: ElevatedButton.styleFrom(
-                                      backgroundColor: const Color(0xFF10B981),
-                                      foregroundColor: Colors.white,
-                                      elevation: 0,
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 8,
-                                      ),
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(12),
-                                      ),
-                                    ),
-                                  ),
-                                  const SizedBox(width: 8),
-                                ],
-                                ElevatedButton.icon(
-                                  onPressed: () => ExperienceHubSheet.show(
-                                    context,
-                                    experience: exp,
-                                  ),
-                                  icon: const Icon(Icons.hub_rounded, size: 15),
-                                  label: const Text('Open Hub'),
-                                  style: ElevatedButton.styleFrom(
+                                  const SizedBox(height: 16),
+                                  PrimaryButton(
+                                    label: 'Retry',
+                                    height: 40,
                                     backgroundColor: isDark
                                         ? AppColors.brightViolet
                                         : AppColors.primaryPurple,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 16,
-                                      vertical: 8.5,
+                                    onPressed: () =>
+                                        ref.invalidate(myExperiencesProvider),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        }
+
+                        final currentUser = ref.watch(currentUserProvider);
+                        final activeList = switch (_selectedMyCircleTab) {
+                          0 => myBundle.upcoming,
+                          1 => myBundle.waitlisted,
+                          2 => myBundle.attended,
+                          3 => myBundle.past,
+                          _ => myBundle.upcoming,
+                        };
+
+                        if (activeList.isEmpty) {
+                          final emptyTitle = switch (_selectedMyCircleTab) {
+                            0 => 'No upcoming experiences joined yet',
+                            1 => 'No waitlisted experiences',
+                            2 => 'No attended experiences yet',
+                            3 => 'No past experiences yet',
+                            _ => 'No experiences found',
+                          };
+
+                          final emptyMsg = switch (_selectedMyCircleTab) {
+                            0 =>
+                              'Your next great connection starts with your next experience. Browse activities to join your first micro-group!',
+                            1 =>
+                              'When a popular experience is full, joining its waitlist will queue you up for automatic spots if someone cancels.',
+                            2 =>
+                              'Once you attend a micro-group meetup, you\'ll find it here to make private reconnect choices.',
+                            _ =>
+                              'Experiences that have concluded will be archived here.',
+                          };
+
+                          return Center(
+                            child: EmptyStateWidget(
+                              icon: _selectedMyCircleTab == 1
+                                  ? Icons.hourglass_empty_rounded
+                                  : Icons.calendar_today_outlined,
+                              title: emptyTitle,
+                              message: emptyMsg,
+                              actionLabel: _selectedMyCircleTab == 0
+                                  ? 'Discover Activities'
+                                  : null,
+                              onActionPressed: () =>
+                                  _tabController.animateTo(0),
+                            ),
+                          );
+                        }
+
+                        return ListView.builder(
+                          key: PageStorageKey(
+                            'my_circles_list_$_selectedMyCircleTab',
+                          ),
+                          primary: false,
+                          padding: const EdgeInsets.only(
+                            left: 18,
+                            right: 18,
+                            top: 6,
+                            bottom: 120,
+                          ),
+                          physics: const AlwaysScrollableScrollPhysics(
+                            parent: BouncingScrollPhysics(),
+                          ),
+                          itemCount: activeList.length,
+                          itemBuilder: (context, index) {
+                            final exp = activeList[index];
+
+                            Widget? cardFooter;
+                            if (_selectedMyCircleTab == 0) {
+                              cardFooter = Row(
+                                children: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        _handleCancelMembership(exp),
+                                    style: TextButton.styleFrom(
+                                      foregroundColor: const Color(0xFFEF4444),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 4,
+                                        vertical: 6,
+                                      ),
+                                      minimumSize: Size.zero,
+                                      tapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
                                     ),
-                                    shape: RoundedRectangleBorder(
-                                      borderRadius: BorderRadius.circular(12),
+                                    child: const Text(
+                                      'Cancel RSVP',
+                                      style: TextStyle(
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w600,
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            );
-                          } else if (_selectedMyCircleTab == 1) {
+                                  const Spacer(),
+                                  Flexible(
+                                    child: Wrap(
+                                      alignment: WrapAlignment.end,
+                                      crossAxisAlignment:
+                                          WrapCrossAlignment.center,
+                                      spacing: 8,
+                                      runSpacing: 4,
+                                      children: [
+                                        if (currentUser?.id == exp.hostId)
+                                          ElevatedButton.icon(
+                                            onPressed: () =>
+                                                HostAttendanceSheet.show(
+                                                  context,
+                                                  experience: exp,
+                                                ),
+                                            icon: const Icon(
+                                              Icons.fact_check_rounded,
+                                              size: 14,
+                                            ),
+                                            label: const Text('Attendance'),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF10B981),
+                                              foregroundColor: Colors.white,
+                                              elevation: 0,
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 12,
+                                                    vertical: 8,
+                                                  ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        ElevatedButton.icon(
+                                          onPressed: () =>
+                                              ExperienceHubSheet.show(
+                                                context,
+                                                experience: exp,
+                                              ),
+                                          icon: const Icon(
+                                            Icons.hub_rounded,
+                                            size: 15,
+                                          ),
+                                          label: const Text('Open Hub'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isDark
+                                                ? AppColors.brightViolet
+                                                : AppColors.primaryPurple,
+                                            foregroundColor: Colors.white,
+                                            elevation: 0,
+                                            padding:
+                                                const EdgeInsets.symmetric(
+                                                  horizontal: 16,
+                                                  vertical: 8.5,
+                                                ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            } else if (_selectedMyCircleTab == 1) {
                             cardFooter = Row(
                               children: [
                                 const Icon(
@@ -910,8 +945,8 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                     },
                   ),
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
