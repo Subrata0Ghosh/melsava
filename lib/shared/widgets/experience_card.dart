@@ -16,6 +16,7 @@ class ExperienceCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback? onJoinTap;
   final bool isCompact;
+  final Widget? footer;
 
   const ExperienceCard({
     super.key,
@@ -23,6 +24,7 @@ class ExperienceCard extends StatefulWidget {
     required this.onTap,
     this.onJoinTap,
     this.isCompact = false,
+    this.footer,
   });
 
   @override
@@ -240,11 +242,26 @@ class _ExperienceCardState extends State<ExperienceCard>
                                   ),
                                 ),
 
-                                // Join Button
-                                if (widget.onJoinTap != null)
+                                // Join Button (hidden when custom footer is supplied)
+                                if (widget.onJoinTap != null &&
+                                    widget.footer == null)
                                   _buildJoinButton(exp, isDark),
                               ],
                             ),
+
+                            // Integrated Card Action Footer
+                            if (widget.footer != null) ...[
+                              const SizedBox(height: 14),
+                              Divider(
+                                height: 1,
+                                thickness: 0.9,
+                                color: isDark
+                                    ? AppColors.darkBorder
+                                    : AppColors.divider.withValues(alpha: 0.7),
+                              ),
+                              const SizedBox(height: 12),
+                              widget.footer!,
+                            ],
                           ],
                         ),
                       ),

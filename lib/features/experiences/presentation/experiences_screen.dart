@@ -720,320 +720,184 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                         itemBuilder: (context, index) {
                           final exp = activeList[index];
 
-                          return Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              ExperienceCard(
-                                experience: exp,
-                                onTap: () => ExperienceDetailSheet.show(
-                                  context,
-                                  experience: exp,
-                                ),
-                                onJoinTap: () => ExperienceDetailSheet.show(
-                                  context,
-                                  experience: exp,
-                                ),
-                              ),
-
-                              // Upcoming Experience Action Card (Hub & Cancel)
-                              if (_selectedMyCircleTab == 0) ...[
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.darkSurface
-                                        : AppColors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? AppColors.darkBorder
-                                          : AppColors.divider,
+                          Widget? cardFooter;
+                          if (_selectedMyCircleTab == 0) {
+                            cardFooter = Row(
+                              children: [
+                                TextButton(
+                                  onPressed: () => _handleCancelMembership(exp),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFFEF4444),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 6,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Cancel RSVP',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.stretch,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 8,
-                                              vertical: 4,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: const Color(
-                                                0xFF10B981,
-                                              ).withValues(alpha: 0.12),
-                                              borderRadius:
-                                                  BorderRadius.circular(8),
-                                            ),
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                const Icon(
-                                                  Icons.check_circle_rounded,
-                                                  size: 14,
-                                                  color: Color(0xFF10B981),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                Text(
-                                                  'Confirmed RSVP',
-                                                  style: AppTypography
-                                                      .titleSmall
-                                                      .copyWith(
-                                                        fontWeight:
-                                                            FontWeight.w700,
-                                                        fontSize: 12,
-                                                        color: const Color(
-                                                          0xFF10B981,
-                                                        ),
-                                                      ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                          const Spacer(),
-                                          TextButton(
-                                            onPressed: () =>
-                                                _handleCancelMembership(exp),
-                                            style: TextButton.styleFrom(
-                                              foregroundColor: const Color(
-                                                0xFFEF4444,
-                                              ),
-                                              padding:
-                                                  const EdgeInsets.symmetric(
-                                                    horizontal: 8,
-                                                  ),
-                                            ),
-                                            child: const Text(
-                                              'Cancel RSVP',
-                                              style: TextStyle(
-                                                fontSize: 12,
-                                                fontWeight: FontWeight.w600,
-                                              ),
-                                            ),
-                                          ),
-                                        ],
+                                ),
+                                const Spacer(),
+                                if (currentUser?.id == exp.hostId) ...[
+                                  ElevatedButton.icon(
+                                    onPressed: () => HostAttendanceSheet.show(
+                                      context,
+                                      experience: exp,
+                                    ),
+                                    icon: const Icon(
+                                      Icons.fact_check_rounded,
+                                      size: 14,
+                                    ),
+                                    label: const Text('Attendance'),
+                                    style: ElevatedButton.styleFrom(
+                                      backgroundColor: const Color(0xFF10B981),
+                                      foregroundColor: Colors.white,
+                                      elevation: 0,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                        vertical: 8,
                                       ),
-                                      const SizedBox(height: 10),
-                                      Row(
-                                        children: [
-                                          Expanded(
-                                            child: ElevatedButton.icon(
-                                              onPressed: () =>
-                                                  ExperienceHubSheet.show(
-                                                    context,
-                                                    experience: exp,
-                                                  ),
-                                              icon: const Icon(
-                                                Icons.hub_rounded,
-                                                size: 15,
-                                              ),
-                                              label: const Text(
-                                                'Open Hub',
-                                                style: TextStyle(
-                                                  fontSize: 12,
-                                                  fontWeight: FontWeight.w700,
-                                                ),
-                                              ),
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: isDark
-                                                    ? AppColors.brightViolet
-                                                    : AppColors.primaryPurple,
-                                                foregroundColor: Colors.white,
-                                                elevation: 0,
-                                                padding:
-                                                    const EdgeInsets.symmetric(
-                                                      vertical: 8,
-                                                      horizontal: 10,
-                                                    ),
-                                                shape: RoundedRectangleBorder(
-                                                  borderRadius:
-                                                      BorderRadius.circular(12),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                          if (currentUser?.id ==
-                                              exp.hostId) ...[
-                                            const SizedBox(width: 8),
-                                            Expanded(
-                                              child: ElevatedButton.icon(
-                                                onPressed: () =>
-                                                    HostAttendanceSheet.show(
-                                                      context,
-                                                      experience: exp,
-                                                    ),
-                                                icon: const Icon(
-                                                  Icons.fact_check_rounded,
-                                                  size: 15,
-                                                ),
-                                                label: const Text(
-                                                  'Attendance',
-                                                  style: TextStyle(
-                                                    fontSize: 12,
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                                style: ElevatedButton.styleFrom(
-                                                  backgroundColor: const Color(
-                                                    0xFF10B981,
-                                                  ),
-                                                  foregroundColor: Colors.white,
-                                                  elevation: 0,
-                                                  padding:
-                                                      const EdgeInsets.symmetric(
-                                                        vertical: 8,
-                                                        horizontal: 10,
-                                                      ),
-                                                  shape: RoundedRectangleBorder(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ],
-                                        ],
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
                                       ),
-                                    ],
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                ],
+                                ElevatedButton.icon(
+                                  onPressed: () => ExperienceHubSheet.show(
+                                    context,
+                                    experience: exp,
+                                  ),
+                                  icon: const Icon(Icons.hub_rounded, size: 15),
+                                  label: const Text('Open Hub'),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple,
+                                    foregroundColor: Colors.white,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8.5,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
                                   ),
                                 ),
                               ],
-
-                              // Waitlisted Experience Action Card
-                              if (_selectedMyCircleTab == 1) ...[
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(12),
-                                  decoration: BoxDecoration(
-                                    color: isDark
-                                        ? AppColors.darkSurface
-                                        : AppColors.white,
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color: isDark
-                                          ? const Color(0xFF4C366B)
-                                          : const Color(0xFFD8B4FE),
+                            );
+                          } else if (_selectedMyCircleTab == 1) {
+                            cardFooter = Row(
+                              children: [
+                                const Icon(
+                                  Icons.hourglass_top_rounded,
+                                  size: 16,
+                                  color: Color(0xFF8B5CF6),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: Text(
+                                    'Waiting for open spot',
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: mutedTextColor,
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
                                     ),
                                   ),
-                                  child: Row(
-                                    children: [
-                                      const Icon(
-                                        Icons.hourglass_top_rounded,
-                                        size: 16,
-                                        color: Color(0xFF8B5CF6),
-                                      ),
-                                      const SizedBox(width: 8),
-                                      Expanded(
-                                        child: Text(
-                                          'Waiting for open spot',
-                                          style: AppTypography.bodySmall
-                                              .copyWith(
-                                                color: mutedTextColor,
-                                                fontWeight: FontWeight.w600,
-                                                fontSize: 12,
-                                              ),
-                                        ),
-                                      ),
-                                      TextButton(
-                                        onPressed: () =>
-                                            _handleCancelMembership(exp),
-                                        style: TextButton.styleFrom(
-                                          foregroundColor: const Color(
-                                            0xFFEF4444,
-                                          ),
-                                        ),
-                                        child: const Text(
-                                          'Leave Waitlist',
-                                          style: TextStyle(
-                                            fontSize: 12,
-                                            fontWeight: FontWeight.w700,
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                TextButton(
+                                  onPressed: () => _handleCancelMembership(exp),
+                                  style: TextButton.styleFrom(
+                                    foregroundColor: const Color(0xFFEF4444),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 4,
+                                      vertical: 6,
+                                    ),
+                                    minimumSize: Size.zero,
+                                    tapTargetSize:
+                                        MaterialTapTargetSize.shrinkWrap,
+                                  ),
+                                  child: const Text(
+                                    'Leave Waitlist',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                    ),
                                   ),
                                 ),
                               ],
-
-                              // Attended / Completed Action Card
-                              if (_selectedMyCircleTab == 2 ||
-                                  exp.isCompleted) ...[
-                                Container(
-                                  margin: const EdgeInsets.only(bottom: 16),
-                                  padding: const EdgeInsets.all(14),
-                                  decoration: BoxDecoration(
-                                    color:
-                                        (isDark
-                                                ? AppColors.brightViolet
-                                                : AppColors.primaryPurple)
-                                            .withValues(alpha: 0.12),
-                                    borderRadius: BorderRadius.circular(16),
-                                    border: Border.all(
-                                      color:
-                                          (isDark
-                                                  ? AppColors.brightViolet
-                                                  : AppColors.primaryPurple)
-                                              .withValues(alpha: 0.35),
+                            );
+                          } else if (_selectedMyCircleTab == 2 ||
+                              exp.isCompleted) {
+                            cardFooter = Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(
+                                      Icons.celebration_rounded,
+                                      size: 17,
+                                      color: AppColors.softCoral,
                                     ),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Experience Complete!',
+                                      style: AppTypography.titleSmall.copyWith(
+                                        color: primaryTextColor,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 3),
+                                Text(
+                                  'Choose privately who you\'d like to reconnect with.',
+                                  style: AppTypography.bodySmall.copyWith(
+                                    color: mutedTextColor,
+                                    fontSize: 11.5,
                                   ),
-                                  child: Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        children: [
-                                          const Icon(
-                                            Icons.celebration_rounded,
-                                            size: 18,
-                                            color: AppColors.softCoral,
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Text(
-                                            'Experience Complete!',
-                                            style: AppTypography.titleSmall
-                                                .copyWith(
-                                                  color: primaryTextColor,
-                                                  fontWeight: FontWeight.w800,
-                                                  fontSize: 13,
-                                                ),
-                                          ),
-                                        ],
-                                      ),
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Choose privately who you\'d like to reconnect with.',
-                                        style: AppTypography.bodySmall.copyWith(
-                                          color: mutedTextColor,
-                                          fontSize: 11.5,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 10),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: PrimaryButton(
-                                          label: 'Make Reconnect Choices →',
-                                          backgroundColor: isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple,
-                                          onPressed: () {
-                                            PostExperienceChoiceScreen.show(
-                                              context,
-                                              exp,
-                                            );
-                                          },
-                                        ),
-                                      ),
-                                    ],
+                                ),
+                                const SizedBox(height: 10),
+                                SizedBox(
+                                  width: double.infinity,
+                                  child: PrimaryButton(
+                                    label: 'Make Reconnect Choices →',
+                                    backgroundColor: isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple,
+                                    onPressed: () {
+                                      PostExperienceChoiceScreen.show(
+                                        context,
+                                        exp,
+                                      );
+                                    },
                                   ),
                                 ),
                               ],
-                            ],
+                            );
+                          }
+
+                          return ExperienceCard(
+                            experience: exp,
+                            onTap: () => ExperienceDetailSheet.show(
+                              context,
+                              experience: exp,
+                            ),
+                            onJoinTap: () => ExperienceDetailSheet.show(
+                              context,
+                              experience: exp,
+                            ),
+                            footer: cardFooter,
                           );
                         },
                       );
