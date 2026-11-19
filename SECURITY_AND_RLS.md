@@ -150,3 +150,55 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 - All client permissions (`PUBLIC`, `anon`, `authenticated`) have been revoked.
 - Function body raises an explicit exception if invoked, preventing any client from bypassing attended verification or intention matching rules.
 
+---
+
+## Phase 3 Hardening & Security Hardening (`012_phase3_hardening.sql`)
+
+### 14. Hardened `complete_experience_and_mark_attendance(p_experience_id UUID, p_attended_user_ids UUID[])`
+- Row lock (`FOR UPDATE`) on parent experience to serialize concurrent completion calls.
+- Scheduled completion verification: rejects execution before scheduled end time (`ends_at` or `starts_at + duration_minutes`). Raises clear exception if duration information is missing.
+- Rejects draft and cancelled experiences.
+- Rejects duplicate attendee user IDs in the submission array.
+- Rejects user IDs that do not belong to confirmed joined memberships.
+- Idempotent safe handling: if experience is already completed, returns the current attended count without modifying finalized records.
+
+### 15. Hardened `submit_post_experience_choices(p_experience_id UUID, p_choices JSONB)`
+- Row lock (`FOR UPDATE`) on parent experience to serialize concurrent reciprocal submissions and prevent missed mutual connections.
+- Validates all submitted participant IDs: rejects self-selection, non-attendees, and duplicate entries.
+- Rejects invalid choice types.
+- Enforces exact matching compatibility (Friendship=Friendship, Activity=Activity, Dating=Dating; mismatched=no connection; no upgrades).
+- Safe retry idempotency: prevents duplicate connections, duplicate conversations, or duplicate notifications.
+
+---
+
+## Server-Side Database Functions & RLS — Phase 4 Messaging & Realtime (`013_phase4_connections_and_realtime.sql`)
+
+### 16. `can_access_conversation(p_conversation_id UUID)`
+- Central security predicate (`SECURITY DEFINER`) for conversation and message RLS.
+- Enforces:
+  1. Caller is an active member in `public.conversation_members`.
+  2. Associated mutual connection exists in `public.connections`.
+  3. Neither participant has blocked the other in `public.blocks`.
+  4. Neither participant has a suspended or banned account in `public.moderation_actions`.
+  5. The caller is an authenticated user (`auth.uid()`).
+
+### 17. Tightened RLS Policies for Messaging
+- **`conversations`**:
+  - `SELECT`: Member with valid access (`can_access_conversation(id)`).
+  - Direct `INSERT` / `UPDATE` / `DELETE`: Denied for client roles; managed strictly via security definer RPCs.
+- **`conversation_members`**:
+  - `SELECT`: Accessible only to members of that conversation where `can_access_conversation(conversation_id)`.
+  - Direct client mutations denied.
+- **`messages`**:
+  - `SELECT`: Accessible only to verified members where `can_access_conversation(conversation_id)`.
+  - Direct `INSERT` / `UPDATE` / `DELETE`: Dropped or restricted to RPCs. `send_conversation_message` sets sender ID from `auth.uid()`, enforces 1,000 char maximum, and rejects empty messages.
+
+### 18. Phase 4 Secure RPCs
+- **`get_user_connections()`**: Authenticated mutual connections only. Enforces mutual consent, blocks exclusion, and sanitizes public profile data.
+- **`get_user_inbox_threads()`**: Authenticated member threads only. Aggregates genuine unread counts (`is_read = FALSE` for peer messages).
+- **`get_conversation_messages(p_conversation_id, p_limit, p_before)`**: Chronological paginated history for authorized conversation members.
+- **`get_or_create_conversation_for_connection(p_connection_id)`**: Safe resolver/creator ensuring exactly 2 members.
+- **`send_conversation_message(p_conversation_id, p_content)`**: Server-validated plain text messaging with character limit (1,000 chars) and server-stamped timestamp.
+- **`mark_conversation_read(p_conversation_id)`**: Atomic read receipt updater for incoming unread messages.
+
+

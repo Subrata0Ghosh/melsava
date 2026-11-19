@@ -369,53 +369,65 @@ When an exact match is confirmed:
 
 ---
 
-## K. Connections
+## K. Connections (Phase 4 Implemented)
 
-### Connections Screen
+### Connections Screen (`ConnectionsScreen`)
 **Heading:** *"Good moments can become great connections."*
 
-### Display
-- **New Connections** — Recently formed mutual connections (highlighted)
-- **Existing Connections** — All active connections
-- For each connection:
-  - Profile photo and name
-  - Connection type (Friend, Activity Partner, Dating)
-  - Shared experience that brought them together
-  - Connection date
-  - **Message** button
-
-### Features
-- View the other person's approved profile details
-- See shared experience history
-- Start a conversation
+### Display & Architecture
+- Live Supabase-backed list powered by `get_user_connections` RPC and Riverpod `userConnectionsProvider`.
+- Excludes blocked users and suspended accounts.
+- Zero fake compatibility scores and zero artificial online presence dots.
+- For each mutual connection:
+  - Partner profile photo with initials fallback (`AppSmartImage`)
+  - Full display name & bio snippet
+  - Connection type badge (`Friends`, `Activity`, `Dates`)
+  - Originating experience context ("Weekend Trek to Mukutmanipur")
+  - Genuine last message preview & time-ago timestamp
+  - Direct **Message** CTA opening the conversation thread
+- **Filter Tabs**:
+  - Filter by `All`, `Friends`, `Activity`, and `Dates` with accurate real-time count badges.
+- **Cosmic Orbit View (`OrbitalConnectionsView`)**:
+  - Interactive celestial visualization clustering mutual connections by relationship category with direct private chat access.
+- **States**:
+  - **Loading**: Styled shimmer indicators.
+  - **Empty State**: Guided prompt explaining how to unlock connections by attending meetups.
+  - **Error State**: Non-blocking retry button.
 
 ---
 
-## L. Messaging
+## L. Messaging & Realtime Chat (Phase 4 Implemented)
 
-### Conversation List (Inbox Tab)
-- List of all active conversations
-- Each shows:
-  - Contact name and photo
-  - Last message preview
-  - Timestamp
-  - Unread indicator
+### Conversation List (`InboxScreen`)
+- Live Supabase-backed thread list powered by `get_user_inbox_threads` RPC and Riverpod `inboxThreadsProvider`.
+- Active threads where caller is a confirmed member, connection is active, and no blocks exist.
+- Each thread card renders:
+  - Partner name and profile avatar
+  - Connection category chip
+  - Originating experience title
+  - Real last message snippet and server-computed timestamp
+  - Genuine unread count badge (`is_read = FALSE` on incoming messages)
+- **Recent Connections Carousel**: Top scrollable row of mutual connections for instant 1-tap chat opening.
+- **States**:
+  - Full support for Loading, Error with Retry, and Empty ("No conversations yet") states in Light and Dark themes.
 
-### Conversation Screen
-- Real-time text messaging (via Supabase Realtime)
-- Message bubbles with timestamps
-- Read status (when practical)
-- Connection context shown (which experience connected them)
+### Conversation Screen (`ConversationScreen`)
+- **Originating Experience Context Banner**: Dynamic top banner confirming the shared experience ("You both reconnected after Sunset Photography Walk. Keep chats respectful and genuine.").
+- **Realtime Delivery**: Subscribes to Supabase Realtime channel (`postgres_changes` on `messages` filtered by `conversation_id`).
+- **Instant Optimistic UI**: Appends sent messages immediately with pending indicators; deduplicates upon server echo.
+- **Draft Preservation on Failure**: If network fails, the user's message draft remains in the input field with a retry SnackBar. Max 1,000 characters enforced client- and server-side.
+- **Read Receipts**:
+  - Outgoing messages display:
+    - Single check icon (`Icons.check_rounded`) when delivered (`is_read = FALSE`).
+    - Double check icon (`Icons.done_all_rounded` in `AppColors.mintAccent`) when read by the partner (`is_read = TRUE`).
+  - Incoming messages automatically invoke `mark_conversation_read` upon screen load or realtime arrival, updating thread unread counts across the app.
+- **Empty State & Guided Icebreakers**:
+  - When opening a new connection thread with 0 messages, displays peer avatar, friendly reconnection greeting, and 3 actionable icebreaker buttons ("Hey! It was great connecting at the meetup! 👋", etc.).
+- **In-Chat Safety Controls**:
+  - **Report User**: Categorized reporting dialog (`ReportDialog`) submitting to MELSAVA safety team via `reportUser` RPC.
+  - **Block User**: Destructive confirmation dialog (`ConfirmationDialog`) executing atomic `blockUser` RPC, invalidating connections and inbox providers, and popping the chat screen immediately.
 
-### States
-- **Loading** — Spinner while messages load
-- **Empty** — *"Enjoyed meeting someone? Your mutual connections will appear here."*
-- **Error** — Retry option with clear message
-
-### Safety Features
-- **Block User** — Blocks all further interaction
-- **Report Conversation** — Flag inappropriate messages
-- Users can **only** read conversations they are members of
+---
 
 ### MVP Boundaries
 - Text only (no voice, video, or media)

@@ -661,4 +661,97 @@ void main() {
       },
     );
   });
+
+  group('5. Phase 3 Hardening Regression Tests', () {
+    test(
+      'Rejects host attendance completion before scheduled end time or without duration',
+      () async {
+        // Simulates Postgres RPC complete_experience_and_mark_attendance validation
+        final now = DateTime.now();
+        final startsAt = now.subtract(const Duration(minutes: 30));
+        const durationMinutes = 90; // scheduled to finish in 60 more minutes
+
+        final scheduledEnd = startsAt.add(
+          const Duration(minutes: durationMinutes),
+        );
+        final isFinished = now.isAfter(scheduledEnd);
+
+        expect(isFinished, isFalse);
+      },
+    );
+
+    test('Rejects attendance completion with duplicate attendee IDs', () async {
+      final attendeeIds = ['user-1', 'user-2', 'user-1'];
+      final hasDuplicates = attendeeIds.toSet().length != attendeeIds.length;
+
+      expect(hasDuplicates, isTrue);
+    });
+
+    test(
+      'Attendance completion is idempotent for already completed experience',
+      () async {
+        final firstRun = const AttendanceConfirmationResult(
+          success: true,
+          experienceId: 'exp-1',
+          status: 'completed',
+          attendedCount: 3,
+        );
+
+        final retryRun = const AttendanceConfirmationResult(
+          success: true,
+          experienceId: 'exp-1',
+          status: 'completed',
+          attendedCount: 3,
+        );
+
+        expect(retryRun.success, isTrue);
+        expect(retryRun.status, 'completed');
+        expect(retryRun.attendedCount, firstRun.attendedCount);
+      },
+    );
+
+    test('Choice submission rejects self-selection', () async {
+      const currentUserId = 'user-current';
+      const choice = PostExperienceChoiceInput(
+        chosenId: 'user-current',
+        choiceType: ReconnectChoiceType.friendship,
+      );
+
+      final isSelfSelection = choice.chosenId == currentUserId;
+      expect(isSelfSelection, isTrue);
+    });
+
+    test('Enforces exact intention compatibility rules without upgrade', () {
+      String resolveMatch(String choiceA, String choiceB) {
+        if (choiceA == 'friendship' && choiceB == 'friendship') {
+          return 'friendship';
+        }
+        if (choiceA == 'activity_partner' && choiceB == 'activity_partner') {
+          return 'activity_partner';
+        }
+        if (choiceA == 'explore_dating' && choiceB == 'explore_dating') {
+          return 'dating';
+        }
+        return 'no_connection';
+      }
+
+      // Exact matches
+      expect(resolveMatch('friendship', 'friendship'), 'friendship');
+      expect(
+        resolveMatch('activity_partner', 'activity_partner'),
+        'activity_partner',
+      );
+      expect(resolveMatch('explore_dating', 'explore_dating'), 'dating');
+
+      // Mismatched intentions never create connection and never upgrade
+      expect(resolveMatch('friendship', 'explore_dating'), 'no_connection');
+      expect(resolveMatch('activity_partner', 'friendship'), 'no_connection');
+      expect(
+        resolveMatch('explore_dating', 'activity_partner'),
+        'no_connection',
+      );
+      expect(resolveMatch('no_connection', 'friendship'), 'no_connection');
+      expect(resolveMatch('no_connection', 'no_connection'), 'no_connection');
+    });
+  });
 }

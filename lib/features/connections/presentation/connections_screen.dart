@@ -7,17 +7,18 @@ import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../data/connections_repository.dart';
 import 'orbital_connections_view.dart';
 
 typedef ConnectionItem = ConnectionModel;
 
-/// Screen 8 (from Image 8): My Connections Screen
+/// Screen 8: My Connections Screen
 ///
 /// Clean, high-fidelity connections directory:
 /// - Filter tabs: All, Friends, Activity, Dates (with live count badges)
-/// - Contact cards with online indicator, intent badge, last message preview
+/// - Contact cards with intent badge, originating experience context, and last message preview
 /// - Direct chat action bubble button
 /// - Optional Cosmic Orbit view toggle
 class ConnectionsScreen extends ConsumerStatefulWidget {
@@ -45,6 +46,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
     final connectionsAsync = ref.watch(userConnectionsProvider);
     final allConnections = connectionsAsync.valueOrNull ?? const [];
     final isLoading = connectionsAsync.isLoading && !connectionsAsync.hasValue;
+    final hasError = connectionsAsync.hasError && !connectionsAsync.hasValue;
 
     final filtered = allConnections.where((c) {
       if (_selectedFilter == 'All') return true;
@@ -85,7 +87,6 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
           ),
         ),
         actions: [
-          // Orbit vs List view toggle
           IconButton(
             tooltip: _isOrbitView ? 'List View' : 'Cosmic Orbit View',
             icon: Icon(
@@ -122,7 +123,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
                     ))
             : Column(
                 children: [
-                  // Filter Tabs (Image 8 Screen 8)
+                  // Filter Tabs
                   Padding(
                     padding: const EdgeInsets.fromLTRB(18, 4, 18, 12),
                     child: SizedBox(
@@ -190,9 +191,52 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
                     ),
                   ),
 
-                  // Connections List
+                  // Connections List or State
                   Expanded(
-                    child: isLoading
+                    child: hasError
+                        ? Center(
+                            child: Padding(
+                              padding: const EdgeInsets.all(24),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  const Icon(
+                                    Icons.error_outline_rounded,
+                                    size: 40,
+                                    color: Color(0xFFEF4444),
+                                  ),
+                                  const SizedBox(height: 12),
+                                  Text(
+                                    'Unable to load connections',
+                                    style: AppTypography.titleMedium.copyWith(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w800,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Please check your connection and try again.',
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.bodySmall.copyWith(
+                                      color: mutedTextColor,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 16),
+                                  PrimaryButton(
+                                    label: 'Retry',
+                                    height: 40,
+                                    backgroundColor: isDark
+                                        ? AppColors.brightViolet
+                                        : AppColors.primaryPurple,
+                                    onPressed: () => ref.refresh(
+                                      userConnectionsProvider.future,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : isLoading
                         ? const Center(
                             child: CircularProgressIndicator(
                               color: AppColors.primaryPurple,
@@ -216,8 +260,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
                                 left: 18,
                                 right: 18,
                                 top: 6,
-                                bottom:
-                                    120, // Guaranteed 120dp clearance for floating navbar
+                                bottom: 120,
                               ),
                               physics: const AlwaysScrollableScrollPhysics(
                                 parent: ClampingScrollPhysics(),
@@ -261,6 +304,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
             'conversationId': conn.conversationId,
             'partnerId': conn.partnerId,
             'partnerAvatar': conn.avatarUrl,
+            'experienceName': conn.experienceName,
           },
         );
       },
@@ -285,68 +329,50 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
         ),
         child: Row(
           children: [
-            // Avatar with Online dot
-            Stack(
-              clipBehavior: Clip.none,
-              children: [
-                Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    border: Border.all(
-                      color: isDark
-                          ? AppColors.brightViolet
-                          : AppColors.primaryPurple,
-                      width: 1.8,
-                    ),
-                  ),
-                  child: ClipOval(
-                    child: AppSmartImage(
-                      imagePath: conn.avatarUrl,
-                      isAvatar: true,
-                      nameHint: conn.name,
-                      fit: BoxFit.cover,
-                    ),
-                  ),
+            // Avatar
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isDark
+                      ? AppColors.brightViolet
+                      : AppColors.primaryPurple,
+                  width: 1.8,
                 ),
-                if (conn.isOnline)
-                  Positioned(
-                    bottom: 2,
-                    right: 2,
-                    child: Container(
-                      width: 12,
-                      height: 12,
-                      decoration: BoxDecoration(
-                        color: AppColors.mintAccent,
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: isDark ? AppColors.darkSurface : Colors.white,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
+              ),
+              child: ClipOval(
+                child: AppSmartImage(
+                  imagePath: conn.avatarUrl,
+                  isAvatar: true,
+                  nameHint: conn.name,
+                  fit: BoxFit.cover,
+                ),
+              ),
             ),
             const SizedBox(width: 14),
 
-            // Name, Intent & snippet
+            // Name, Intent, Originating Experience & snippet
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Text(
-                        conn.name,
-                        style: AppTypography.titleSmall.copyWith(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: primaryTextColor,
+                      Expanded(
+                        child: Text(
+                          conn.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.titleSmall.copyWith(
+                            fontWeight: FontWeight.w800,
+                            fontSize: 15,
+                            color: primaryTextColor,
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
+                      const SizedBox(width: 6),
                       Container(
                         padding: const EdgeInsets.symmetric(
                           horizontal: 8,
@@ -367,9 +393,40 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 5),
+                  if (conn.experienceName.isNotEmpty) ...[
+                    const SizedBox(height: 3),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.local_activity_outlined,
+                          size: 11,
+                          color: isDark
+                              ? AppColors.luminousMauve
+                              : AppColors.mauve,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            conn.experienceName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: AppTypography.bodySmall.copyWith(
+                              fontSize: 11,
+                              color: isDark
+                                  ? AppColors.luminousMauve
+                                  : AppColors.mauve,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 4),
                   Text(
-                    conn.lastMessage,
+                    conn.lastMessage.isNotEmpty
+                        ? conn.lastMessage
+                        : 'Connected after ${conn.experienceName}',
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.bodySmall.copyWith(
@@ -382,7 +439,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
             ),
             const SizedBox(width: 10),
 
-            // Direct Chat Action Button (Image 8 Screen 8)
+            // Direct Chat Action Button
             GestureDetector(
               onTap: () {
                 HapticFeedback.lightImpact();
@@ -393,6 +450,7 @@ class _ConnectionsScreenState extends ConsumerState<ConnectionsScreen> {
                     'conversationId': conn.conversationId,
                     'partnerId': conn.partnerId,
                     'partnerAvatar': conn.avatarUrl,
+                    'experienceName': conn.experienceName,
                   },
                 );
               },

@@ -386,6 +386,7 @@ class _OrbitalConnectionsViewState extends State<OrbitalConnectionsView>
                         'conversationId': _selectedConnection!.conversationId,
                         'partnerId': _selectedConnection!.partnerId,
                         'partnerAvatar': _selectedConnection!.avatarUrl,
+                        'experienceName': _selectedConnection!.experienceName,
                       },
                     );
                   },

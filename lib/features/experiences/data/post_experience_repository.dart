@@ -535,9 +535,9 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
             userId: hostProfile['id']?.toString() ?? hostId,
             displayName:
                 (hostProfile['display_name'] as String?)?.trim().isNotEmpty ==
-                        true
-                    ? (hostProfile['display_name'] as String).trim()
-                    : 'Host',
+                    true
+                ? (hostProfile['display_name'] as String).trim()
+                : 'Host',
             avatarUrl: (hostProfile['avatar_url'] as String?)?.trim() ?? '',
             bio: (hostProfile['bio'] as String?)?.trim() ?? '',
             role: 'Host',
@@ -562,8 +562,8 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
                 userId: hp['id']?.toString() ?? hostId,
                 displayName:
                     (hp['display_name'] as String?)?.trim().isNotEmpty == true
-                        ? (hp['display_name'] as String).trim()
-                        : 'Host',
+                    ? (hp['display_name'] as String).trim()
+                    : 'Host',
                 avatarUrl: (hp['avatar_url'] as String?)?.trim() ?? '',
                 bio: (hp['bio'] as String?)?.trim() ?? '',
                 role: 'Host',
@@ -603,8 +603,8 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
               userId: uid,
               displayName:
                   (p['display_name'] as String?)?.trim().isNotEmpty == true
-                      ? (p['display_name'] as String).trim()
-                      : 'Participant',
+                  ? (p['display_name'] as String).trim()
+                  : 'Participant',
               avatarUrl: (p['avatar_url'] as String?)?.trim() ?? '',
               bio: (p['bio'] as String?)?.trim() ?? '',
               role: 'Attendee',
@@ -656,8 +656,8 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
                   userId: uid,
                   displayName:
                       (p?['display_name'] as String?)?.trim().isNotEmpty == true
-                          ? (p!['display_name'] as String).trim()
-                          : 'Participant',
+                      ? (p!['display_name'] as String).trim()
+                      : 'Participant',
                   avatarUrl: (p?['avatar_url'] as String?)?.trim() ?? '',
                   bio: (p?['bio'] as String?)?.trim() ?? '',
                   role: 'Attendee',
@@ -703,8 +703,8 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
               userId: currentUid,
               displayName:
                   (p?['display_name'] as String?)?.trim().isNotEmpty == true
-                      ? (p!['display_name'] as String).trim()
-                      : 'You',
+                  ? (p!['display_name'] as String).trim()
+                  : 'You',
               avatarUrl: (p?['avatar_url'] as String?)?.trim() ?? '',
               bio: (p?['bio'] as String?)?.trim() ?? '',
               role: 'Attendee',

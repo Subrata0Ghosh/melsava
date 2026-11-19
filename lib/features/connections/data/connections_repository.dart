@@ -20,7 +20,7 @@ class ConnectionModel {
   final DateTime? lastMessageAt;
   final String timeAgo;
   final bool isOnline;
-  final int compatibilityScore;
+  final int? compatibilityScore;
 
   const ConnectionModel({
     required this.id,
@@ -36,8 +36,8 @@ class ConnectionModel {
     required this.lastMessage,
     this.lastMessageAt,
     required this.timeAgo,
-    this.isOnline = true,
-    this.compatibilityScore = 92,
+    this.isOnline = false,
+    this.compatibilityScore,
   });
 
   factory ConnectionModel.fromMap(Map<String, dynamic> map) {
@@ -58,6 +58,11 @@ class ConnectionModel {
       dt = DateTime.tryParse(createdAtStr.toString());
     }
 
+    final rawLastMessage = (map['last_message'] as String?)?.trim();
+    final lastMessage = (rawLastMessage != null && rawLastMessage.isNotEmpty)
+        ? rawLastMessage
+        : '';
+
     return ConnectionModel(
       id: map['connection_id']?.toString() ?? '',
       conversationId: map['conversation_id']?.toString(),
@@ -74,13 +79,11 @@ class ConnectionModel {
           (map['experience_title'] as String?)?.trim().isNotEmpty == true
           ? (map['experience_title'] as String).trim()
           : 'Shared Experience',
-      lastMessage: (map['last_message'] as String?)?.trim().isNotEmpty == true
-          ? (map['last_message'] as String).trim()
-          : 'Connected after ${map['experience_title'] ?? 'event'}',
+      lastMessage: lastMessage,
       lastMessageAt: dt,
       timeAgo: _formatTimeAgo(dt),
-      isOnline: map['is_online'] == true || true,
-      compatibilityScore: (map['compatibility_score'] as num?)?.toInt() ?? 92,
+      isOnline: map['is_online'] == true,
+      compatibilityScore: (map['compatibility_score'] as num?)?.toInt(),
     );
   }
 }
@@ -113,7 +116,7 @@ class InboxThreadModel {
     this.lastMessageAt,
     required this.timestamp,
     this.unreadCount = 0,
-    this.isOnline = true,
+    this.isOnline = false,
   });
 
   bool get isUnread => unreadCount > 0;
@@ -136,6 +139,11 @@ class InboxThreadModel {
       dt = DateTime.tryParse(createdAtStr.toString());
     }
 
+    final rawLastMessage = (map['last_message'] as String?)?.trim();
+    final lastMessage = (rawLastMessage != null && rawLastMessage.isNotEmpty)
+        ? rawLastMessage
+        : '';
+
     return InboxThreadModel(
       conversationId: map['conversation_id']?.toString() ?? '',
       connectionId: map['connection_id']?.toString(),
@@ -150,13 +158,11 @@ class InboxThreadModel {
           (map['experience_title'] as String?)?.trim().isNotEmpty == true
           ? (map['experience_title'] as String).trim()
           : 'Shared Experience',
-      lastMessage: (map['last_message'] as String?)?.trim().isNotEmpty == true
-          ? (map['last_message'] as String).trim()
-          : 'Start the conversation!',
+      lastMessage: lastMessage,
       lastMessageAt: dt,
       timestamp: _formatTimeAgo(dt),
       unreadCount: (map['unread_count'] as num?)?.toInt() ?? 0,
-      isOnline: map['is_online'] == true || true,
+      isOnline: map['is_online'] == true,
     );
   }
 }
@@ -189,14 +195,32 @@ class ChatMessageModel {
     final period = dt.hour >= 12 ? 'PM' : 'AM';
     final minute = dt.minute.toString().padLeft(2, '0');
 
+    final senderId = map['sender_id']?.toString() ?? '';
+    final currentUid = SupabaseService.client?.auth.currentUser?.id;
+    final isMe =
+        map['is_me'] == true ||
+        (currentUid != null && senderId.isNotEmpty && senderId == currentUid);
+
     return ChatMessageModel(
-      id: map['message_id']?.toString() ?? '',
-      senderId: map['sender_id']?.toString() ?? '',
+      id: map['message_id']?.toString() ?? map['id']?.toString() ?? '',
+      senderId: senderId,
       content: map['content']?.toString() ?? '',
       isRead: map['is_read'] == true,
       createdAt: dt,
-      isMe: map['is_me'] == true,
+      isMe: isMe,
       time: '$hour:$minute $period',
+    );
+  }
+
+  ChatMessageModel copyWith({bool? isRead}) {
+    return ChatMessageModel(
+      id: id,
+      senderId: senderId,
+      content: content,
+      isRead: isRead ?? this.isRead,
+      createdAt: createdAt,
+      isMe: isMe,
+      time: time,
     );
   }
 }
@@ -215,8 +239,13 @@ String _formatTimeAgo(DateTime? dt) {
 abstract class ConnectionsRepository {
   Future<List<ConnectionModel>> fetchConnections();
   Future<List<InboxThreadModel>> fetchInboxThreads();
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId);
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    int limit = 50,
+    DateTime? before,
+  });
   Future<bool> sendMessage(String conversationId, String content);
+  Future<int> markConversationRead(String conversationId);
   Future<String?> getOrCreateConversation(String connectionId);
   Future<bool> blockUser(String partnerId);
   Future<bool> reportUser({
@@ -225,6 +254,12 @@ abstract class ConnectionsRepository {
     String? description,
     String? conversationId,
   });
+  RealtimeChannel? subscribeToConversationMessages({
+    required String conversationId,
+    required void Function(ChatMessageModel message) onMessageInserted,
+    required void Function(String messageId, bool isRead) onMessageUpdated,
+  });
+  void unsubscribe(RealtimeChannel channel);
 }
 
 /// Production Supabase-backed implementation of [ConnectionsRepository].
@@ -249,7 +284,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return const [];
     } catch (e) {
       debugPrint('[ConnectionsRepository] fetchConnections RPC error: $e');
-      return const [];
+      rethrow;
     }
   }
 
@@ -268,18 +303,26 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return const [];
     } catch (e) {
       debugPrint('[ConnectionsRepository] fetchInboxThreads RPC error: $e');
-      return const [];
+      rethrow;
     }
   }
 
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async {
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    int limit = 50,
+    DateTime? before,
+  }) async {
     if (!_hasLiveSupabase || conversationId.isEmpty) return const [];
 
     try {
       final rows = await _client!.rpc(
         'get_conversation_messages',
-        params: {'p_conversation_id': conversationId},
+        params: {
+          'p_conversation_id': conversationId,
+          'p_limit': limit,
+          if (before != null) 'p_before': before.toIso8601String(),
+        },
       );
       if (rows is List) {
         return rows
@@ -290,7 +333,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return const [];
     } catch (e) {
       debugPrint('[ConnectionsRepository] fetchMessages RPC error: $e');
-      return const [];
+      rethrow;
     }
   }
 
@@ -311,7 +354,23 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return res != null && res['success'] == true;
     } catch (e) {
       debugPrint('[ConnectionsRepository] sendMessage RPC error: $e');
-      return false;
+      rethrow;
+    }
+  }
+
+  @override
+  Future<int> markConversationRead(String conversationId) async {
+    if (!_hasLiveSupabase || conversationId.isEmpty) return 0;
+
+    try {
+      final res = await _client!.rpc(
+        'mark_conversation_read',
+        params: {'p_conversation_id': conversationId},
+      );
+      return (res as num?)?.toInt() ?? 0;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] markConversationRead RPC error: $e');
+      return 0;
     }
   }
 
@@ -328,7 +387,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       debugPrint(
         '[ConnectionsRepository] getOrCreateConversation RPC error: $e',
       );
-      return null;
+      rethrow;
     }
   }
 
@@ -375,6 +434,66 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
     } catch (e) {
       debugPrint('[ConnectionsRepository] reportUser error: $e');
       return false;
+    }
+  }
+
+  @override
+  RealtimeChannel? subscribeToConversationMessages({
+    required String conversationId,
+    required void Function(ChatMessageModel message) onMessageInserted,
+    required void Function(String messageId, bool isRead) onMessageUpdated,
+  }) {
+    if (!_hasLiveSupabase || conversationId.isEmpty) return null;
+
+    final channel = _client!.channel('chat:$conversationId');
+    channel
+        .onPostgresChanges(
+          event: PostgresChangeEvent.insert,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: conversationId,
+          ),
+          callback: (payload) {
+            final newRecord = payload.newRecord;
+            if (newRecord.isNotEmpty) {
+              final msg = ChatMessageModel.fromMap(newRecord);
+              onMessageInserted(msg);
+            }
+          },
+        )
+        .onPostgresChanges(
+          event: PostgresChangeEvent.update,
+          schema: 'public',
+          table: 'messages',
+          filter: PostgresChangeFilter(
+            type: PostgresChangeFilterType.eq,
+            column: 'conversation_id',
+            value: conversationId,
+          ),
+          callback: (payload) {
+            final newRecord = payload.newRecord;
+            final msgId =
+                newRecord['id']?.toString() ??
+                newRecord['message_id']?.toString() ??
+                '';
+            final isRead = newRecord['is_read'] == true;
+            if (msgId.isNotEmpty) {
+              onMessageUpdated(msgId, isRead);
+            }
+          },
+        )
+        .subscribe();
+
+    return channel;
+  }
+
+  @override
+  void unsubscribe(RealtimeChannel channel) {
+    if (_client != null) {
+      _client!.removeChannel(channel);
     }
   }
 }

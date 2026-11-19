@@ -241,6 +241,9 @@ class AppRouter {
             final String? partnerId = extra is Map
                 ? extra['partnerId']?.toString()
                 : null;
+            final String? experienceName = extra is Map
+                ? extra['experienceName']?.toString()
+                : null;
 
             return ConversationScreen(
               participantName: name,
@@ -248,6 +251,7 @@ class AppRouter {
               connectionId: connectionId,
               partnerAvatar: partnerAvatar,
               partnerId: partnerId,
+              experienceName: experienceName,
             );
           },
         ),

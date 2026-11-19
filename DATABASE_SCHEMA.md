@@ -470,11 +470,26 @@ Push notification tokens.
 | `fetch_eligible_reconnect_attendees(UUID)` | 009 | Privacy-safe: returns only attended peers, excludes blocked/suspended, zero PII |
 | `fetch_reconnect_submission_status(UUID)` | 009 | Gating: returns completion, attendance, host, and submission status |
 | `get_experience_circle_participants(UUID)` | 009 | Privacy-safe: returns active meetup circle participants (host and members) |
-| `submit_post_experience_choices(UUID, JSONB)` | 009 | Atomic: exact matching (Friendship=Friendship, Dating=Dating), creates canonical connections, conversations, and notifications |
+| `submit_post_experience_choices(UUID, JSONB)` | 009, 012 | Hardened atomic: exact matching (Friendship=Friendship, Dating=Dating), row-locked serialization, attendee validation, creates canonical connections, conversations, and notifications |
+| `complete_experience_and_mark_attendance(UUID, UUID[])` | 009, 012 | Hardened atomic: host authentication, scheduled end time validation (`ends_at` or `starts_at + duration`), attendee array validation, idempotent completion |
+| `can_access_conversation(UUID)` | 013 | Security helper: verifies membership, active mutual connection, no blocks, and active accounts |
+| `get_user_connections()` | 013 | Secure RPC: authenticated mutual connections, originating experience title, real last message, no fake badges |
+| `get_user_inbox_threads()` | 013 | Secure RPC: conversation threads with genuine unread counts (`is_read = FALSE`) and shared experience context |
+| `get_conversation_messages(UUID, INT, TIMESTAMPTZ)` | 013 | Secure RPC: chronological messages for authorized members |
+| `get_or_create_conversation_for_connection(UUID)` | 013 | Safe RPC: gets or creates 2-member conversation for mutual connection |
+| `send_conversation_message(UUID, TEXT)` | 013 | Secure RPC: server sender ID (`auth.uid()`), whitespace trim, 1000 char maximum |
+| `mark_conversation_read(UUID)` | 013 | Secure RPC: atomic read receipt marking for incoming peer messages |
 
 ---
 
-## Performance & Concurrency Indexes (Migrations 006 & 009)
+## Realtime Publications (Migration 013)
+
+- `messages` table added to `supabase_realtime` publication.
+- `REPLICA IDENTITY FULL` enabled on `messages` table to ensure complete payload delivery for inserts and updates.
+
+---
+
+## Performance & Concurrency Indexes (Migrations 006, 009 & 013)
 
 | Index Name | Table | Columns | Purpose |
 |------------|-------|---------|---------|
@@ -482,6 +497,9 @@ Push notification tokens.
 | `idx_experience_members_exp_status_fifo` | `experience_members` | `(experience_id, status, joined_at, created_at, id)` | Ensures indexed FIFO waitlist promotion and fast capacity calculation |
 | `idx_pes_exp_user` | `post_experience_submissions` | `(experience_id, user_id)` | Fast lookup and uniqueness verification for submission gating |
 | `idx_notifications_user_created` | `app_notifications` | `(user_id, created_at DESC)` | Efficient in-app notification feed sorting and badge counts |
+| `idx_messages_conv_created` | `messages` | `(conversation_id, created_at DESC)` | Fast message history retrieval and pagination |
+| `idx_messages_unread_incoming` | `messages` | `(conversation_id, sender_id, is_read)` | Efficient inbox unread count aggregation |
+| `idx_connections_canonical` | `connections` | `(user_a_id, user_b_id)` | Fast mutual connection pairing lookup |
 
 ---
 

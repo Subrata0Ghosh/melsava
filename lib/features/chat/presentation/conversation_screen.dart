@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/app_smart_image.dart';
@@ -8,24 +9,13 @@ import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/report_dialog.dart';
 import '../../connections/data/connections_repository.dart';
 
-class ChatMessage {
-  final String text;
-  final bool isMe;
-  final String time;
-
-  const ChatMessage({
-    required this.text,
-    required this.isMe,
-    required this.time,
-  });
-}
-
 class ConversationScreen extends ConsumerStatefulWidget {
   final String participantName;
   final String? conversationId;
   final String? connectionId;
   final String? partnerAvatar;
   final String? partnerId;
+  final String? experienceName;
 
   const ConversationScreen({
     super.key,
@@ -34,6 +24,7 @@ class ConversationScreen extends ConsumerStatefulWidget {
     this.connectionId,
     this.partnerAvatar,
     this.partnerId,
+    this.experienceName,
   });
 
   @override
@@ -43,23 +34,18 @@ class ConversationScreen extends ConsumerStatefulWidget {
 class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
-  final List<ChatMessage> _optimisticMessages = [];
-  String? _activeConversationId;
-  bool _isSending = false;
 
-  // Fallback messages for preview / demo when no live conversation exists
-  final List<ChatMessage> _fallbackMessages = [
-    const ChatMessage(
-      text: 'That was an amazing experience! 😊',
-      isMe: false,
-      time: '7:20 PM',
-    ),
-    const ChatMessage(
-      text: "Yes! Let's definitely do more together.",
-      isMe: true,
-      time: '7:22 PM',
-    ),
-  ];
+  String? _activeConversationId;
+  bool _isResolvingConversation = false;
+  String? _resolveError;
+  bool _isSending = false;
+  bool _hasMarkedReadOnLoad = false;
+
+  // Realtime & Optimistic additions
+  final List<ChatMessageModel> _optimisticMessages = [];
+  final List<ChatMessageModel> _realtimeMessages = [];
+  final Map<String, bool> _readReceiptOverrides = {};
+  RealtimeChannel? _realtimeSubscription;
 
   static const List<String> _icebreakers = [
     'Hey! It was great connecting at the meetup! 👋',
@@ -71,30 +57,121 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   void initState() {
     super.initState();
     _activeConversationId = widget.conversationId;
-    if ((_activeConversationId == null || _activeConversationId!.isEmpty) &&
-        widget.connectionId != null &&
-        widget.connectionId!.isNotEmpty) {
+
+    if (_activeConversationId != null && _activeConversationId!.isNotEmpty) {
+      _setupRealtimeSubscription(_activeConversationId!);
+      _markReadOnce(_activeConversationId!);
+    } else if (widget.connectionId != null && widget.connectionId!.isNotEmpty) {
       _resolveConversation();
     }
   }
 
   Future<void> _resolveConversation() async {
+    setState(() {
+      _isResolvingConversation = true;
+      _resolveError = null;
+    });
+
     try {
       final convId = await ref
           .read(connectionsRepositoryProvider)
           .getOrCreateConversation(widget.connectionId!);
-      if (convId != null && mounted) {
+
+      if (!mounted) return;
+
+      if (convId != null && convId.isNotEmpty) {
         setState(() {
           _activeConversationId = convId;
+          _isResolvingConversation = false;
+        });
+        _setupRealtimeSubscription(convId);
+        _markReadOnce(convId);
+      } else {
+        setState(() {
+          _isResolvingConversation = false;
+          _resolveError = 'Could not establish conversation thread.';
         });
       }
     } catch (e) {
-      debugPrint('[ConversationScreen] Error resolving conversation: $e');
+      if (mounted) {
+        setState(() {
+          _isResolvingConversation = false;
+          _resolveError = 'Failed to load conversation: ${e.toString()}';
+        });
+      }
     }
+  }
+
+  void _setupRealtimeSubscription(String conversationId) {
+    _cleanupRealtime();
+    _realtimeSubscription = ref
+        .read(connectionsRepositoryProvider)
+        .subscribeToConversationMessages(
+          conversationId: conversationId,
+          onMessageInserted: (newMsg) {
+            if (!mounted) return;
+            setState(() {
+              // Deduplicate by message ID
+              final exists =
+                  _realtimeMessages.any((m) => m.id == newMsg.id) ||
+                  _optimisticMessages.any((m) => m.content == newMsg.content);
+
+              if (!exists) {
+                _realtimeMessages.add(newMsg);
+              }
+              // If we sent this optimistically, remove pending version
+              _optimisticMessages.removeWhere(
+                (m) => m.content == newMsg.content && m.isMe,
+              );
+            });
+
+            _scrollToBottom();
+
+            // If message came from the other person, mark read immediately
+            if (!newMsg.isMe) {
+              ref
+                  .read(connectionsRepositoryProvider)
+                  .markConversationRead(conversationId);
+              ref.invalidate(inboxThreadsProvider);
+              ref.invalidate(userConnectionsProvider);
+            }
+          },
+          onMessageUpdated: (messageId, isRead) {
+            if (!mounted) return;
+            setState(() {
+              _readReceiptOverrides[messageId] = isRead;
+            });
+          },
+        );
+  }
+
+  void _cleanupRealtime() {
+    if (_realtimeSubscription != null) {
+      ref
+          .read(connectionsRepositoryProvider)
+          .unsubscribe(_realtimeSubscription!);
+      _realtimeSubscription = null;
+    }
+  }
+
+  void _markReadOnce(String conversationId) {
+    if (_hasMarkedReadOnLoad) return;
+    _hasMarkedReadOnLoad = true;
+    ref
+        .read(connectionsRepositoryProvider)
+        .markConversationRead(conversationId)
+        .then((count) {
+          if (count > 0 && mounted) {
+            ref.invalidate(inboxThreadsProvider);
+            ref.invalidate(userConnectionsProvider);
+          }
+        })
+        .catchError((_) {});
   }
 
   @override
   void dispose() {
+    _cleanupRealtime();
     _messageController.dispose();
     _scrollController.dispose();
     super.dispose();
@@ -113,13 +190,24 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
   }
 
   Future<void> _sendMessage([String? presetText]) async {
-    final text = presetText ?? _messageController.text.trim();
+    final rawText = presetText ?? _messageController.text;
+    final text = rawText.trim();
+
     if (text.isEmpty || _isSending) return;
 
-    HapticFeedback.lightImpact();
-    if (presetText == null) {
-      _messageController.clear();
+    if (text.length > 1000) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Message exceeds maximum limit of 1,000 characters (${text.length} chars).',
+          ),
+          backgroundColor: AppColors.error,
+        ),
+      );
+      return;
     }
+
+    HapticFeedback.lightImpact();
 
     String? targetConvId = _activeConversationId;
     if ((targetConvId == null || targetConvId.isEmpty) &&
@@ -132,52 +220,97 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         setState(() {
           _activeConversationId = targetConvId;
         });
+        _setupRealtimeSubscription(targetConvId);
       }
     }
 
-    final hasLiveConv = targetConvId != null && targetConvId.isNotEmpty;
-
-    if (hasLiveConv) {
-      setState(() {
-        _isSending = true;
-        _optimisticMessages.add(
-          ChatMessage(text: text, isMe: true, time: 'Just now'),
+    if (targetConvId == null || targetConvId.isEmpty) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Cannot send message: no active conversation found.'),
+            backgroundColor: AppColors.error,
+          ),
         );
-      });
-      _scrollToBottom();
+      }
+      return;
+    }
 
-      try {
-        final success = await ref
-            .read(connectionsRepositoryProvider)
-            .sendMessage(targetConvId, text);
+    // Set optimistic message
+    final now = DateTime.now();
+    final hour = now.hour > 12
+        ? now.hour - 12
+        : (now.hour == 0 ? 12 : now.hour);
+    final period = now.hour >= 12 ? 'PM' : 'AM';
+    final minute = now.minute.toString().padLeft(2, '0');
 
-        if (mounted) {
-          if (success) {
-            ref.invalidate(conversationMessagesProvider(targetConvId));
-            ref.invalidate(inboxThreadsProvider);
-            ref.invalidate(userConnectionsProvider);
+    final optimisticMsg = ChatMessageModel(
+      id: 'optimistic_${now.millisecondsSinceEpoch}',
+      senderId: 'me',
+      content: text,
+      isRead: false,
+      createdAt: now,
+      isMe: true,
+      time: '$hour:$minute $period',
+    );
+
+    setState(() {
+      _isSending = true;
+      _optimisticMessages.add(optimisticMsg);
+    });
+    _scrollToBottom();
+
+    try {
+      final success = await ref
+          .read(connectionsRepositoryProvider)
+          .sendMessage(targetConvId, text);
+
+      if (mounted) {
+        if (success) {
+          // Success: clear the controller and refresh data
+          if (presetText == null) {
+            _messageController.clear();
+          }
+          ref.invalidate(conversationMessagesProvider(targetConvId));
+          ref.invalidate(inboxThreadsProvider);
+          ref.invalidate(userConnectionsProvider);
+        } else {
+          // Failure: restore text if preset, preserve controller, remove optimistic
+          if (presetText != null && _messageController.text.isEmpty) {
+            _messageController.text = presetText;
           }
           setState(() {
-            _optimisticMessages.clear();
-            _isSending = false;
+            _optimisticMessages.remove(optimisticMsg);
           });
-          _scrollToBottom();
-        }
-      } catch (e) {
-        if (mounted) {
-          setState(() {
-            _isSending = false;
-          });
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Failed to send message. Please try again.'),
+              backgroundColor: AppColors.error,
+            ),
+          );
         }
       }
-    } else {
-      // Local demo fallback
-      setState(() {
-        _fallbackMessages.add(
-          ChatMessage(text: text, isMe: true, time: 'Just now'),
+    } catch (e) {
+      if (mounted) {
+        if (presetText != null && _messageController.text.isEmpty) {
+          _messageController.text = presetText;
+        }
+        setState(() {
+          _optimisticMessages.remove(optimisticMsg);
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Error sending message: ${e.toString()}'),
+            backgroundColor: AppColors.error,
+          ),
         );
-      });
-      _scrollToBottom();
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isSending = false;
+        });
+      }
     }
   }
 
@@ -186,10 +319,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         widget.partnerAvatar!.trim().isNotEmpty) {
       return widget.partnerAvatar!.trim();
     }
-    if (widget.participantName.toLowerCase().contains('rohan')) {
-      return 'assets/images/rohan_avatar.png';
-    }
-    return 'assets/images/sneha_avatar.png';
+    return '';
   }
 
   @override
@@ -212,18 +342,29 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
         ? ref.watch(conversationMessagesProvider(_activeConversationId!))
         : null;
 
-    final List<ChatMessage> displayMessages;
-    if (hasLiveConv) {
-      final live = messagesAsync?.valueOrNull ?? [];
-      displayMessages = [
-        ...live.map(
-          (m) => ChatMessage(text: m.content, isMe: m.isMe, time: m.time),
-        ),
-        ..._optimisticMessages,
-      ];
-    } else {
-      displayMessages = _fallbackMessages;
+    // Build the consolidated message list
+    final List<ChatMessageModel> baseList = messagesAsync?.valueOrNull ?? [];
+    final Map<String, ChatMessageModel> messageMap = {};
+
+    for (final m in baseList) {
+      final updatedRead = _readReceiptOverrides[m.id];
+      messageMap[m.id] = updatedRead != null
+          ? m.copyWith(isRead: updatedRead)
+          : m;
     }
+
+    for (final m in _realtimeMessages) {
+      final updatedRead = _readReceiptOverrides[m.id];
+      messageMap[m.id] = updatedRead != null
+          ? m.copyWith(isRead: updatedRead)
+          : m;
+    }
+
+    final List<ChatMessageModel> displayMessages = [
+      ...messageMap.values,
+      ..._optimisticMessages,
+    ];
+    displayMessages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
     return Scaffold(
       backgroundColor: isDark ? AppColors.obsidian : AppColors.warmIvory,
@@ -255,26 +396,33 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               ),
             ),
             const SizedBox(width: 10),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  widget.participantName,
-                  style: AppTypography.titleMedium.copyWith(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15.5,
-                    color: primaryTextColor,
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    widget.participantName,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.titleMedium.copyWith(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15.5,
+                      color: primaryTextColor,
+                    ),
                   ),
-                ),
-                Text(
-                  'Connected Peer',
-                  style: AppTypography.bodySmall.copyWith(
-                    color: mutedTextColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w500,
+                  Text(
+                    'Connected Peer',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.bodySmall.copyWith(
+                      color: mutedTextColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ],
         ),
@@ -290,7 +438,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   onSubmit: (reason, desc) async {
                     if (widget.partnerId != null &&
                         widget.partnerId!.isNotEmpty) {
-                      await ref
+                      final success = await ref
                           .read(connectionsRepositoryProvider)
                           .reportUser(
                             reportedUserId: widget.partnerId!,
@@ -298,15 +446,18 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             description: desc,
                             conversationId: _activeConversationId,
                           );
-                    }
-                    if (context.mounted) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Report submitted to MELSAVA Safety Team.',
+
+                      if (context.mounted) {
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          SnackBar(
+                            content: Text(
+                              success
+                                  ? 'Report submitted to MELSAVA Safety Team.'
+                                  : 'Unable to submit report. Please try again.',
+                            ),
                           ),
-                        ),
-                      );
+                        );
+                      }
                     }
                   },
                 );
@@ -325,20 +476,32 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 if (confirmed == true && mounted) {
                   if (widget.partnerId != null &&
                       widget.partnerId!.isNotEmpty) {
-                    await ref
+                    final success = await ref
                         .read(connectionsRepositoryProvider)
                         .blockUser(widget.partnerId!);
-                    ref.invalidate(userConnectionsProvider);
-                    ref.invalidate(inboxThreadsProvider);
+
+                    if (success) {
+                      ref.invalidate(userConnectionsProvider);
+                      ref.invalidate(inboxThreadsProvider);
+                      nav.pop();
+                      messenger.showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            '${widget.participantName} has been blocked.',
+                          ),
+                        ),
+                      );
+                    } else {
+                      messenger.showSnackBar(
+                        const SnackBar(
+                          content: Text(
+                            'Unable to block user. Please try again.',
+                          ),
+                          backgroundColor: AppColors.error,
+                        ),
+                      );
+                    }
                   }
-                  nav.pop();
-                  messenger.showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        '${widget.participantName} has been blocked.',
-                      ),
-                    ),
-                  );
                 }
               }
             },
@@ -353,9 +516,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       color: primaryTextColor,
                     ),
                     const SizedBox(width: 8),
-                    Text(
-                      'Report Conversation',
-                      style: TextStyle(color: primaryTextColor),
+                    Expanded(
+                      child: Text(
+                        'Report Conversation',
+                        style: TextStyle(color: primaryTextColor),
+                      ),
                     ),
                   ],
                 ),
@@ -370,9 +535,11 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       color: AppColors.error,
                     ),
                     SizedBox(width: 8),
-                    Text(
-                      'Block User',
-                      style: TextStyle(color: AppColors.error),
+                    Expanded(
+                      child: Text(
+                        'Block User',
+                        style: TextStyle(color: AppColors.error),
+                      ),
                     ),
                   ],
                 ),
@@ -403,7 +570,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: Text(
-                    'You both mutually reconnected after your meetup. Keep chats respectful and genuine.',
+                    (widget.experienceName != null &&
+                            widget.experienceName!.trim().isNotEmpty)
+                        ? 'You both reconnected after ${widget.experienceName!.trim()}. Keep chats respectful and genuine.'
+                        : 'You both mutually reconnected after your meetup. Keep chats respectful and genuine.',
                     style: AppTypography.bodySmall.copyWith(
                       fontSize: 11.5,
                       color: primaryTextColor,
@@ -416,11 +586,58 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
           // Messages list or empty conversation icebreaker state
           Expanded(
-            child:
-                (hasLiveConv &&
-                    messagesAsync != null &&
-                    messagesAsync.isLoading &&
-                    !messagesAsync.hasValue)
+            child: _isResolvingConversation
+                ? const Center(
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2.5,
+                      valueColor: AlwaysStoppedAnimation<Color>(
+                        AppColors.primaryPurple,
+                      ),
+                    ),
+                  )
+                : _resolveError != null
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            Icons.error_outline_rounded,
+                            size: 48,
+                            color: isDark
+                                ? AppColors.luminousMauve
+                                : AppColors.primaryPurple,
+                          ),
+                          const SizedBox(height: 12),
+                          Text(
+                            _resolveError!,
+                            textAlign: TextAlign.center,
+                            style: AppTypography.bodyMedium.copyWith(
+                              color: mutedTextColor,
+                            ),
+                          ),
+                          const SizedBox(height: 16),
+                          ElevatedButton.icon(
+                            onPressed: _resolveConversation,
+                            icon: const Icon(Icons.refresh_rounded, size: 18),
+                            label: const Text('Retry'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryPurple,
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : (hasLiveConv &&
+                      messagesAsync != null &&
+                      messagesAsync.isLoading &&
+                      !messagesAsync.hasValue)
                 ? const Center(
                     child: CircularProgressIndicator(
                       strokeWidth: 2.5,
@@ -499,7 +716,9 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             (prompt) => Padding(
                               padding: const EdgeInsets.only(bottom: 8),
                               child: InkWell(
-                                onTap: () => _sendMessage(prompt),
+                                onTap: _isSending
+                                    ? null
+                                    : () => _sendMessage(prompt),
                                 borderRadius: BorderRadius.circular(16),
                                 child: Container(
                                   width: double.infinity,
@@ -613,7 +832,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                               : CrossAxisAlignment.start,
                           children: [
                             Text(
-                              msg.text,
+                              msg.content,
                               style: AppTypography.bodyMedium.copyWith(
                                 color: msgTextColor,
                                 fontSize: 14,
@@ -635,10 +854,14 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                                 ),
                                 if (msg.isMe) ...[
                                   const SizedBox(width: 4),
-                                  const Icon(
-                                    Icons.done_all_rounded,
+                                  Icon(
+                                    msg.isRead
+                                        ? Icons.done_all_rounded
+                                        : Icons.check_rounded,
                                     size: 13,
-                                    color: Colors.white,
+                                    color: msg.isRead
+                                        ? AppColors.mintAccent
+                                        : Colors.white.withValues(alpha: 0.75),
                                   ),
                                 ],
                               ],
@@ -695,11 +918,20 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                 children: [
                   Expanded(
                     child: TextField(
+                      key: const Key('chat_message_input'),
                       controller: _messageController,
                       style: AppTypography.bodyMedium.copyWith(
                         color: primaryTextColor,
                         fontSize: 14,
                       ),
+                      maxLength: 1000,
+                      buildCounter:
+                          (
+                            context, {
+                            required currentLength,
+                            required isFocused,
+                            maxLength,
+                          }) => null,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
                         hintStyle: AppTypography.bodyMedium.copyWith(
@@ -724,7 +956,8 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                   ),
                   const SizedBox(width: 10),
                   GestureDetector(
-                    onTap: () => _sendMessage(),
+                    key: const Key('chat_send_button'),
+                    onTap: _isSending ? null : () => _sendMessage(),
                     child: Container(
                       width: 44,
                       height: 44,

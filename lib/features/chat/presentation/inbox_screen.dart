@@ -7,6 +7,7 @@ import '../../../core/constants/app_typography.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/empty_state_widget.dart';
+import '../../../shared/widgets/primary_button.dart';
 import '../../connections/data/connections_repository.dart';
 
 typedef ChatThreadPreview = InboxThreadModel;
@@ -52,6 +53,7 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
     final threadsAsync = ref.watch(inboxThreadsProvider);
     final allThreads = threadsAsync.valueOrNull ?? const [];
     final isLoading = threadsAsync.isLoading && !threadsAsync.hasValue;
+    final hasError = threadsAsync.hasError && !threadsAsync.hasValue;
 
     // Filter threads
     final filteredThreads = allThreads.where((t) {
@@ -263,64 +265,43 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                             '/chat/${thread.participantName}',
                             extra: {
                               'conversationId': thread.conversationId,
+                              'connectionId': thread.connectionId,
                               'partnerId': thread.partnerId,
                               'partnerAvatar': thread.participantAvatar,
+                              'experienceName': thread.experienceName,
                             },
                           ),
                           child: Container(
                             margin: const EdgeInsets.only(right: 14),
                             child: Column(
                               children: [
-                                Stack(
-                                  children: [
-                                    Container(
-                                      width: 56,
-                                      height: 56,
-                                      padding: const EdgeInsets.all(2.5),
-                                      decoration: BoxDecoration(
-                                        shape: BoxShape.circle,
-                                        gradient: ringGradient,
-                                      ),
-                                      child: Container(
-                                        decoration: BoxDecoration(
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: isDark
-                                                ? AppColors.obsidian
-                                                : AppColors.warmIvory,
-                                            width: 2,
-                                          ),
-                                        ),
-                                        child: ClipOval(
-                                          child: AppSmartImage(
-                                            imagePath: thread.participantAvatar,
-                                            isAvatar: true,
-                                            nameHint: thread.participantName,
-                                            fit: BoxFit.cover,
-                                          ),
-                                        ),
+                                Container(
+                                  width: 56,
+                                  height: 56,
+                                  padding: const EdgeInsets.all(2.5),
+                                  decoration: BoxDecoration(
+                                    shape: BoxShape.circle,
+                                    gradient: ringGradient,
+                                  ),
+                                  child: Container(
+                                    decoration: BoxDecoration(
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                        color: isDark
+                                            ? AppColors.obsidian
+                                            : AppColors.warmIvory,
+                                        width: 2,
                                       ),
                                     ),
-                                    if (thread.isOnline)
-                                      Positioned(
-                                        right: 2,
-                                        bottom: 2,
-                                        child: Container(
-                                          width: 13,
-                                          height: 13,
-                                          decoration: BoxDecoration(
-                                            color: AppColors.mintAccent,
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: isDark
-                                                  ? AppColors.obsidian
-                                                  : AppColors.white,
-                                              width: 2,
-                                            ),
-                                          ),
-                                        ),
+                                    child: ClipOval(
+                                      child: AppSmartImage(
+                                        imagePath: thread.participantAvatar,
+                                        isAvatar: true,
+                                        nameHint: thread.participantName,
+                                        fit: BoxFit.cover,
                                       ),
-                                  ],
+                                    ),
+                                  ),
                                 ),
                                 const SizedBox(height: 6),
                                 Text(
@@ -357,7 +338,49 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 
               // ── Conversations List ──
               Expanded(
-                child: isLoading
+                child: hasError
+                    ? Center(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(
+                                Icons.error_outline_rounded,
+                                size: 40,
+                                color: Color(0xFFEF4444),
+                              ),
+                              const SizedBox(height: 12),
+                              Text(
+                                'Unable to load conversations',
+                                style: AppTypography.titleMedium.copyWith(
+                                  color: primaryTextColor,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                'Could not connect to messages right now.',
+                                textAlign: TextAlign.center,
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: mutedTextColor,
+                                ),
+                              ),
+                              const SizedBox(height: 16),
+                              PrimaryButton(
+                                label: 'Retry',
+                                height: 40,
+                                backgroundColor: isDark
+                                    ? AppColors.brightViolet
+                                    : AppColors.primaryPurple,
+                                onPressed: () =>
+                                    ref.refresh(inboxThreadsProvider.future),
+                              ),
+                            ],
+                          ),
+                        ),
+                      )
+                    : isLoading
                     ? const Center(
                         child: CircularProgressIndicator(
                           color: AppColors.primaryPurple,
@@ -403,8 +426,10 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                   '/chat/${thread.participantName}',
                                   extra: {
                                     'conversationId': thread.conversationId,
+                                    'connectionId': thread.connectionId,
                                     'partnerId': thread.partnerId,
                                     'partnerAvatar': thread.participantAvatar,
+                                    'experienceName': thread.experienceName,
                                   },
                                 );
                               },
@@ -438,47 +463,25 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                 ),
                                 child: Row(
                                   children: [
-                                    // Avatar with status ring
-                                    Stack(
-                                      children: [
-                                        Container(
-                                          width: 52,
-                                          height: 52,
-                                          decoration: BoxDecoration(
-                                            shape: BoxShape.circle,
-                                            border: Border.all(
-                                              color: badgeColor,
-                                              width: 1.8,
-                                            ),
-                                          ),
-                                          child: ClipOval(
-                                            child: AppSmartImage(
-                                              imagePath:
-                                                  thread.participantAvatar,
-                                              isAvatar: true,
-                                              nameHint: thread.participantName,
-                                              fit: BoxFit.cover,
-                                            ),
-                                          ),
+                                    // Avatar
+                                    Container(
+                                      width: 52,
+                                      height: 52,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: badgeColor,
+                                          width: 1.8,
                                         ),
-                                        if (thread.isOnline)
-                                          Positioned(
-                                            right: 1,
-                                            bottom: 1,
-                                            child: Container(
-                                              width: 12,
-                                              height: 12,
-                                              decoration: BoxDecoration(
-                                                color: AppColors.mintAccent,
-                                                shape: BoxShape.circle,
-                                                border: Border.all(
-                                                  color: cardBg,
-                                                  width: 2,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                      ],
+                                      ),
+                                      child: ClipOval(
+                                        child: AppSmartImage(
+                                          imagePath: thread.participantAvatar,
+                                          isAvatar: true,
+                                          nameHint: thread.participantName,
+                                          fit: BoxFit.cover,
+                                        ),
+                                      ),
                                     ),
                                     const SizedBox(width: 14),
 
@@ -549,51 +552,69 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                                                 ? AppColors
                                                                       .softCoral
                                                                 : AppColors
-                                                                      .mauve)
+                                                                      .primaryPurple)
                                                           : mutedTextColor,
-                                                      fontSize: 11,
+                                                      fontSize: 11.5,
                                                       fontWeight:
                                                           thread.isUnread
                                                           ? FontWeight.w700
-                                                          : FontWeight.w400,
+                                                          : FontWeight.w500,
                                                     ),
                                               ),
                                             ],
                                           ),
                                           const SizedBox(height: 3),
 
-                                          // Activity context pill
-                                          Row(
-                                            children: [
-                                              Icon(
-                                                Icons.event_outlined,
-                                                size: 11,
-                                                color: mutedTextColor,
+                                          // Meetup context chip
+                                          if (thread.experienceName.isNotEmpty)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                bottom: 3,
                                               ),
-                                              const SizedBox(width: 4),
-                                              Expanded(
-                                                child: Text(
-                                                  thread.experienceName,
-                                                  maxLines: 1,
-                                                  overflow:
-                                                      TextOverflow.ellipsis,
-                                                  style: AppTypography.bodySmall
-                                                      .copyWith(
-                                                        color: mutedTextColor,
-                                                        fontSize: 11,
-                                                      ),
-                                                ),
+                                              child: Row(
+                                                children: [
+                                                  Icon(
+                                                    Icons
+                                                        .local_activity_outlined,
+                                                    size: 11,
+                                                    color: isDark
+                                                        ? AppColors
+                                                              .luminousMauve
+                                                        : AppColors.mauve,
+                                                  ),
+                                                  const SizedBox(width: 4),
+                                                  Expanded(
+                                                    child: Text(
+                                                      thread.experienceName,
+                                                      maxLines: 1,
+                                                      overflow:
+                                                          TextOverflow.ellipsis,
+                                                      style: AppTypography
+                                                          .bodySmall
+                                                          .copyWith(
+                                                            fontSize: 11,
+                                                            color: isDark
+                                                                ? AppColors
+                                                                      .luminousMauve
+                                                                : AppColors
+                                                                      .mauve,
+                                                            fontWeight:
+                                                                FontWeight.w600,
+                                                          ),
+                                                    ),
+                                                  ),
+                                                ],
                                               ),
-                                            ],
-                                          ),
-                                          const SizedBox(height: 5),
+                                            ),
 
-                                          // Message preview & unread dot
+                                          // Last message snippet & Unread badge
                                           Row(
                                             children: [
                                               Expanded(
                                                 child: Text(
-                                                  thread.lastMessage,
+                                                  thread.lastMessage.isNotEmpty
+                                                      ? thread.lastMessage
+                                                      : 'Say hi to your new connection!',
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -610,17 +631,32 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                                       ),
                                                 ),
                                               ),
-                                              if (thread.isUnread) ...[
+                                              if (thread.unreadCount > 0) ...[
                                                 const SizedBox(width: 8),
                                                 Container(
-                                                  width: 9,
-                                                  height: 9,
+                                                  padding:
+                                                      const EdgeInsets.symmetric(
+                                                        horizontal: 7,
+                                                        vertical: 2,
+                                                      ),
                                                   decoration: BoxDecoration(
-                                                    shape: BoxShape.circle,
                                                     color: isDark
-                                                        ? AppColors
-                                                              .luminousMauve
-                                                        : AppColors.mauve,
+                                                        ? AppColors.brightViolet
+                                                        : AppColors
+                                                              .primaryPurple,
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          10,
+                                                        ),
+                                                  ),
+                                                  child: Text(
+                                                    '${thread.unreadCount}',
+                                                    style: const TextStyle(
+                                                      color: Colors.white,
+                                                      fontSize: 10,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                    ),
                                                   ),
                                                 ),
                                               ],
@@ -646,23 +682,24 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
 
   Widget _buildFilterTab(int index, String label, bool isDark) {
     final isSelected = _selectedFilterIndex == index;
-    final activeBg = isDark ? AppColors.luminousMauve : AppColors.deepPlum;
-
     return GestureDetector(
-      onTap: () => setState(() => _selectedFilterIndex = index),
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() => _selectedFilterIndex = index);
+      },
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 7),
         decoration: BoxDecoration(
           color: isSelected
-              ? activeBg
-              : (isDark ? AppColors.darkSurface : AppColors.creamElevated),
-          borderRadius: BorderRadius.circular(16),
+              ? (isDark ? AppColors.brightViolet : AppColors.primaryPurple)
+              : (isDark ? AppColors.darkElevated : Colors.white),
+          borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected
-                ? activeBg
+                ? Colors.transparent
                 : (isDark ? AppColors.darkBorder : AppColors.divider),
-            width: isSelected ? 1.2 : 0.8,
+            width: 0.9,
           ),
         ),
         child: Text(
@@ -670,9 +707,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
           style: AppTypography.labelSmall.copyWith(
             color: isSelected
                 ? Colors.white
-                : (isDark ? AppColors.darkMutedText : AppColors.mutedText),
-            fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
-            fontSize: 11.5,
+                : (isDark ? AppColors.darkTextPrimary : AppColors.deepPlum),
+            fontWeight: isSelected ? FontWeight.w800 : FontWeight.w600,
+            fontSize: 12,
           ),
         ),
       ),
@@ -680,16 +717,12 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
   }
 
   Color _getBadgeColor(String type, bool isDark) {
-    switch (type.toLowerCase()) {
-      case 'exploring dating':
-      case 'dating':
-        return isDark ? AppColors.vividCoral : AppColors.softCoral;
-      case 'friendship':
-        return isDark ? AppColors.luminousMauve : AppColors.mauve;
-      case 'activity partner':
-        return AppColors.mintAccent;
-      default:
-        return isDark ? AppColors.luminousMauve : AppColors.mauve;
+    final lower = type.toLowerCase();
+    if (lower.contains('dating')) {
+      return isDark ? AppColors.softCoral : AppColors.vividCoral;
+    } else if (lower.contains('activity')) {
+      return isDark ? const Color(0xFF38BDF8) : const Color(0xFF0284C7);
     }
+    return isDark ? AppColors.luminousMauve : AppColors.primaryPurple;
   }
 }

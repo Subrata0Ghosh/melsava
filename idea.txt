@@ -1,23 +1,43 @@
-# MELSAVA — PHASE 3 COMPLETION: PRODUCTION-BACKED ATTENDANCE & MUTUAL CONNECTIONS
+# MELSAVA — PHASE 4: REAL CONNECTIONS, SUPABASE REALTIME CHAT & READ RECEIPTS
 
-Work inside my existing MELSAVA Flutter repository.
+Work inside my EXISTING MELSAVA Flutter repository.
 
 Repository:
 https://github.com/Subrata0Ghosh/melsava
 
-## OBJECTIVE
+## MAIN OBJECTIVE
 
-Complete Phase 3 using the existing Flutter screens, Riverpod providers, Supabase repositories and PostgreSQL schema.
+Implement a complete real connection and messaging system using Flutter, Riverpod, Supabase PostgreSQL and Supabase Realtime.
 
-Do not rebuild the application.
+Phase 1: Completed.
+Phase 2: Completed.
+Phase 3: Marked completed in the current roadmap.
+Phase 4: To be implemented now.
 
-Do not repeat Phase 1 or Phase 2.
+Do not rebuild the app.
 
-The existing Phase 3 Flutter implementation is partially wired to Supabase, but the required database RPC functions are missing from the published migrations.
+Do not redesign existing screens.
 
-Your main job is to finish the missing backend, secure the workflow, and verify the complete experience-to-connection journey.
+Do not replace the design system.
 
-## 1. INSPECT BEFORE CODING
+Reuse the existing MELSAVA UI, data models, repositories, providers, migrations and mutual-connection workflow wherever possible.
+
+The final user experience should be:
+
+Experience completed
+→ Mutual compatible selection
+→ Connection created
+→ Connection appears in Connections
+→ Conversation appears in Inbox
+→ User opens conversation
+→ Send and receive actual messages
+→ Realtime delivery
+→ Read receipts
+→ Block/report available within chat.
+
+---
+
+# PART 1 — INSPECT THE CURRENT PROJECT
 
 Read:
 
@@ -26,478 +46,832 @@ Read:
 - APP_WORKFLOW.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
-- lib/features/experiences/data/post_experience_repository.dart
-- lib/features/experiences/presentation/post_experience_choice_screen.dart
-- lib/features/experiences/presentation/host_attendance_sheet.dart
-- lib/features/experiences/presentation/experience_hub_sheet.dart
-- lib/features/experiences/presentation/live_experience_screen.dart
+- lib/features/connections/data/connections_repository.dart
 - lib/features/connections/presentation/connections_screen.dart
 - lib/features/chat/presentation/inbox_screen.dart
+- lib/features/chat/presentation/conversation_screen.dart
+- lib/features/experiences/data/post_experience_repository.dart
 - lib/shared/widgets/mutual_match_celebration_dialog.dart
-- supabase/migrations/001_initial_schema.sql
-- supabase/migrations/002_rls_policies.sql
-- supabase/migrations/003_functions.sql
-- supabase/migrations/006_phase2_experiences_rls_and_rpc.sql
-- Relevant tests.
+- Existing router and shared widgets
+- All existing SQL migrations 001 through 009
+- Existing unit and widget tests
 
-Check the actual deployed migration history if local Supabase configuration is available.
+Understand existing tables:
 
-Do not assume repository RPC calls are already implemented in PostgreSQL.
+- connections
+- conversations
+- conversation_members
+- messages
+- profiles
+- experiences
+- blocks
+- reports
 
-## 2. CREATE MIGRATION 007
+Do not invent database columns.
 
-Create:
+Inspect the actual schema before creating migration files.
 
-supabase/migrations/007_phase3_mutual_connections.sql
+Check the current deployed migration history if Supabase CLI access is available.
 
-Never modify previously applied migrations.
+The current Flutter repository expects these RPC functions:
 
-Use existing tables and constraints wherever possible.
+- get_user_connections
+- get_user_inbox_threads
+- get_conversation_messages
+- send_conversation_message
+- get_or_create_conversation_for_connection
 
-Add only genuinely necessary tables, indexes, constraints and functions.
+Search every existing migration before creating them.
 
-### Add submission tracking
+If any already exists, reuse and verify it instead of creating a duplicate.
 
-The current post_experience_choices table cannot independently indicate that a user has submitted all choices when there are no other attendees.
+---
 
-Create a minimal table if it does not already exist:
+# PART 2 — REQUIRED PHASE 3 HARDENING
 
-post_experience_submissions
+Before Phase 4, fix the following two important issues through a new migration.
 
-Fields:
-- id
-- experience_id
-- user_id
-- submitted_at
+Do not modify previously applied migrations.
 
-Add a unique constraint on experience_id and user_id.
+Use the next available migration number after inspecting the repository.
 
-This records that a participant has completed the private selection process, including when every choice is No Connection.
+### A. Host attendance completion
 
-Ensure retries cannot create duplicate submissions.
+Inspect:
 
-### Add persistent in-app notifications
+complete_experience_and_mark_attendance(UUID, UUID[])
 
-Check whether an existing notification table is suitable.
+Current issue:
+The function checks that the experience has started but does not check that its scheduled duration has finished.
 
-If none exists, create:
+It also does not reject every invalid attendee ID before reporting success.
 
-app_notifications
+Fix:
 
-Fields:
-- id
-- user_id
-- notification_type
-- title
-- message
+1. Require an authenticated host.
+2. Lock the experience row.
+3. Verify the correct host.
+4. Reject cancelled and draft experiences.
+5. Verify current time is at or after the scheduled end time using starts_at and duration_minutes, or the actual end-time field if the schema has one.
+6. Validate the entire attendee array.
+7. Reject duplicate user IDs.
+8. Reject IDs that do not belong to an eligible joined membership.
+9. Do not silently ignore invalid attendance IDs.
+10. Keep the operation atomic.
+11. Do not allow regular members to update their own attendance status.
+
+If duration information is missing, return a clear validation error rather than completing the experience prematurely.
+
+If the experience is already completed, implement a safe, clearly defined idempotent result. Do not let an ordinary retry silently alter finalized attendance records.
+
+### B. Private choice submission concurrency
+
+Inspect:
+
+submit_post_experience_choices(UUID, JSONB)
+
+Current concern:
+Concurrent reciprocal submissions can happen before either transaction sees the other submission.
+
+Use an appropriate transaction-level lock, such as locking the parent experience row with FOR UPDATE before checking and inserting the submission.
+
+This should serialize post-experience submissions for the same experience and prevent missed mutual connections.
+
+Also inspect the current UI payload.
+
+- Validate all submitted participant IDs.
+- Reject self-selection.
+- Reject participants who did not attend the same experience.
+- Reject invalid choice types instead of silently converting them.
+- Reject duplicate participant entries.
+- Ensure submission semantics are consistent with the current UI's No Connection defaults.
+- Permit an empty selection only when there are genuinely no eligible peers.
+- Prevent retry from creating duplicate connections, conversations or notifications.
+
+Preserve the existing exact compatibility rules:
+
+Friendship + Friendship = Friendship.
+
+Activity Partner + Activity Partner = Activity Partner.
+
+Explore Dating + Explore Dating = Dating.
+
+Different intentions = No connection.
+
+Never automatically upgrade the relationship intention.
+
+Add regression tests for these two hardening changes.
+
+---
+
+# PART 3 — CREATE PHASE 4 SQL MIGRATION
+
+Create a new migration:
+
+011_phase4_connections_and_realtime.sql
+
+Use the next available version if the migration history has changed.
+
+Never modify migration 009 or any previously applied migration.
+
+The migration must provide the missing database RPCs.
+
+## A. get_user_connections()
+
+No caller-supplied user ID.
+
+Always use auth.uid().
+
+Return actual connections belonging to the authenticated user.
+
+Required response information where supported:
+
 - connection_id
-- created_at
-- read_at
-
-Add indexes and strict RLS.
-
-Users must only access their own notifications.
-
-Do not implement Firebase push notifications or paid notification services in this phase.
-
-## 3. IMPLEMENT THE REQUIRED DATABASE FUNCTIONS
-
-The existing Flutter repository already expects these exact function names.
-
-Create them with compatible parameters and return formats. If a signature must change, update the Flutter repository and tests together.
-
-### A. get_host_joined_participants
-
-Purpose:
-Return the actual participant roster for the host attendance screen.
+- conversation_id
+- partner_id
+- partner_name
+- partner_avatar
+- partner_bio
+- connection_type
+- experience_id
+- experience_title
+- last_message
+- last_message_at
 
 Requirements:
-- Authenticated host only.
-- Verify auth.uid() matches the experience host_id.
-- Return real member IDs.
-- Return display name, avatar and approved public bio fields.
-- Return membership status and joined timestamp.
-- Do not return email, date of birth, phone number or private information.
-- Never return waitlisted or cancelled users as eligible attendees.
 
-### B. complete_experience_and_mark_attendance
+- Include either side of the canonical user pair.
+- Return only mutual connections.
+- Exclude blocked relationships.
+- Exclude suspended accounts.
+- Join approved public profile fields only.
+- Join the actual originating experience.
+- Join the associated conversation.
+- Include a genuine last message when one exists.
+- Return a useful empty list for an account with no connections.
+- Sort by most recent conversation activity, then connection creation.
 
-Suggested parameters:
+Do not return private profile information.
 
-p_experience_id UUID
-p_attended_user_ids UUID[]
+Do not fabricate compatibility scores.
 
-Purpose:
-Allow the verified experience host to confirm who actually attended.
+Do not fabricate online status.
+
+Do not return fake last messages.
+
+## B. get_user_inbox_threads()
+
+No caller-supplied user ID.
+
+Use auth.uid().
+
+Return actual conversation threads belonging to the caller.
+
+Fields:
+
+- conversation_id
+- connection_id
+- partner_id
+- partner_name
+- partner_avatar
+- connection_type
+- experience_name
+- last_message
+- last_message_at
+- unread_count
 
 Requirements:
-1. Require an authenticated user.
-2. Verify that the caller is the actual host.
-3. Verify that the experience exists.
-4. Verify that the experience is eligible for completion and its end time has passed.
-5. Reject draft and cancelled experiences.
-6. Verify all submitted user IDs belong to eligible joined members.
-7. Never accept arbitrary user IDs.
-8. Mark selected eligible members as attended.
-9. Mark non-attending joined members appropriately, using a clearly defined no-show state if the existing membership model needs it.
-10. Mark the experience completed.
-11. Execute everything atomically.
-12. Prevent duplicate or conflicting attendance submissions.
 
-If adding a no_show membership status, create a safe migration and update all relevant membership grouping logic. Do not misuse cancelled status to represent a person who simply did not attend.
+- Only conversations where the caller is a member.
+- Include only valid mutual connections.
+- Exclude blocked relationships.
+- Exclude suspended accounts.
+- Retrieve the most recent message using an efficient query.
+- Calculate unread messages as messages from the other participant where is_read = FALSE.
+- Return real unread counts.
+- Sort by conversation activity.
+- Handle conversations with no messages.
 
-Only a successful server response should unlock reconnect eligibility.
+Avoid N+1 queries.
 
-### C. fetch_reconnect_submission_status
+Add suitable indexes where required.
+
+## C. get_conversation_messages()
 
 Parameters:
 
-p_experience_id UUID
+p_conversation_id UUID
+
+Optionally support:
+- p_limit
+- p_before
+
+if appropriate for pagination.
 
 Return:
 
-- is_completed
-- is_attended
-- is_host
-- is_submitted
-- submitted_at
-
-Derive the current user using auth.uid().
-
-Do not accept a caller-supplied user ID.
-
-### D. get_experience_circle_participants
-
-Purpose:
-Return actual circle participants for the live experience and hub screens.
+- message_id
+- sender_id
+- content
+- is_read
+- created_at
+- is_me
 
 Requirements:
-- Require authentication.
-- Verify that the caller is an eligible host or circle participant.
-- Return only approved participant profile data.
-- Return real participant IDs, display names, profile images and roles.
-- Do not return fake or invented attendees.
-- Respect account suspension and block restrictions.
-- Do not expose participant private account information.
 
-### E. fetch_eligible_reconnect_attendees
+- Require authentication.
+- Verify the caller belongs to the conversation.
+- Verify the associated mutual connection is valid.
+- Check that neither participant has blocked the other.
+- Exclude unavailable or suspended participants where appropriate.
+- Return chronological messages.
+- Support a sensible initial limit, such as the latest 50 messages.
+- Never permit reading an unrelated conversation.
+- Do not expose private account data.
+
+## D. get_or_create_conversation_for_connection()
 
 Parameters:
 
-p_experience_id UUID
+p_connection_id UUID
 
 Requirements:
-- The experience must be completed.
-- The current authenticated user must be marked attended.
-- Exclude the current user.
-- Include only other confirmed attendees.
-- Exclude suspended accounts.
-- Exclude blocked relationships in either direction.
-- Return approved public profile fields only.
-- Never expose private selection records.
 
-### F. submit_post_experience_choices
+- Authentication required.
+- Verify caller is user_a_id or user_b_id.
+- Verify an actual mutual connection exists.
+- Check block status.
+- Check account status.
+- Return the existing conversation if it exists.
+- Create one only when a valid mutual connection exists but the conversation is missing.
+- Ensure exactly two eligible conversation members.
+- Use ON CONFLICT or equivalent safeguards.
+- Never create conversations without mutual connections.
+
+Prefer reusing the conversation that Phase 3 already created.
+
+## E. send_conversation_message()
 
 Parameters:
 
-p_experience_id UUID
-p_choices JSONB
-
-Example payload:
-
-[
-  {
-    "chosen_id": "PARTICIPANT_UUID",
-    "choice_type": "friendship"
-  },
-  {
-    "chosen_id": "ANOTHER_PARTICIPANT_UUID",
-    "choice_type": "no_connection"
-  }
-]
+p_conversation_id UUID
+p_content TEXT
 
 Requirements:
-- Require authentication.
-- Derive chooser_id from auth.uid().
-- Verify the experience is completed.
-- Verify the current user attended.
-- Validate every selected participant attended the same experience.
-- Prevent self-selection.
-- Reject duplicate participant IDs.
-- Accept only friendship, activity_partner, explore_dating and no_connection.
-- Validate the submitted participant set so selections cannot be used to manipulate unmatched or omitted participants.
-- Record the completed submission.
-- Process compatible mutual selections.
-- Return only the caller's legitimate mutual connections.
-- Make submission idempotent.
-- Prevent multiple conversations.
-- Do not expose one-sided or rejected choices.
 
-The UI currently submits a selection for every eligible attendee, with No Connection as the default. Preserve this behaviour.
+1. Require authentication.
+2. Get sender ID only from auth.uid().
+3. Validate that the caller is a conversation member.
+4. Validate the associated connection.
+5. Check that the other user has not blocked the caller and that the caller has not blocked the other user.
+6. Reject suspended accounts.
+7. Trim leading and trailing whitespace.
+8. Reject empty content.
+9. Reject messages longer than 1,000 characters.
+10. Insert the message using the real sender ID.
+11. Set created_at on the server.
+12. Update conversations.updated_at.
+13. Return the actual inserted message.
+14. Do not allow the caller to specify sender_id.
 
-## 4. FIX THE OLD MUTUAL MATCHING LOGIC
+Do not trust client-provided timestamps or sender identity.
 
-IMPORTANT.
+Keep message content as plain text for the initial MVP. Do not implement HTML rendering.
 
-Review process_mutual_connections() in migration 003.
+## F. mark_conversation_read()
 
-The existing function incorrectly selects the more romantic intention when users choose different intentions.
+Parameters:
 
-Replace or supersede it safely.
+p_conversation_id UUID
 
-New exact compatibility rules:
+Requirements:
 
-| User A | User B | Result |
-|---|---|---|
-| Friendship | Friendship | Friendship connection |
-| Activity Partner | Activity Partner | Activity connection |
-| Explore Dating | Explore Dating | Dating connection |
-| Friendship | Explore Dating | No connection |
-| Friendship | Activity Partner | No connection |
-| Explore Dating | Activity Partner | No connection |
-| No Connection | Any | No connection |
-| One-sided choice | No reciprocal choice | No connection |
+- Only an actual conversation participant.
+- Only update messages sent by the other user.
+- Never allow marking someone else's unrelated conversation as read.
+- Check block and conversation eligibility.
+- Update is_read to TRUE.
+- Return the number of updated messages.
+- Repeated execution should be safe.
 
-A connection is allowed only if:
+Use the existing messages.is_read column if appropriate.
 
-- Both people attended the same completed experience.
-- Both submitted their final selections.
-- A selected B.
-- B selected A.
-- Both selected the exact same connection type.
-- Neither person blocked the other.
-- Both accounts remain eligible.
+Do not add another read-status table unnecessarily.
 
-Do not infer a romantic intention.
+---
 
-Do not use intention priority.
+# PART 4 — MESSAGE AND CONNECTION SECURITY
 
-Do not create connections based on a user's profile preferences alone.
+Inspect and tighten existing RLS policies.
 
-### Connection creation
+Important: the current message policies in the original RLS migration primarily check conversation membership. The implementation must also check that the connection remains valid and has not been blocked.
 
-For an eligible mutual pair:
+Create a carefully secured helper such as:
 
-1. Normalize user IDs so user_a_id < user_b_id.
-2. Check for an existing connection.
-3. Create one connection if none exists.
-4. Create one conversation.
-5. Create two conversation_members records.
-6. Associate the connection with the experience.
-7. Create an in-app notification for each participant.
+can_access_conversation(p_conversation_id UUID)
 
-Use database transactions, unique constraints and conflict-safe inserts.
+It must verify:
 
-Never create duplicate connections or conversations when users retry.
+- Authenticated caller.
+- Valid conversation membership.
+- Valid associated connection.
+- No block in either direction.
+- No suspended participant.
 
-If a pair is already connected from an earlier experience, reuse its existing connection and conversation according to the existing unique-user-pair design.
+Use SECURITY DEFINER only where needed.
 
-Do not silently overwrite the original connection context.
+Use a fixed search_path.
 
-### Protect the matching function
+Revoke execution from unnecessary roles.
 
-Do not leave the old function publicly executable with arbitrary experience IDs.
+Grant only the appropriate authenticated access.
 
-Restrict its permissions.
+Apply it to:
 
-Perform matching only through the validated submission workflow or an appropriately protected internal database helper.
+- Conversation reads.
+- Conversation member reads.
+- Message reads.
+- Any other relevant policies.
 
-Revoke unnecessary EXECUTE permissions from PUBLIC and anon.
+Prevent direct client message INSERT and unrestricted UPDATE if writes are routed through the new RPCs.
 
-## 5. HARDEN POST-EXPERIENCE RLS
+For sending messages, use the validated server function.
 
-Review the existing policies on post_experience_choices.
+For read receipts, use mark_conversation_read().
 
-The current migration 002 includes a direct insert policy for a user's own choices.
+Do not expose conversation membership data to unrelated users.
 
-This must not remain a bypass around the new validated submission RPC.
+### Blocking behaviour
 
-Use migration 007 to:
-- Remove direct client writes where appropriate.
-- Restrict access to private choices.
-- Keep private submission tracking protected.
-- Permit writes through validated server-side functions.
-- Prevent one user from reading another person's private selections.
-- Ensure only appropriate participants can retrieve approved profiles.
-- Prevent clients from directly creating connections or conversations.
+The existing block action must have an immediate backend effect.
 
-Use SECURITY DEFINER functions only where necessary.
+Once User A blocks User B:
 
-Always use a fixed search_path, check auth.uid(), and grant execution only to the appropriate role.
+- Neither can send new messages to the other.
+- The blocked conversation must no longer be returned in normal inbox queries.
+- The conversation should no longer appear in mutual connection discovery.
+- Realtime message access must stop for the blocked pair.
+- Existing connection records must not be re-created automatically.
 
-Never use service_role credentials in Flutter.
+Do not delete historical messages simply because a user blocks someone, unless the actual account deletion policy requires it.
 
-## 6. FIX FLUTTER ERROR HANDLING
+The UI must clearly confirm whether the block succeeded.
 
-File:
+---
 
-lib/features/experiences/data/post_experience_repository.dart
+# PART 5 — ENABLE SUPABASE REALTIME
 
-Currently:
-- fetchSubmissionStatus catches errors and returns an empty/default status.
-- fetchCircleParticipants catches errors and returns an empty list.
+Use the existing messages table.
 
-This can hide genuine backend failures.
+Add public.messages to the supabase_realtime publication in an idempotent migration block.
 
-Change this so actual errors reach Riverpod AsyncError.
+Check whether:
+- The publication already exists.
+- The messages table is already registered.
 
-Do not make a database failure look like:
-- Experience not completed.
-- No participants.
-- No submissions.
-- Successful empty result.
+Do not fail migration because a publication/table entry already exists.
 
-Keep useful logging without exposing private user information.
+Ensure Realtime access follows the appropriate messages SELECT RLS rules.
 
-Invalidate the correct providers after attendance confirmation and submission.
+Use Supabase Realtime subscriptions in Flutter.
 
-## 7. CONNECT THE EXISTING SCREENS
+Subscribe to:
 
-Do not redesign these screens.
+- New messages.
+- Message read-status changes.
 
-Reuse:
-- post_experience_choice_screen.dart
-- host_attendance_sheet.dart
-- experience_hub_sheet.dart
-- live_experience_screen.dart
-- post_experience_repository.dart
-- existing Riverpod providers
-- existing mutual match celebration dialog
+Filter by conversation_id.
 
-### Host attendance
+The client must:
 
-Connect the existing host sheet to the real database function.
+1. Load initial messages from Supabase.
+2. Subscribe to Realtime events.
+3. Merge incoming messages by unique ID.
+4. Avoid duplicate messages.
+5. Keep messages in chronological order.
+6. Unsubscribe when the conversation screen is disposed.
+7. Refresh or re-establish the subscription after reconnection.
+8. Mark received messages as read when the conversation is actively open.
 
-After successful attendance confirmation:
-- Close the sheet.
-- Refresh experience and membership providers.
-- Show the actual number of attendees.
-- Make the experience available in the attended/completed flow.
+Do not subscribe forever after leaving a screen.
 
-### Post-experience choice screen
+Do not use polling as the main chat update mechanism.
 
-Preserve its current design.
+Keep Realtime traffic limited to the active conversation and the user's necessary inbox updates.
 
-Required behaviour:
-- Load real eligibility status.
-- Show a not-completed state when appropriate.
-- Show a not-attended state when appropriate.
-- Show already-submitted state when appropriate.
-- Load actual eligible attendees.
-- Do not preselect positive choices.
-- Confirm choices before submission.
-- Submit all required choices.
-- Show success only after the backend confirms.
-- Display a celebration only when an actual mutual connection was returned.
-- Allow viewing the real connection afterwards.
+No paid chat provider is needed.
 
-### Live Experience and Experience Hub
+---
 
-Remove hard-coded Rhea, Aarav and other example attendees from production participant lists.
+# PART 6 — CONNECT THE EXISTING CONNECTIONS REPOSITORY
 
-Use actual circle participants from Supabase.
+Existing file:
 
-Do not silently substitute a fabricated roster when the backend fails.
+lib/features/connections/data/connections_repository.dart
 
-Show a clear loading, error or empty state instead.
+Keep the current repository architecture.
 
-The same rule applies to all participant counts and host displays.
+Make its current methods functional:
 
-## 8. MUTUAL CONNECTION NOTIFICATIONS
+- fetchConnections()
+- fetchInboxThreads()
+- fetchMessages()
+- sendMessage()
+- getOrCreateConversation()
+- blockUser()
+- reportUser()
 
-Create notifications only when a real connection is created.
+Use the exact new RPC names and parameter names.
 
-Both participants receive an in-app notification.
+Do not add another repository class duplicating this feature.
+
+### Important error-handling correction
+
+Currently several methods catch Supabase errors and return an empty list or false.
+
+This makes a backend failure appear as an empty inbox or a successful-looking empty conversation.
+
+Change this.
+
+- Log useful errors without logging private message content.
+- Rethrow data-fetch failures so Riverpod receives AsyncError.
+- Return typed results or clear failure information for mutation operations.
+- Do not silently return success.
+- Do not convert network failures to empty data.
+
+Update ConnectionModel and InboxThreadModel.
+
+Remove fake fields or defaults:
+
+- isOnline must not automatically be TRUE.
+- compatibilityScore must not default to 92.
+- Do not show online dots unless actual presence is implemented.
+- Do not display invented compatibility statistics.
+
+Presence is not required for Phase 4.
+
+Do not add a paid presence service.
+
+---
+
+# PART 7 — REAL CONNECTIONS SCREEN
+
+Existing file:
+
+lib/features/connections/presentation/connections_screen.dart
+
+Preserve the existing MELSAVA visual design.
+
+Requirements:
+
+- Load from userConnectionsProvider.
+- Display actual connections.
+- Group or section connections by originating shared experience.
+- Preserve useful connection-type filters.
+- Show correct mutual connection type.
+- Display actual profile photographs or the existing initials placeholder.
+- Show originating experience context.
+- Display actual last-message preview when available.
+- Sort using real activity timestamps.
+- Navigate to the associated conversation ID.
+- Pull to refresh.
+
+Remove:
+- Fake online indicators.
+- Fabricated compatibility percentage.
+- Sample people.
+- Hard-coded last messages.
+
+Keep existing Light and Dark modes.
+
+Add proper loading, error, retry and empty states.
+
+Suggested empty text:
+
+"No connections yet."
+
+"Your next meaningful connection could begin with your next experience."
+
+Do not display invented member profiles.
+
+---
+
+# PART 8 — REAL INBOX
+
+Existing file:
+
+lib/features/chat/presentation/inbox_screen.dart
+
+Connect it to get_user_inbox_threads().
+
+Features:
+
+- All conversations.
+- Unread.
+- Shared experience conversations.
+- Search by actual partner name or last message.
+- Last message preview.
+- Actual timestamp.
+- Actual unread count.
+- Actual shared experience context.
+- Tap to open a real conversation.
+
+Remove false online indicators and sample member data.
+
+When a new message arrives:
+- Update the thread preview.
+- Update unread count.
+- Move the thread to the top.
+- Refresh the associated connection data where needed.
+
+Provide pull-to-refresh.
+
+Display proper loading, empty, error and retry states.
+
+Do not show an empty state when the RPC failed.
+
+---
+
+# PART 9 — REAL CONVERSATION SCREEN
+
+Existing file:
+
+lib/features/chat/presentation/conversation_screen.dart
+
+Keep the existing visual design.
+
+Remove:
+
+- _fallbackMessages.
+- Rohan/Sneha hard-coded avatar selection.
+- Local fake-send behaviour.
+- Any demo-only conversation fallback in release builds.
+
+A conversation must require a valid conversation ID or a valid connection ID from which the secure RPC can resolve one.
+
+If a valid conversation cannot be resolved, show an honest error state. Do not create fake messages.
+
+### Message display
+
+Use real Supabase messages.
+
+Message bubbles must show:
+
+- Actual text.
+- Actual sender.
+- Actual timestamp.
+- Sent/received style.
+- Real read receipt where applicable.
+
+### Sending
+
+- Trim message input.
+- Reject whitespace-only messages.
+- Maximum 1,000 characters.
+- Disable send during the request.
+- Show a sending state.
+- Save through send_conversation_message().
+- Clear the input only after confirmed success.
+- Preserve the message draft on failure.
+- Show retry.
+- Do not leave failed optimistic messages appearing as sent.
+
+### Realtime
+
+Use a properly disposed Supabase channel.
+
+When a new message arrives:
+
+- Add it once.
+- Sort chronologically.
+- Scroll to the bottom when appropriate.
+- Mark incoming messages read when the screen is visible.
+
+When the screen closes, unsubscribe.
+
+### Read receipts
+
+Reuse is_read.
+
+For messages sent by the current user:
+
+- One check: successfully sent.
+- Read indicator: the other participant has read the message.
+
+Do not pretend messages have been read.
+
+### Connection context
+
+Replace generic fake labels with real shared experience context.
 
 Example:
 
-Title:
-"You have a new connection!"
+"You both reconnected after Coffee & Conversation."
 
-Message:
-"You and another member both chose to reconnect after Coffee & Conversation."
+If experience details are unavailable, omit the banner rather than invent information.
 
-Do not include rejected selections.
+### Chat safety controls
 
-Do not disclose who chose whom first.
+Keep the existing report and block controls.
 
-The user can open the connection from the notification.
+Make both real and error-aware.
 
-No paid notification infrastructure in this phase.
+If a report fails, do not display "Report submitted".
 
-## 9. TESTING
+If a block fails, do not display "User blocked".
 
-Create a Phase 3 test suite.
+On successful block:
+- Remove the relevant connection from current providers.
+- Remove the conversation from the inbox.
+- Prevent further communication.
+- Return the user to a safe screen.
 
-Test:
+---
 
-### Host attendance
-1. Authorized host can load the roster.
-2. Non-host cannot load host-only attendance information.
-3. Non-host cannot complete an experience.
-4. Experience cannot be completed before its end time.
-5. Cancelled experience cannot be completed.
-6. Waitlisted participants cannot be marked attended.
-7. Arbitrary IDs are rejected.
-8. Duplicate attendance submission is safe.
+# PART 10 — REALTIME RIVERPOD ARCHITECTURE
 
-### Eligibility
-9. Only confirmed attendees can submit selections.
-10. Non-attendees cannot retrieve eligible participants.
-11. Users from another experience cannot be selected.
-12. Blocked participants are excluded.
-13. Suspended participants are excluded.
-14. Submission status accurately reports completed, attended and submitted states.
+The current conversationMessagesProvider is a FutureProvider.
 
-### Mutual choices
-15. Friendship + Friendship creates a friendship connection.
-16. Activity Partner + Activity Partner creates an activity connection.
-17. Explore Dating + Explore Dating creates a dating connection.
-18. Friendship + Explore Dating produces no connection.
-19. Activity Partner + Friendship produces no connection.
-20. One-sided choice produces no connection.
-21. No Connection produces no connection.
-22. Empty selection list still records a completed submission when the user has no eligible peers.
-23. Duplicate submission is prevented.
-24. Network retry is idempotent.
-25. Existing connections are not duplicated.
+Replace or extend it with a properly managed realtime architecture.
 
-### Security
-26. Users cannot read another person's selections.
-27. Users cannot submit choices for another user.
-28. Users cannot directly create a connection.
-29. Users cannot create conversations without a real connection.
-30. Old unsafe matching RPC permissions are restricted.
+Suggested design:
 
-### Flutter
-31. Host sheet loading and errors.
-32. Actual participant list.
-33. Post-experience selection screen states.
-34. Submission loading and failure.
-35. Mutual-match celebration only after confirmed server result.
-36. Light and Dark modes.
+- FutureProvider or repository method for initial message loading.
+- StreamProvider family for active conversation updates.
+- A repository subscription method.
+- Proper channel cleanup on provider disposal.
+- Inbox thread refresh/invalidation when messages change.
+- Read-receipt updates reflected in the conversation.
 
-Use database tests and different authenticated test accounts.
+Do not create duplicate channels on rebuild.
 
-Do not count a mock repository test as proof of Supabase security.
+Do not open multiple subscriptions for the same conversation without a reason.
 
-## 10. UPDATE DOCUMENTATION
+Use typed message models.
+
+Keep SQL calls out of widget build methods.
+
+Keep state management maintainable for a solo Flutter developer.
+
+---
+
+# PART 11 — TESTING
+
+Create Phase 4 tests.
+
+### Database/RPC tests
+
+1. User A can load their real connections.
+2. User B can load their own connections.
+3. User A cannot access a conversation they do not belong to.
+4. Unrelated User C cannot read messages.
+5. Valid connection can resolve a conversation.
+6. Invalid connection cannot create a conversation.
+7. Empty message is rejected.
+8. Whitespace-only message is rejected.
+9. Message over 1,000 characters is rejected.
+10. Valid message is saved with auth.uid() as sender.
+11. Caller cannot forge sender_id.
+12. Suspended users cannot send.
+13. Blocked participants cannot send.
+14. Blocked participants cannot read through the normal conversation RPC.
+15. Read RPC updates only incoming messages.
+16. Repeating mark-read is safe.
+17. Conversation list includes the correct last message.
+18. Unread counts are accurate.
+19. Duplicate conversations are prevented.
+20. RPC results do not expose private profile data.
+
+### Realtime tests
+
+21. User A sends a message.
+22. User B receives the inserted message without refreshing manually.
+23. User B opens the conversation.
+24. User A receives the correct read-state update.
+25. Message events do not create duplicate Flutter bubbles.
+26. Unsubscribing stops further event handling.
+27. Reconnection refreshes the message list.
+
+### Flutter tests
+
+- Connection loading.
+- Connections empty state.
+- Connection error and retry.
+- Inbox loading.
+- Inbox unread filter.
+- Search.
+- Message loading.
+- Empty conversation.
+- Message send success.
+- Message send failure.
+- Retry preserving draft.
+- Realtime incoming message.
+- Read receipt update.
+- Block confirmation and success.
+- Report confirmation and actual failure handling.
+- Light and Dark themes.
+
+### Two-account manual verification
+
+Use two separate authenticated Supabase accounts that have a real Phase 3 connection.
+
+1. User A opens Connections.
+2. User B opens Connections.
+3. Both see the same valid mutual connection.
+4. User A opens Inbox.
+5. User B opens Inbox.
+6. User A sends a message.
+7. User B receives it without refreshing.
+8. User B replies.
+9. User A receives the reply.
+10. User B reads User A's earlier message.
+11. User A sees the updated read receipt.
+12. User A restarts the app.
+13. Previous conversations and messages are still present.
+14. User A blocks User B.
+15. Both accounts are prevented from continuing communication through the blocked conversation.
+
+Do not use simulated matches to claim this works.
+
+Use actual Supabase accounts and database rows.
+
+---
+
+# PART 12 — UPDATE DOCUMENTATION
 
 Update:
 
-- README.md
 - DEVELOPMENT_ROADMAP.md
 - APP_WORKFLOW.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
+- README.md
 
-Record migration 007 and all RPC names.
+Document:
 
-Update the Phase 3 status only when implementation and required tests are complete.
+- New SQL migration files.
+- All new RPC functions.
+- Realtime publication configuration.
+- RLS policy changes.
+- Message sending and read status.
+- Block enforcement.
+- Flutter realtime lifecycle.
+- Actual tests and results.
 
-Keep Phase 4 marked planned.
+Phase 4 should remain incomplete until the necessary backend and multi-account verification work has passed.
 
-## 11. FINAL VERIFICATION
+---
+
+# PART 13 — RESOURCE AND COST RULES
+
+Keep MELSAVA low-cost.
+
+Use existing:
+
+- Flutter.
+- Riverpod.
+- Supabase PostgreSQL.
+- Supabase Realtime.
+- Existing database tables.
+- Existing chat UI.
+
+Do not add:
+
+- A dedicated VPS.
+- Firebase database.
+- Paid chat service.
+- Paid WebSocket provider.
+- AI chat API.
+- Video calls.
+- Paid presence tracking.
+- New paid Flutter template.
+- New UI component framework.
+
+Use Supabase Realtime within the existing project's quotas.
+
+---
+
+# PART 14 — FINAL ACCEPTANCE CRITERIA
+
+Phase 4 is complete only when:
+
+1. Connections are loaded from real Supabase records.
+2. Inbox is loaded from real conversations.
+3. All expected RPC functions exist in migrations.
+4. Messages are loaded from PostgreSQL.
+5. Message sending works across two accounts.
+6. Realtime delivery works without manual refresh.
+7. Read receipts work.
+8. Unread counts update correctly.
+9. Connection context is real.
+10. No fabricated people, messages, online indicators or scores remain.
+11. Blocked pairs cannot continue normal communication.
+12. Reporting displays success only after confirmed database insertion.
+13. Message RLS and RPC security are tested.
+14. The existing MELSAVA UI remains intact.
+15. Loading, empty and error states work.
+16. No new critical analyzer issues.
+17. All implemented tests pass.
 
 Run:
 
@@ -505,48 +879,40 @@ dart format .
 flutter analyze
 flutter test
 
-Run database migrations in a disposable local Supabase environment if available.
+Execute database tests and, where available, Supabase local tests.
 
-Check for:
-- SQL errors.
-- Missing RPC functions.
-- RLS failures.
-- Duplicate connections.
-- Duplicate conversations.
-- Incorrect romantic matches.
-- Hard-coded demo participants.
-- Swallowed backend errors.
+Manually test with two real accounts.
 
-Report all actual results.
-
-Do not claim a test passed unless it was executed.
+Do not claim that tests passed unless they actually ran.
 
 Report:
-1. Changed files.
-2. New SQL migration 007.
-3. Database functions created.
-4. RLS changes.
-5. Tests executed and results.
-6. Manual Supabase deployment instructions.
-7. Remaining limitations.
+
+- Files changed.
+- SQL migrations created.
+- Functions implemented.
+- RLS changes.
+- Realtime setup steps.
+- Tests executed and their results.
+- Manual Supabase deployment instructions.
+- Remaining problems.
 
 ## STRICT SCOPE
 
-This is Phase 3 only.
+This is Phase 4 only, plus the small required Phase 3 hardening corrections.
 
+Do not redesign Discover.
 Do not rebuild authentication.
 Do not rebuild onboarding.
-Do not rebuild Discover.
-Do not rebuild experience discovery or joining.
-Do not add subscriptions.
-Do not add AI APIs.
-Do not add paid hosting.
-Do not implement Phase 4 messaging yet.
+Do not rebuild experience joining.
+Do not change the mutual matching product concept.
+Do not add subscriptions or paid features.
+Do not add AI.
+Do not add video or voice calling.
 
-Preserve the existing MELSAVA visual style and architecture.
+Preserve the existing MELSAVA design and code architecture.
 
-Finish the backend first, connect the existing screens, run the tests, update documentation and STOP.
+Implement incrementally, test the real user workflow and STOP after Phase 4.
 
-CORE RULE:
+CORE REQUIREMENT:
 
-A MELSAVA connection can only be created when two confirmed attendees from the same completed experience independently select each other with exactly matching connection intentions.
+A user must only be able to read, send or receive messages in a valid mutual connection, and every new message must be saved securely and delivered to the other eligible participant through Supabase Realtime.

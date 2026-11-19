@@ -86,9 +86,13 @@ supabase/migrations/006_phase2_experiences_rls_and_rpc.sql
 supabase/migrations/007_fix_experience_members_recursion.sql
 supabase/migrations/008_set_distinct_experience_covers.sql
 supabase/migrations/009_phase3_attendance_and_mutual_choices.sql
+supabase/migrations/010_experience_circle_hub.sql
+supabase/migrations/011_connections_and_inbox_rpcs.sql
+supabase/migrations/012_phase3_hardening.sql
+supabase/migrations/013_phase4_connections_and_realtime.sql
 ```
 
-*(Alternatively, for Phase 3 directly execute `supabase/PHASE_3_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
+*(Alternatively, for Phase 4 directly execute `supabase/PHASE_4_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
 
 ### 5. Run the App
 

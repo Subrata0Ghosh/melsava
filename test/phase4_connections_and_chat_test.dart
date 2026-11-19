@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:melsava/features/chat/presentation/conversation_screen.dart';
 import 'package:melsava/features/chat/presentation/inbox_screen.dart';
 import 'package:melsava/features/connections/data/connections_repository.dart';
@@ -12,6 +13,12 @@ class MockConnectionsRepository implements ConnectionsRepository {
   Map<String, List<ChatMessageModel>> messages = {};
   bool didBlock = false;
   bool didReport = false;
+  bool didMarkRead = false;
+  String? lastMarkedConversationId;
+  bool throwOnSend = false;
+
+  void Function(ChatMessageModel message)? onMessageInsertedCallback;
+  void Function(String messageId, bool isRead)? onMessageUpdatedCallback;
 
   @override
   Future<List<ConnectionModel>> fetchConnections() async => connections;
@@ -20,11 +27,17 @@ class MockConnectionsRepository implements ConnectionsRepository {
   Future<List<InboxThreadModel>> fetchInboxThreads() async => threads;
 
   @override
-  Future<List<ChatMessageModel>> fetchMessages(String conversationId) async =>
-      messages[conversationId] ?? [];
+  Future<List<ChatMessageModel>> fetchMessages(
+    String conversationId, {
+    int limit = 50,
+    DateTime? before,
+  }) async => messages[conversationId] ?? [];
 
   @override
   Future<bool> sendMessage(String conversationId, String content) async {
+    if (throwOnSend) {
+      throw Exception('Network error sending message');
+    }
     final list = messages[conversationId] ?? [];
     list.add(
       ChatMessageModel(
@@ -39,6 +52,13 @@ class MockConnectionsRepository implements ConnectionsRepository {
     );
     messages[conversationId] = list;
     return true;
+  }
+
+  @override
+  Future<int> markConversationRead(String conversationId) async {
+    didMarkRead = true;
+    lastMarkedConversationId = conversationId;
+    return 1;
   }
 
   @override
@@ -62,6 +82,20 @@ class MockConnectionsRepository implements ConnectionsRepository {
     didReport = true;
     return true;
   }
+
+  @override
+  RealtimeChannel? subscribeToConversationMessages({
+    required String conversationId,
+    required void Function(ChatMessageModel message) onMessageInserted,
+    required void Function(String messageId, bool isRead) onMessageUpdated,
+  }) {
+    onMessageInsertedCallback = onMessageInserted;
+    onMessageUpdatedCallback = onMessageUpdated;
+    return null;
+  }
+
+  @override
+  void unsubscribe(RealtimeChannel channel) {}
 }
 
 void main() {
@@ -72,10 +106,10 @@ void main() {
       mockRepo = MockConnectionsRepository();
     });
 
-    Widget createTestApp(Widget child) {
+    Widget createTestApp(Widget child, {ThemeData? theme}) {
       return ProviderScope(
         overrides: [connectionsRepositoryProvider.overrideWithValue(mockRepo)],
-        child: MaterialApp(home: child),
+        child: MaterialApp(theme: theme ?? ThemeData.light(), home: child),
       );
     }
 
@@ -100,7 +134,7 @@ void main() {
     );
 
     testWidgets(
-      'ConnectionsScreen displays live connections and filter counts',
+      'ConnectionsScreen displays live connections and filter counts without fake badges',
       (tester) async {
         mockRepo.connections = [
           ConnectionModel(
@@ -135,6 +169,9 @@ void main() {
 
         expect(find.text('Priya Sharma'), findsOneWidget);
         expect(find.text('Rohan Sen'), findsOneWidget);
+        expect(find.text('Weekend Trek to Mukutmanipur'), findsOneWidget);
+        expect(find.text('Court Badminton Rally'), findsOneWidget);
+        expect(find.text('Great hiking with you!'), findsOneWidget);
         expect(find.text('All (2)'), findsOneWidget);
         expect(find.text('Friends (1)'), findsOneWidget);
         expect(find.text('Activity (1)'), findsOneWidget);
@@ -169,6 +206,7 @@ void main() {
       mockRepo.threads = [
         const InboxThreadModel(
           conversationId: 'conv_123',
+          connectionId: 'conn_123',
           partnerId: 'partner_1',
           participantName: 'Aditi Sen',
           participantAvatar: '',
@@ -176,7 +214,7 @@ void main() {
           experienceName: 'Coffee & Conversation',
           lastMessage: 'It was great chatting about books!',
           timestamp: '2h ago',
-          unreadCount: 1,
+          unreadCount: 2,
         ),
       ];
 
@@ -186,7 +224,36 @@ void main() {
 
       expect(find.text('Aditi Sen'), findsAtLeastNWidgets(1));
       expect(find.text('It was great chatting about books!'), findsOneWidget);
+      expect(find.text('Coffee & Conversation'), findsOneWidget);
+      expect(find.text('2'), findsOneWidget); // unread badge
     });
+
+    testWidgets(
+      'ConversationScreen displays context banner with experience name',
+      (tester) async {
+        mockRepo.messages['conv_xyz'] = [];
+
+        await tester.pumpWidget(
+          createTestApp(
+            const ConversationScreen(
+              participantName: 'Rohan',
+              conversationId: 'conv_xyz',
+              partnerId: 'user_rohan',
+              experienceName: 'Sunset Photography Walk',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(
+          find.text(
+            'You both reconnected after Sunset Photography Walk. Keep chats respectful and genuine.',
+          ),
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
       'ConversationScreen displays icebreakers when empty and sends messages',
@@ -218,7 +285,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // Sent message is now in repository and displayed
+        // Sent message is now in repository
         expect(mockRepo.messages['conv_abc']?.length, 1);
         expect(
           mockRepo.messages['conv_abc']?.first.content,
@@ -226,5 +293,193 @@ void main() {
         );
       },
     );
+
+    testWidgets(
+      'ConversationScreen shows read receipts correctly for unread and read messages',
+      (tester) async {
+        final now = DateTime.now();
+        mockRepo.messages['conv_read_test'] = [
+          ChatMessageModel(
+            id: 'm1',
+            senderId: 'current_user',
+            content: 'Hey, are you free this weekend?',
+            isRead: false,
+            createdAt: now.subtract(const Duration(minutes: 5)),
+            isMe: true,
+            time: '2:15 PM',
+          ),
+          ChatMessageModel(
+            id: 'm2',
+            senderId: 'current_user',
+            content: 'Let me know!',
+            isRead: true,
+            createdAt: now.subtract(const Duration(minutes: 4)),
+            isMe: true,
+            time: '2:16 PM',
+          ),
+        ];
+
+        await tester.pumpWidget(
+          createTestApp(
+            const ConversationScreen(
+              participantName: 'Priya',
+              conversationId: 'conv_read_test',
+              partnerId: 'user_priya',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Hey, are you free this weekend?'), findsOneWidget);
+        expect(find.text('Let me know!'), findsOneWidget);
+
+        // Check icon: single check for unread (m1), double check for read (m2)
+        expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.done_all_rounded), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'ConversationScreen receives Realtime message and marks conversation read',
+      (tester) async {
+        mockRepo.messages['conv_rt'] = [];
+
+        await tester.pumpWidget(
+          createTestApp(
+            const ConversationScreen(
+              participantName: 'Siddharth',
+              conversationId: 'conv_rt',
+              partnerId: 'user_sid',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(mockRepo.onMessageInsertedCallback, isNotNull);
+
+        // Simulate incoming message via Realtime
+        final incoming = ChatMessageModel(
+          id: 'rt_msg_1',
+          senderId: 'user_sid',
+          content: 'Hey! Loved the event!',
+          isRead: false,
+          createdAt: DateTime.now(),
+          isMe: false,
+          time: '3:00 PM',
+        );
+
+        mockRepo.onMessageInsertedCallback!(incoming);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Hey! Loved the event!'), findsOneWidget);
+        expect(mockRepo.didMarkRead, isTrue);
+        expect(mockRepo.lastMarkedConversationId, 'conv_rt');
+      },
+    );
+
+    testWidgets(
+      'Sending message failure preserves draft in text field and shows error',
+      (tester) async {
+        mockRepo.messages['conv_err'] = [];
+        mockRepo.throwOnSend = true;
+
+        await tester.pumpWidget(
+          createTestApp(
+            const ConversationScreen(
+              participantName: 'Sneha',
+              conversationId: 'conv_err',
+              partnerId: 'user_sneha',
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // Enter message
+        await tester.enterText(
+          find.byType(TextField),
+          'Important message that must not be lost',
+        );
+        await tester.pump();
+
+        // Tap send
+        await tester.tap(find.byKey(const Key('chat_send_button')));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // TextField still has the draft preserved!
+        expect(
+          find.text('Important message that must not be lost'),
+          findsAtLeastNWidgets(1),
+        );
+        expect(find.byType(SnackBar), findsOneWidget);
+      },
+    );
+
+    testWidgets('Block user flow invokes blockUser and pops screen', (
+      tester,
+    ) async {
+      mockRepo.messages['conv_block'] = [];
+
+      await tester.pumpWidget(
+        createTestApp(
+          const ConversationScreen(
+            participantName: 'Troublemaker',
+            conversationId: 'conv_block',
+            partnerId: 'user_bad',
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      // Open overflow menu
+      await tester.tap(find.byIcon(Icons.more_vert));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Block User'), findsOneWidget);
+      await tester.tap(find.text('Block User'));
+      await tester.pumpAndSettle();
+
+      // Confirmation dialog appears
+      expect(find.text('Block Troublemaker?'), findsOneWidget);
+      await tester.tap(find.text('Block'));
+      await tester.pumpAndSettle();
+
+      expect(mockRepo.didBlock, isTrue);
+    });
+
+    testWidgets('Renders properly in Dark Theme', (tester) async {
+      mockRepo.messages['conv_dark'] = [
+        ChatMessageModel(
+          id: 'd1',
+          senderId: 'current_user',
+          content: 'Dark mode test message',
+          isRead: true,
+          createdAt: DateTime.now(),
+          isMe: true,
+          time: '4:00 PM',
+        ),
+      ];
+
+      await tester.pumpWidget(
+        createTestApp(
+          const ConversationScreen(
+            participantName: 'Aarav',
+            conversationId: 'conv_dark',
+            partnerId: 'user_aarav',
+          ),
+          theme: ThemeData.dark(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Dark mode test message'), findsOneWidget);
+      expect(find.text('Aarav'), findsOneWidget);
+    });
   });
 }
