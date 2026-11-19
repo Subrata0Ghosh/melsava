@@ -545,7 +545,9 @@ class _LiveExperienceScreenState extends ConsumerState<LiveExperienceScreen>
           ),
         );
       }
-      if (currentUser != null && currentUser.id != exp.hostId) {
+      if (currentUser != null &&
+          currentUser.id != exp.hostId &&
+          exp.isActiveMember) {
         list.add(
           MeetupCircleParticipant(
             userId: currentUser.id,

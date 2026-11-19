@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:melsava/features/auth/domain/app_user.dart';
+import 'package:melsava/features/auth/presentation/auth_providers.dart';
 import 'package:melsava/features/experiences/data/post_experience_repository.dart';
+import 'package:melsava/features/experiences/presentation/experience_hub_sheet.dart';
 import 'package:melsava/features/experiences/presentation/host_attendance_sheet.dart';
 import 'package:melsava/features/experiences/presentation/post_experience_choice_screen.dart';
 import 'package:melsava/shared/models/experience_model.dart';
@@ -453,6 +456,53 @@ void main() {
         expect(find.text('Sneha Roy'), findsOneWidget);
       },
     );
+
+    testWidgets(
+      'Shows error screen and allows retry when fetchEligibleAttendees throws',
+      (tester) async {
+        fakeRepo.throwOnFetchAttendees = true;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            child: PostExperienceChoiceScreen(experience: testExperience),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Unable to load participants. Please try again.'),
+          findsOneWidget,
+        );
+        expect(find.text('Retry'), findsOneWidget);
+
+        // Fix error and tap Retry
+        fakeRepo.throwOnFetchAttendees = false;
+        await tester.tap(find.text('Retry'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Who would you like to meet again?'), findsOneWidget);
+      },
+    );
+
+    testWidgets('PostExperienceChoiceScreen renders cleanly in Dark Mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            postExperienceRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: PostExperienceChoiceScreen(experience: testExperience),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Post-Experience Reconnect'), findsOneWidget);
+      expect(find.text('Sneha Roy'), findsOneWidget);
+    });
   });
 
   group('3. HostAttendanceSheet Widget Tests', () {
@@ -489,6 +539,125 @@ void main() {
         expect(fakeRepo.lastAttendedUserIds.length, equals(2));
         expect(fakeRepo.lastAttendedUserIds.contains('user-sneha-1'), isTrue);
         expect(fakeRepo.lastAttendedUserIds.contains('user-rohan-2'), isTrue);
+      },
+    );
+
+    testWidgets('HostAttendanceSheet renders cleanly in Dark Mode', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            postExperienceRepositoryProvider.overrideWithValue(fakeRepo),
+          ],
+          child: MaterialApp(
+            theme: ThemeData.dark(),
+            home: HostAttendanceSheet(experience: testExperience),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Confirm Attendance'), findsOneWidget);
+      expect(find.text('Sneha Roy'), findsOneWidget);
+    });
+  });
+
+  group('4. ExperienceHubSheet Widget Tests', () {
+    testWidgets(
+      'Shows private roster prompt with Join button when user is not joined',
+      (tester) async {
+        fakeRepo.throwOnFetchCircleParticipants = true;
+
+        final unjoinedExp = testExperience.copyWith(
+          membershipStatus: MembershipStatus.none,
+          hasJoined: false,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              postExperienceRepositoryProvider.overrideWithValue(fakeRepo),
+              currentUserProvider.overrideWith(
+                (ref) => const AppUser(
+                  id: 'unjoined-user-1',
+                  email: 'test@melsava.com',
+                  displayName: 'Test User',
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(body: ExperienceHubSheet(experience: unjoinedExp)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('PREVIEW'), findsOneWidget);
+        expect(find.text('Participant Roster is Private'), findsOneWidget);
+        expect(find.text('Join This Meetup'), findsOneWidget);
+        expect(find.text('Join Meetup to Access Circle →'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'Shows error and working Retry button when joined user fetchCircleParticipants throws',
+      (tester) async {
+        fakeRepo.throwOnFetchCircleParticipants = true;
+
+        final joinedExp = testExperience.copyWith(
+          membershipStatus: MembershipStatus.joined,
+          hasJoined: true,
+        );
+
+        await tester.pumpWidget(
+          ProviderScope(
+            overrides: [
+              postExperienceRepositoryProvider.overrideWithValue(fakeRepo),
+              currentUserProvider.overrideWith(
+                (ref) => const AppUser(
+                  id: 'joined-user-1',
+                  email: 'test@melsava.com',
+                  displayName: 'Test User',
+                ),
+              ),
+            ],
+            child: MaterialApp(
+              home: Scaffold(body: ExperienceHubSheet(experience: joinedExp)),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.text('CONFIRMED RSVP'), findsOneWidget);
+        expect(find.text('Unable to load participant roster'), findsOneWidget);
+        expect(find.text('Retry'), findsOneWidget);
+
+        // Fix the error in fake repo and tap Retry
+        fakeRepo.throwOnFetchCircleParticipants = false;
+        fakeRepo.circleParticipants = [
+          const MeetupCircleParticipant(
+            userId: 'host-user-999',
+            displayName: 'Subrata Ghosh',
+            avatarUrl: '',
+            bio: 'Host bio',
+            role: 'Host',
+          ),
+          const MeetupCircleParticipant(
+            userId: 'joined-user-1',
+            displayName: 'Test User',
+            avatarUrl: '',
+            bio: 'Attendee bio',
+            role: 'Attendee',
+          ),
+        ];
+
+        await tester.tap(find.text('Retry'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Unable to load participant roster'), findsNothing);
+        expect(find.text('Subrata Ghosh'), findsOneWidget);
+        expect(find.text('Test User (You)'), findsOneWidget);
       },
     );
   });

@@ -34,15 +34,16 @@ CREATE POLICY "pes_select_own"
 
 -- 2. Table: app_notifications
 CREATE TABLE IF NOT EXISTS public.app_notifications (
-    id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id       UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
-    type          TEXT NOT NULL,
-    title         TEXT NOT NULL,
-    message       TEXT NOT NULL,
-    connection_id UUID REFERENCES public.connections(id) ON DELETE SET NULL,
-    experience_id UUID REFERENCES public.experiences(id) ON DELETE SET NULL,
-    read_at       TIMESTAMPTZ,
-    created_at    TIMESTAMPTZ NOT NULL DEFAULT now()
+    id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id           UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    type              TEXT NOT NULL,
+    notification_type TEXT GENERATED ALWAYS AS (type) STORED,
+    title             TEXT NOT NULL,
+    message           TEXT NOT NULL,
+    connection_id     UUID REFERENCES public.connections(id) ON DELETE SET NULL,
+    experience_id     UUID REFERENCES public.experiences(id) ON DELETE SET NULL,
+    read_at           TIMESTAMPTZ,
+    created_at        TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 CREATE INDEX IF NOT EXISTS idx_notifications_user_created
@@ -656,3 +657,29 @@ $$;
 
 REVOKE ALL ON FUNCTION public.submit_post_experience_choices(UUID, JSONB) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.submit_post_experience_choices(UUID, JSONB) TO authenticated;
+
+-- ----------------------------------------------------------------------------
+-- 9. Supersede & Protect Old Unsafe `process_mutual_connections` (from Migration 003)
+--    Prevents bypassing the atomic attendance & exact compatibility matching logic.
+-- ----------------------------------------------------------------------------
+CREATE OR REPLACE FUNCTION public.process_mutual_connections(p_experience_id UUID)
+RETURNS TABLE (
+    connection_id   UUID,
+    user_a          UUID,
+    user_b          UUID,
+    connection_type TEXT,
+    conversation_id UUID
+)
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+    RAISE EXCEPTION 'process_mutual_connections is deprecated. Choices must be submitted via submit_post_experience_choices.';
+END;
+$$;
+
+REVOKE ALL ON FUNCTION public.process_mutual_connections(UUID) FROM PUBLIC;
+REVOKE ALL ON FUNCTION public.process_mutual_connections(UUID) FROM anon;
+REVOKE ALL ON FUNCTION public.process_mutual_connections(UUID) FROM authenticated;
+

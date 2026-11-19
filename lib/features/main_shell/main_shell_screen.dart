@@ -28,9 +28,7 @@ class MainShellScreen extends ConsumerWidget {
     HapticFeedback.mediumImpact();
     final myBundle = ref.read(myExperiencesProvider).valueOrNull;
     final activeExp =
-        myBundle?.upcoming.firstOrNull ??
-        myBundle?.waitlisted.firstOrNull ??
-        ref.read(publishedExperiencesProvider).valueOrNull?.firstOrNull;
+        myBundle?.upcoming.firstOrNull ?? myBundle?.waitlisted.firstOrNull;
 
     if (activeExp != null) {
       ExperienceHubSheet.show(context, experience: activeExp);

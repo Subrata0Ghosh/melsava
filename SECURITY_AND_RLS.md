@@ -138,3 +138,15 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 - Atomically creates canonical `public.connections` (`user_a_id < user_b_id`), `public.conversations`, `public.conversation_members`, and in-app alerts in `public.app_notifications`.
 - Idempotently records completion in `public.post_experience_submissions`.
 - Returns only the authenticated caller's own new mutual connections.
+
+### 12. `get_experience_circle_participants(p_experience_id UUID)`
+- `SECURITY DEFINER` function with `search_path = public`.
+- Validates caller is either the host or a confirmed joined/attended participant.
+- Excludes blocked and suspended accounts.
+- Zero PII: returns only approved public profile information (name, avatar, bio, role).
+
+### 13. Security Deprecation: `process_mutual_connections(p_experience_id UUID)`
+- The legacy matching function from migration 003 has been superseded and deprecated.
+- All client permissions (`PUBLIC`, `anon`, `authenticated`) have been revoked.
+- Function body raises an explicit exception if invoked, preventing any client from bypassing attended verification or intention matching rules.
+

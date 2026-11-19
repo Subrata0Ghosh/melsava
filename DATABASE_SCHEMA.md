@@ -469,6 +469,7 @@ Push notification tokens.
 | `get_host_joined_participants(UUID)` | 009 | Host-only: lists joined participants for attendance review |
 | `fetch_eligible_reconnect_attendees(UUID)` | 009 | Privacy-safe: returns only attended peers, excludes blocked/suspended, zero PII |
 | `fetch_reconnect_submission_status(UUID)` | 009 | Gating: returns completion, attendance, host, and submission status |
+| `get_experience_circle_participants(UUID)` | 009 | Privacy-safe: returns active meetup circle participants (host and members) |
 | `submit_post_experience_choices(UUID, JSONB)` | 009 | Atomic: exact matching (Friendship=Friendship, Dating=Dating), creates canonical connections, conversations, and notifications |
 
 ---

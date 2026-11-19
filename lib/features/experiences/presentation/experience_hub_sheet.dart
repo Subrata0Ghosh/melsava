@@ -9,7 +9,10 @@ import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../data/experiences_repository.dart';
+import '../data/post_experience_repository.dart';
 import 'host_attendance_sheet.dart';
+import 'join_experience_sheet.dart';
 import 'live_experience_screen.dart';
 
 /// Experience Hub (Pre-Meetup Group Space)
@@ -54,6 +57,23 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
   ];
 
   int _selectedPromptIndex = 0;
+  bool _isRetryingRoster = false;
+
+  Future<void> _handleRetryRoster(String expId) async {
+    if (_isRetryingRoster) return;
+    HapticFeedback.lightImpact();
+    setState(() => _isRetryingRoster = true);
+    try {
+      ref.invalidate(circleParticipantsProvider(expId));
+      await ref.read(circleParticipantsProvider(expId).future);
+    } catch (e) {
+      debugPrint('[ExperienceHubSheet] Retry failed: $e');
+    } finally {
+      if (mounted) {
+        setState(() => _isRetryingRoster = false);
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -72,7 +92,40 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
     final borderColor = isDark ? AppColors.darkBorder : AppColors.divider;
 
     final currentUser = ref.watch(currentUserProvider);
+    final circleAsync = ref.watch(circleParticipantsProvider(exp.id));
     final isHost = currentUser != null && currentUser.id == exp.hostId;
+
+    // Membership badge attributes
+    final String statusLabel;
+    final Color statusBg;
+    final Color statusFg;
+
+    if (isHost) {
+      statusLabel = 'HOST';
+      statusBg = isDark
+          ? AppColors.brightViolet.withValues(alpha: 0.25)
+          : AppColors.primaryPurple.withValues(alpha: 0.15);
+      statusFg = isDark ? AppColors.luminousMauve : AppColors.primaryPurple;
+    } else if (exp.membershipStatus == MembershipStatus.attended) {
+      statusLabel = 'ATTENDED';
+      statusBg = AppColors.mintAccent.withValues(alpha: 0.2);
+      statusFg = AppColors.mintAccent;
+    } else if (exp.membershipStatus == MembershipStatus.joined) {
+      statusLabel = 'CONFIRMED RSVP';
+      statusBg = AppColors.mintAccent.withValues(alpha: 0.2);
+      statusFg = AppColors.mintAccent;
+    } else if (exp.membershipStatus == MembershipStatus.waitlisted) {
+      statusLabel = 'WAITLISTED';
+      statusBg = (isDark ? AppColors.softCoral : AppColors.vividCoral)
+          .withValues(alpha: 0.2);
+      statusFg = isDark ? AppColors.softCoral : AppColors.vividCoral;
+    } else {
+      statusLabel = 'PREVIEW';
+      statusBg = (isDark ? AppColors.mauve : AppColors.deepPlum).withValues(
+        alpha: 0.15,
+      );
+      statusFg = isDark ? AppColors.softCoral : AppColors.mauve;
+    }
 
     // Calculate countdown label
     final now = DateTime.now();
@@ -348,15 +401,13 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                                     vertical: 4,
                                   ),
                                   decoration: BoxDecoration(
-                                    color: AppColors.mintAccent.withValues(
-                                      alpha: 0.2,
-                                    ),
+                                    color: statusBg,
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: Text(
-                                    'CONFIRMED RSVP',
+                                    statusLabel,
                                     style: AppTypography.labelSmall.copyWith(
-                                      color: AppColors.mintAccent,
+                                      color: statusFg,
                                       fontWeight: FontWeight.w800,
                                       fontSize: 10,
                                     ),
@@ -575,7 +626,7 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            'MICRO-GROUP PARTICIPANTS (${exp.currentParticipants}/${exp.maxParticipants})',
+                            'MICRO-GROUP PARTICIPANTS (${circleAsync.valueOrNull?.length ?? exp.currentParticipants}/${exp.maxParticipants})',
                             style: AppTypography.labelSmall.copyWith(
                               letterSpacing: 1.2,
                               fontWeight: FontWeight.w800,
@@ -612,57 +663,296 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                             ),
                           ],
                         ),
-                        child: Column(
-                          children: [
-                            // Host row
-                            _buildParticipantRow(
-                              name: exp.hostName,
-                              avatarUrl: exp.hostAvatar,
-                              tag: 'Curated Host',
-                              tagColor: isDark
-                                  ? AppColors.luminousMauve
-                                  : AppColors.mauve,
-                              bio:
-                                  'Certified community organizer & local nature trail enthusiast.',
-                              isHost: true,
-                              isDark: isDark,
-                              primaryTextColor: primaryTextColor,
-                              mutedTextColor: mutedTextColor,
-                            ),
-                            Divider(height: 20, color: borderColor),
+                        child: _isRetryingRoster
+                            ? Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    vertical: 24,
+                                  ),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      const SizedBox(
+                                        width: 28,
+                                        height: 28,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2.5,
+                                          color: AppColors.primaryPurple,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Refreshing participant roster...',
+                                        style: AppTypography.bodySmall.copyWith(
+                                          color: mutedTextColor,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              )
+                            : circleAsync.when(
+                                loading: () => const Center(
+                                  child: Padding(
+                                    padding: EdgeInsets.symmetric(vertical: 24),
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2.5,
+                                      color: AppColors.primaryPurple,
+                                    ),
+                                  ),
+                                ),
+                                error: (err, _) {
+                                  final isAuthOrMemberIssue =
+                                      err.toString().contains(
+                                        'Only active joined participants',
+                                      ) ||
+                                      (!exp.isActiveMember && !isHost);
 
-                            // Attendee rows
-                            for (
-                              int i = 0;
-                              i < exp.attendeeAvatars.length;
-                              i++
-                            ) ...[
-                              _buildParticipantRow(
-                                name: i == 0
-                                    ? 'Rhea Sen'
-                                    : (i == 1
-                                          ? 'Aarav Mehta'
-                                          : 'You (Confirmed)'),
-                                avatarUrl: exp.attendeeAvatars[i],
-                                tag: i == 2 ? 'You' : 'Attendee',
-                                tagColor: i == 2
-                                    ? AppColors.mintAccent
-                                    : AppColors.softCoral,
-                                bio: i == 0
-                                    ? 'Graphic designer who loves weekend treks, filter coffee, and acoustic guitar.'
-                                    : (i == 1
-                                          ? 'Software engineer & amateur landscape photographer.'
-                                          : 'You! Attending in-person with confirmed reservation.'),
-                                isHost: false,
-                                isDark: isDark,
-                                primaryTextColor: primaryTextColor,
-                                mutedTextColor: mutedTextColor,
+                                  if (isAuthOrMemberIssue) {
+                                    return Padding(
+                                      padding: const EdgeInsets.symmetric(
+                                        vertical: 16,
+                                      ),
+                                      child: Column(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                            Icons.lock_outline_rounded,
+                                            size: 32,
+                                            color: isDark
+                                                ? AppColors.softCoral
+                                                : AppColors.mauve,
+                                          ),
+                                          const SizedBox(height: 8),
+                                          Text(
+                                            'Participant Roster is Private',
+                                            style: AppTypography.titleSmall
+                                                .copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: primaryTextColor,
+                                                ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                            ),
+                                            child: Text(
+                                              'Only confirmed participants and the host can view the meetup circle roster.',
+                                              textAlign: TextAlign.center,
+                                              style: AppTypography.bodySmall
+                                                  .copyWith(
+                                                    color: mutedTextColor,
+                                                    fontSize: 12,
+                                                  ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 14),
+                                          ElevatedButton.icon(
+                                            onPressed: () async {
+                                              Navigator.of(context).pop();
+                                              await JoinExperienceSheet.show(
+                                                context,
+                                                experience: exp,
+                                                onConfirmJoin: () => ref
+                                                    .read(
+                                                      experienceActionControllerProvider,
+                                                    )
+                                                    .joinExperience(exp.id),
+                                              );
+                                            },
+                                            icon: const Icon(
+                                              Icons.how_to_reg_rounded,
+                                              size: 16,
+                                            ),
+                                            label: const Text(
+                                              'Join This Meetup',
+                                            ),
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor: isDark
+                                                  ? AppColors.brightViolet
+                                                  : AppColors.primaryPurple,
+                                              foregroundColor: Colors.white,
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(12),
+                                              ),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  }
+
+                                  return Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.cloud_off_rounded,
+                                          size: 30,
+                                          color: mutedTextColor,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'Unable to load participant roster',
+                                          style: AppTypography.titleSmall
+                                              .copyWith(
+                                                fontWeight: FontWeight.w700,
+                                                color: primaryTextColor,
+                                              ),
+                                        ),
+                                        const SizedBox(height: 4),
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                          ),
+                                          child: Text(
+                                            'Could not connect to the circle roster right now.',
+                                            textAlign: TextAlign.center,
+                                            style: AppTypography.bodySmall
+                                                .copyWith(
+                                                  color: mutedTextColor,
+                                                  fontSize: 12,
+                                                ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 12),
+                                        ElevatedButton.icon(
+                                          onPressed: () =>
+                                              _handleRetryRoster(exp.id),
+                                          icon: const Icon(
+                                            Icons.refresh_rounded,
+                                            size: 16,
+                                          ),
+                                          label: const Text('Retry'),
+                                          style: ElevatedButton.styleFrom(
+                                            backgroundColor: isDark
+                                                ? AppColors.brightViolet
+                                                : AppColors.primaryPurple,
+                                            foregroundColor: Colors.white,
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  );
+                                },
+                                data: (participants) {
+                                  final host = participants.firstWhere(
+                                    (p) =>
+                                        p.role == 'Host' ||
+                                        p.userId == exp.hostId,
+                                    orElse: () => MeetupCircleParticipant(
+                                      userId: exp.hostId ?? '',
+                                      displayName: exp.hostName.isNotEmpty
+                                          ? exp.hostName
+                                          : 'Curated Host',
+                                      avatarUrl: exp.hostAvatar,
+                                      bio:
+                                          exp.hostBio ??
+                                          'Certified community organizer & local trail enthusiast.',
+                                      role: 'Host',
+                                    ),
+                                  );
+
+                                  final attendees = participants
+                                      .where((p) => p.userId != host.userId)
+                                      .toList();
+
+                                  return Column(
+                                    children: [
+                                      // Host row
+                                      _buildParticipantRow(
+                                        name: host.displayName,
+                                        avatarUrl: host.avatarUrl,
+                                        tag: 'Curated Host',
+                                        tagColor: isDark
+                                            ? AppColors.luminousMauve
+                                            : AppColors.mauve,
+                                        bio: host.bio.isNotEmpty
+                                            ? host.bio
+                                            : 'Certified community organizer & local trail enthusiast.',
+                                        isHost: true,
+                                        isDark: isDark,
+                                        primaryTextColor: primaryTextColor,
+                                        mutedTextColor: mutedTextColor,
+                                      ),
+                                      Divider(height: 20, color: borderColor),
+
+                                      if (attendees.isEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 14,
+                                          ),
+                                          child: Text(
+                                            'No other participants have joined this circle yet.',
+                                            style: AppTypography.bodySmall
+                                                .copyWith(
+                                                  color: mutedTextColor,
+                                                  fontStyle: FontStyle.italic,
+                                                ),
+                                          ),
+                                        )
+                                      else
+                                        for (
+                                          int i = 0;
+                                          i < attendees.length;
+                                          i++
+                                        ) ...[
+                                          () {
+                                            final attendee = attendees[i];
+                                            final isMe =
+                                                currentUser != null &&
+                                                (attendee.userId ==
+                                                        currentUser.id ||
+                                                    (currentUser.displayName !=
+                                                            null &&
+                                                        attendee.displayName
+                                                                .trim()
+                                                                .toLowerCase() ==
+                                                            currentUser
+                                                                .displayName!
+                                                                .trim()
+                                                                .toLowerCase()));
+
+                                            return _buildParticipantRow(
+                                              name: isMe
+                                                  ? '${attendee.displayName} (You)'
+                                                  : attendee.displayName,
+                                              avatarUrl: attendee.avatarUrl,
+                                              tag: isMe ? 'You' : 'Attendee',
+                                              tagColor: isMe
+                                                  ? AppColors.mintAccent
+                                                  : AppColors.softCoral,
+                                              bio: attendee.bio.isNotEmpty
+                                                  ? attendee.bio
+                                                  : (isMe
+                                                        ? 'You! Attending in-person with confirmed reservation.'
+                                                        : 'Confirmed attendee in this circle.'),
+                                              isHost: false,
+                                              isDark: isDark,
+                                              primaryTextColor:
+                                                  primaryTextColor,
+                                              mutedTextColor: mutedTextColor,
+                                            );
+                                          }(),
+                                          if (i < attendees.length - 1)
+                                            Divider(
+                                              height: 18,
+                                              color: borderColor,
+                                            ),
+                                        ],
+                                    ],
+                                  );
+                                },
                               ),
-                              if (i < exp.attendeeAvatars.length - 1)
-                                Divider(height: 18, color: borderColor),
-                            ],
-                          ],
-                        ),
                       ),
 
                       const SizedBox(height: 22),
@@ -879,16 +1169,34 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                         const SizedBox(height: 12),
                       ],
 
-                      // ── Enter Live Experience Mode ──
-                      PrimaryButton(
-                        label: 'Enter Live Experience Mode →',
-                        gradient: AppColors.sunsetCtaGradient,
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          LiveExperienceScreen.show(context, exp);
-                        },
-                      ),
-                      const SizedBox(height: 12),
+                      // ── Enter Live Experience Mode / Join ──
+                      if (exp.isActiveMember || isHost) ...[
+                        PrimaryButton(
+                          label: 'Enter Live Experience Mode →',
+                          gradient: AppColors.sunsetCtaGradient,
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            LiveExperienceScreen.show(context, exp);
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ] else ...[
+                        PrimaryButton(
+                          label: 'Join Meetup to Access Circle →',
+                          gradient: AppColors.sunsetCtaGradient,
+                          onPressed: () async {
+                            Navigator.of(context).pop();
+                            await JoinExperienceSheet.show(
+                              context,
+                              experience: exp,
+                              onConfirmJoin: () => ref
+                                  .read(experienceActionControllerProvider)
+                                  .joinExperience(exp.id),
+                            );
+                          },
+                        ),
+                        const SizedBox(height: 12),
+                      ],
 
                       PrimaryButton(
                         label: 'Done',

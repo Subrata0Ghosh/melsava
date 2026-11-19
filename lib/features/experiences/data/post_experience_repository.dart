@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
+import 'experiences_repository.dart';
 
 /// Available connection choice types for post-experience reconnection.
 enum ReconnectChoiceType {
@@ -348,7 +349,7 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
       return const ReconnectSubmissionStatus();
     } catch (e) {
       debugPrint('[PostExperienceRepository] fetchSubmissionStatus error: $e');
-      return const ReconnectSubmissionStatus();
+      rethrow;
     }
   }
 
@@ -493,8 +494,10 @@ class SupabasePostExperienceRepository implements PostExperienceRepository {
       }
       return const [];
     } catch (e) {
-      debugPrint('[PostExperienceRepository] fetchCircleParticipants error: $e');
-      return const [];
+      debugPrint(
+        '[PostExperienceRepository] fetchCircleParticipants error: $e',
+      );
+      rethrow;
     }
   }
 }
@@ -559,6 +562,7 @@ class PostExperienceActionController {
 
     _ref.invalidate(reconnectSubmissionStatusProvider(experienceId));
     _ref.invalidate(eligibleAttendeesProvider(experienceId));
+    _ref.invalidate(myExperiencesProvider);
 
     return result;
   }
@@ -576,6 +580,9 @@ class PostExperienceActionController {
     _ref.invalidate(reconnectSubmissionStatusProvider(experienceId));
     _ref.invalidate(hostJoinedParticipantsProvider(experienceId));
     _ref.invalidate(eligibleAttendeesProvider(experienceId));
+    _ref.invalidate(circleParticipantsProvider(experienceId));
+    _ref.invalidate(myExperiencesProvider);
+    _ref.invalidate(publishedExperiencesProvider);
 
     return result;
   }

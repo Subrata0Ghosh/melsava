@@ -74,12 +74,8 @@ void main() {
 
     Widget createTestApp(Widget child) {
       return ProviderScope(
-        overrides: [
-          connectionsRepositoryProvider.overrideWithValue(mockRepo),
-        ],
-        child: MaterialApp(
-          home: child,
-        ),
+        overrides: [connectionsRepositoryProvider.overrideWithValue(mockRepo)],
+        child: MaterialApp(home: child),
       );
     }
 
@@ -154,48 +150,43 @@ void main() {
       },
     );
 
-    testWidgets(
-      'InboxScreen displays EmptyStateWidget when no threads exist',
-      (tester) async {
-        mockRepo.threads = [];
+    testWidgets('InboxScreen displays EmptyStateWidget when no threads exist', (
+      tester,
+    ) async {
+      mockRepo.threads = [];
 
-        await tester.pumpWidget(createTestApp(const InboxScreen()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpWidget(createTestApp(const InboxScreen()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Inbox'), findsOneWidget);
-        expect(find.text('No conversations yet'), findsOneWidget);
-      },
-    );
+      expect(find.text('Inbox'), findsOneWidget);
+      expect(find.text('No conversations yet'), findsOneWidget);
+    });
 
-    testWidgets(
-      'InboxScreen displays active conversation threads and badges',
-      (tester) async {
-        mockRepo.threads = [
-          const InboxThreadModel(
-            conversationId: 'conv_123',
-            partnerId: 'partner_1',
-            participantName: 'Aditi Sen',
-            participantAvatar: '',
-            connectionType: 'Friendship',
-            experienceName: 'Coffee & Conversation',
-            lastMessage: 'It was great chatting about books!',
-            timestamp: '2h ago',
-            unreadCount: 1,
-          ),
-        ];
+    testWidgets('InboxScreen displays active conversation threads and badges', (
+      tester,
+    ) async {
+      mockRepo.threads = [
+        const InboxThreadModel(
+          conversationId: 'conv_123',
+          partnerId: 'partner_1',
+          participantName: 'Aditi Sen',
+          participantAvatar: '',
+          connectionType: 'Friendship',
+          experienceName: 'Coffee & Conversation',
+          lastMessage: 'It was great chatting about books!',
+          timestamp: '2h ago',
+          unreadCount: 1,
+        ),
+      ];
 
-        await tester.pumpWidget(createTestApp(const InboxScreen()));
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+      await tester.pumpWidget(createTestApp(const InboxScreen()));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('Aditi Sen'), findsAtLeastNWidgets(1));
-        expect(
-          find.text('It was great chatting about books!'),
-          findsOneWidget,
-        );
-      },
-    );
+      expect(find.text('Aditi Sen'), findsAtLeastNWidgets(1));
+      expect(find.text('It was great chatting about books!'), findsOneWidget);
+    });
 
     testWidgets(
       'ConversationScreen displays icebreakers when empty and sends messages',
