@@ -16,6 +16,7 @@ class ExperienceCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback? onJoinTap;
   final bool isCompact;
+  final bool isHostFollowed;
   final Widget? footer;
 
   const ExperienceCard({
@@ -24,6 +25,7 @@ class ExperienceCard extends StatefulWidget {
     required this.onTap,
     this.onJoinTap,
     this.isCompact = false,
+    this.isHostFollowed = false,
     this.footer,
   });
 
@@ -406,6 +408,48 @@ class _ExperienceCardState extends State<ExperienceCard>
                   const TrendingBadge(
                     fontSize: 10.5,
                     padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4.5),
+                  ),
+                ],
+                if (widget.isHostFollowed) ...[
+                  const SizedBox(width: 7),
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(14),
+                    child: BackdropFilter(
+                      filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4.5,
+                        ),
+                        decoration: BoxDecoration(
+                          color: (isDark
+                                  ? AppColors.softCoral
+                                  : AppColors.primaryPurple)
+                              .withValues(alpha: 0.9),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.35),
+                            width: 0.8,
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: const [
+                            Icon(Icons.star_rounded,
+                                size: 12, color: Colors.amber),
+                            SizedBox(width: 3),
+                            Text(
+                              'Followed Host',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 10.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
                   ),
                 ],
               ],

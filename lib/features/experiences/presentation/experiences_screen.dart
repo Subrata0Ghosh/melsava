@@ -10,6 +10,7 @@ import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../data/experiences_repository.dart';
+import '../data/followed_hosts_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
 import 'experience_detail_sheet.dart';
 import 'experience_hub_sheet.dart';
@@ -159,6 +160,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
     final publishedAsync = ref.watch(publishedExperiencesProvider);
     final categoriesAsync = ref.watch(activityCategoriesProvider);
     final myAsync = ref.watch(myExperiencesProvider);
+    final followedHosts = ref.watch(followedHostsProvider);
 
     final allPublished =
         publishedAsync.valueOrNull ?? const <ExperienceModel>[];
@@ -553,8 +555,12 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                         itemCount: filteredPublished.length,
                         itemBuilder: (context, index) {
                           final exp = filteredPublished[index];
+                          final isFollowed = (exp.hostId != null &&
+                                  followedHosts.contains(exp.hostId)) ||
+                              followedHosts.contains(exp.hostName);
                           return ExperienceCard(
                             experience: exp,
+                            isHostFollowed: isFollowed,
                             onTap: () => ExperienceDetailSheet.show(
                               context,
                               experience: exp,
@@ -943,8 +949,12 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                             );
                           }
 
+                          final isFollowed = (exp.hostId != null &&
+                                  followedHosts.contains(exp.hostId)) ||
+                              followedHosts.contains(exp.hostName);
                           return ExperienceCard(
                             experience: exp,
+                            isHostFollowed: isFollowed,
                             onTap: () => ExperienceDetailSheet.show(
                               context,
                               experience: exp,

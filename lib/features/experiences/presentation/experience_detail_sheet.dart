@@ -12,6 +12,8 @@ import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/experience_share_sheet.dart';
 import '../../../shared/widgets/trending_badge.dart';
 import '../data/experiences_repository.dart';
+import '../data/followed_hosts_provider.dart';
+import '../../auth/presentation/auth_providers.dart';
 import 'experience_hub_sheet.dart';
 import 'join_experience_sheet.dart';
 
@@ -151,6 +153,17 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
     // Watch live experience provider for fresh capacity and membership state
     final liveAsync = ref.watch(experienceDetailProvider(widget.experience.id));
     final exp = liveAsync.valueOrNull ?? widget.experience;
+
+    final currentUser = ref.watch(currentUserProvider);
+    final followedHosts = ref.watch(followedHostsProvider);
+    final isHost = currentUser != null &&
+        exp.hostId != null &&
+        currentUser.id == exp.hostId;
+    final hostKey = (exp.hostId != null && exp.hostId!.isNotEmpty)
+        ? exp.hostId!
+        : exp.hostName;
+    final isFollowing = followedHosts.contains(hostKey) ||
+        followedHosts.contains(exp.hostName);
 
     final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
 
@@ -572,49 +585,176 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                           ],
                                         ),
                                       ),
-                                      // Follow Button
-                                      GestureDetector(
-                                        onTap: () {
-                                          HapticFeedback.lightImpact();
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                'Following ${exp.hostName}!',
-                                              ),
-                                            ),
-                                          );
-                                        },
-                                        child: Container(
+                                      // Follow / Host Badge
+                                      if (isHost)
+                                        Container(
                                           padding: const EdgeInsets.symmetric(
-                                            horizontal: 18,
-                                            vertical: 8,
+                                            horizontal: 13,
+                                            vertical: 7,
                                           ),
                                           decoration: BoxDecoration(
-                                            gradient: AppColors.purpleGradient,
-                                            borderRadius: BorderRadius.circular(
-                                              20,
+                                            color: (isDark
+                                                    ? AppColors.softCoral
+                                                    : AppColors.deepPlum)
+                                                .withValues(alpha: 0.12),
+                                            borderRadius:
+                                                BorderRadius.circular(20),
+                                            border: Border.all(
+                                              color: (isDark
+                                                      ? AppColors.softCoral
+                                                      : AppColors.deepPlum)
+                                                  .withValues(alpha: 0.35),
+                                              width: 1.2,
                                             ),
-                                            boxShadow: [
-                                              BoxShadow(
-                                                color: AppColors.primaryPurple
-                                                    .withValues(alpha: 0.35),
-                                                blurRadius: 10,
-                                                offset: const Offset(0, 3),
+                                          ),
+                                          child: Row(
+                                            mainAxisSize: MainAxisSize.min,
+                                            children: [
+                                              Icon(
+                                                Icons.verified_user_rounded,
+                                                size: 14,
+                                                color: isDark
+                                                    ? AppColors.softCoral
+                                                    : AppColors.deepPlum,
+                                              ),
+                                              const SizedBox(width: 4),
+                                              Text(
+                                                'You (Host)',
+                                                style: TextStyle(
+                                                  color: isDark
+                                                      ? AppColors.softCoral
+                                                      : AppColors.deepPlum,
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 11.5,
+                                                ),
                                               ),
                                             ],
                                           ),
-                                          child: const Text(
-                                            'Follow',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w800,
-                                              fontSize: 12.5,
+                                        )
+                                      else if (isFollowing)
+                                        GestureDetector(
+                                          onTap: () async {
+                                            HapticFeedback.lightImpact();
+                                            await ref
+                                                .read(followedHostsProvider
+                                                    .notifier)
+                                                .toggleFollow(hostKey);
+                                            if (!context.mounted) return;
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Unfollowed ${exp.hostName}.',
+                                                ),
+                                                duration:
+                                                    const Duration(seconds: 2),
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 14,
+                                              vertical: 7,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: (isDark
+                                                      ? AppColors.darkElevated
+                                                      : Colors.white)
+                                                  .withValues(alpha: 0.85),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              border: Border.all(
+                                                color: isDark
+                                                    ? AppColors.brightViolet
+                                                    : AppColors.primaryPurple,
+                                                width: 1.2,
+                                              ),
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Icon(
+                                                  Icons.check_rounded,
+                                                  size: 14,
+                                                  color: isDark
+                                                      ? AppColors.brightViolet
+                                                      : AppColors.primaryPurple,
+                                                ),
+                                                const SizedBox(width: 4),
+                                                Text(
+                                                  'Following',
+                                                  style: TextStyle(
+                                                    color: isDark
+                                                        ? AppColors.brightViolet
+                                                        : AppColors.primaryPurple,
+                                                    fontWeight: FontWeight.w700,
+                                                    fontSize: 12,
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        )
+                                      else
+                                        GestureDetector(
+                                          onTap: () async {
+                                            HapticFeedback.mediumImpact();
+                                            await ref
+                                                .read(followedHostsProvider
+                                                    .notifier)
+                                                .toggleFollow(hostKey);
+                                            if (!context.mounted) return;
+                                            ScaffoldMessenger.of(context)
+                                                .showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'You are now following ${exp.hostName}. You\'ll see their new curated experiences prioritized.',
+                                                ),
+                                                duration:
+                                                    const Duration(seconds: 3),
+                                              ),
+                                            );
+                                          },
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 7.5,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              gradient:
+                                                  AppColors.purpleGradient,
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                              boxShadow: [
+                                                BoxShadow(
+                                                  color: AppColors.primaryPurple
+                                                      .withValues(alpha: 0.35),
+                                                  blurRadius: 10,
+                                                  offset: const Offset(0, 3),
+                                                ),
+                                              ],
+                                            ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: const [
+                                                Icon(
+                                                  Icons.add_rounded,
+                                                  size: 14,
+                                                  color: Colors.white,
+                                                ),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'Follow',
+                                                  style: TextStyle(
+                                                    color: Colors.white,
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 12.5,
+                                                  ),
+                                                ),
+                                              ],
                                             ),
                                           ),
                                         ),
-                                      ),
                                     ],
                                   ),
                                 ),
