@@ -912,6 +912,35 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                 ),
                               ],
                             );
+                          } else if (_selectedMyCircleTab == 3 &&
+                              !exp.isCompleted &&
+                              currentUser?.id == exp.hostId) {
+                            cardFooter = SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: () => HostAttendanceSheet.show(
+                                  context,
+                                  experience: exp,
+                                ),
+                                icon: const Icon(
+                                  Icons.fact_check_rounded,
+                                  size: 15,
+                                ),
+                                label: const Text('Confirm Attendance'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFF10B981),
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 16,
+                                    vertical: 9,
+                                  ),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                              ),
+                            );
                           }
 
                           return ExperienceCard(

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
@@ -45,6 +47,14 @@ class _HostAttendanceSheetState extends ConsumerState<HostAttendanceSheet> {
   Widget build(BuildContext context) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     final exp = widget.experience;
+    final scheduledEndTime =
+        exp.endsAt ??
+        exp.startsAt.add(
+          Duration(
+            minutes: exp.durationMinutes > 0 ? exp.durationMinutes : 120,
+          ),
+        );
+    final hasScheduledFinished = DateTime.now().isAfter(scheduledEndTime);
 
     final sheetBg = isDark ? const Color(0xFF130F1E) : AppColors.white;
     final primaryTextColor = isDark
@@ -252,6 +262,43 @@ class _HostAttendanceSheetState extends ConsumerState<HostAttendanceSheet> {
                         ],
                       ),
                     ),
+                    if (!hasScheduledFinished) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFFF59E0B,
+                          ).withValues(alpha: 0.12),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(
+                              0xFFF59E0B,
+                            ).withValues(alpha: 0.35),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(
+                              Icons.schedule_rounded,
+                              size: 20,
+                              color: Color(0xFFF59E0B),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: Text(
+                                'This meetup is scheduled to conclude on ${DateFormat("EEE, MMM d · h:mm a").format(scheduledEndTime)}. Attendance confirmation unlocks once the meetup ends.',
+                                style: AppTypography.bodySmall.copyWith(
+                                  color: primaryTextColor,
+                                  fontSize: 12,
+                                  height: 1.35,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                     const SizedBox(height: 16),
 
                     Row(
@@ -502,12 +549,16 @@ class _HostAttendanceSheetState extends ConsumerState<HostAttendanceSheet> {
                               }
                             } catch (e) {
                               if (!mounted) return;
+                              String cleanMsg = e
+                                  .toString()
+                                  .replaceAll('Exception:', '')
+                                  .trim();
+                              if (e is PostgrestException) {
+                                cleanMsg = e.message;
+                              }
                               setState(() {
                                 _isSubmitting = false;
-                                _errorMessage = e
-                                    .toString()
-                                    .replaceAll('Exception:', '')
-                                    .trim();
+                                _errorMessage = cleanMsg;
                               });
                             }
                           },
