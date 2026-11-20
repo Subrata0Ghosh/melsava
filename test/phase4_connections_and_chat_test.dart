@@ -73,10 +73,39 @@ class MockConnectionsRepository implements ConnectionsRepository {
   }
 
   @override
+  Future<List<BlockedUserModel>> fetchBlockedUsers() async => [];
+
+  @override
+  Future<bool> unblockUser(String blockedId) async => true;
+
+  @override
+  Future<bool> isCurrentUserModerator() async => false;
+
+  @override
+  Future<List<ModerationReportModel>> fetchModerationReports({
+    String status = 'pending',
+  }) async => [];
+
+  @override
+  Future<bool> resolveModerationReport(String reportId, String status) async =>
+      true;
+
+  @override
+  Future<bool> applyModerationAction({
+    required String userId,
+    required String actionType,
+    required String reason,
+    String? reportId,
+    DateTime? expiresAt,
+  }) async => true;
+
+  @override
   Future<bool> reportUser({
     required String reportedUserId,
     required String reason,
     String? description,
+    String? contentType,
+    String? contentId,
     String? conversationId,
   }) async {
     didReport = true;

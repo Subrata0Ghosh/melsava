@@ -10,223 +10,24 @@ import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../connections/data/connections_repository.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
 import 'edit_profile_sheet.dart';
 
-/// Screen 12 & 13 (Image 7): Profile & Settings Screen
+/// Screen 12: Profile Screen
 ///
-/// Luxury Artistic UI matching Image 7:
-/// - Watercolor ambient mesh background (Sky blue top-left, sunny golden amber top-right)
-/// - Botanical leaves framing avatar from both sides
-/// - Avatar with green verified badge
-/// - "Sneha" with green checkmark
-/// - "Friend • Kolkata, India" with "Friend" highlighted in royal purple
-/// - Bio: "Nature lover | Coffee enthusiast | Explorer"
-/// - Organic rounded stats card: 24 Experiences, 78 Connections, 12 Followers
+/// Luxury Artistic UI with real authenticated profile data:
+/// - Watercolor ambient mesh background
+/// - Botanical leaves framing avatar
+/// - Avatar with green verified badge ONLY when genuinely verified
+/// - Real Display Name & Real Location
+/// - Real Bio & Interests chips
+/// - Real statistics: Attended/Upcoming Experiences & Mutual Connections (no fake metrics)
 /// - Stadium outline [ Edit Profile ] button
-/// - "Go Premium" golden card & modern settings list
+/// - Community Guidelines & Safety pledge card
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
-
-  void _showGoPremiumDialog(BuildContext context, bool isDark) {
-    showDialog(
-      context: context,
-      builder: (context) => Dialog(
-        backgroundColor: Colors.transparent,
-        insetPadding: const EdgeInsets.symmetric(horizontal: 22),
-        child: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              colors: isDark
-                  ? const [Color(0xFF261044), Color(0xFF130926)]
-                  : const [Color(0xFFFFFFFF), Color(0xFFFFF9EE)],
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-            ),
-            borderRadius: BorderRadius.circular(28),
-            border: Border.all(
-              color: isDark
-                  ? const Color(0xFFFFB800).withValues(alpha: 0.35)
-                  : const Color(0xFFE5A93C).withValues(alpha: 0.45),
-              width: 1.2,
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: isDark
-                    ? Colors.black.withValues(alpha: 0.5)
-                    : const Color(0xFF261044).withValues(alpha: 0.16),
-                blurRadius: 32,
-                offset: const Offset(0, 10),
-              ),
-            ],
-          ),
-          child: Stack(
-            children: [
-              // Close button on top-right (Image 3 Screen 14)
-              Positioned(
-                top: 12,
-                right: 12,
-                child: GestureDetector(
-                  onTap: () => Navigator.of(context).pop(),
-                  child: Container(
-                    padding: const EdgeInsets.all(6),
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      color: isDark
-                          ? Colors.white.withValues(alpha: 0.12)
-                          : const Color(0xFFEDE8F5),
-                    ),
-                    child: Icon(
-                      Icons.close_rounded,
-                      color: isDark ? Colors.white70 : const Color(0xFF5B4D70),
-                      size: 18,
-                    ),
-                  ),
-                ),
-              ),
-
-              Padding(
-                padding: const EdgeInsets.fromLTRB(24, 28, 24, 24),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    // 3D Golden Crown Emblem (Screen 14)
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        gradient: const LinearGradient(
-                          colors: [Color(0xFFFFB800), Color(0xFFF59E0B)],
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomRight,
-                        ),
-                        shape: BoxShape.circle,
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(
-                              0xFFFFB800,
-                            ).withValues(alpha: 0.45),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
-                      child: const Center(
-                        child: Text('👑', style: TextStyle(fontSize: 28)),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    Text(
-                      'Go Premium',
-                      style: AppTypography.headlineSmall.copyWith(
-                        fontWeight: FontWeight.w900,
-                        color: isDark ? Colors.white : const Color(0xFF1E1435),
-                        fontSize: 22,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      'Unlock more features and get the most out of MELSAVA.',
-                      textAlign: TextAlign.center,
-                      style: AppTypography.bodySmall.copyWith(
-                        color: isDark
-                            ? Colors.white.withValues(alpha: 0.8)
-                            : const Color(0xFF6B5E82),
-                        fontSize: 12.5,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    _buildBenefitRow('See who liked you', isDark),
-                    _buildBenefitRow('Advanced filters', isDark),
-                    _buildBenefitRow('Priority support', isDark),
-                    const SizedBox(height: 24),
-                    GestureDetector(
-                      onTap: () {
-                        Navigator.of(context).pop();
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              'MELSAVA Premium successfully activated!',
-                            ),
-                          ),
-                        );
-                      },
-                      child: Container(
-                        height: 50,
-                        alignment: Alignment.center,
-                        decoration: BoxDecoration(
-                          gradient: const LinearGradient(
-                            colors: [Color(0xFFFF9D2E), Color(0xFFFF7A00)],
-                            begin: Alignment.topLeft,
-                            end: Alignment.bottomRight,
-                          ),
-                          borderRadius: BorderRadius.circular(25),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(
-                                0xFFFF7A00,
-                              ).withValues(alpha: 0.40),
-                              blurRadius: 16,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          'Upgrade Now',
-                          style: AppTypography.labelLarge.copyWith(
-                            color: Colors.white,
-                            fontWeight: FontWeight.w900,
-                            fontSize: 15,
-                            letterSpacing: 0.3,
-                          ),
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  static Widget _buildBenefitRow(String text, bool isDark) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 5.5),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(2),
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: const Color(0xFFFFB800).withValues(alpha: 0.16),
-            ),
-            child: const Icon(
-              Icons.check_circle_rounded,
-              color: Color(0xFFF59E0B),
-              size: 18,
-            ),
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: isDark
-                    ? Colors.white.withValues(alpha: 0.9)
-                    : const Color(0xFF261044),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -245,7 +46,23 @@ class ProfileScreen extends ConsumerWidget {
         ? AppColors.darkMutedText
         : const Color(0xFF7E7394);
 
-    final displayName = user?.displayName ?? 'Sneha';
+    final displayName =
+        (user?.displayName != null && user!.displayName!.trim().isNotEmpty)
+        ? user.displayName!.trim()
+        : 'MELSAVA Member';
+
+    final isVerified = user?.isVerified == true;
+
+    // Real statistics
+    final connectionsCount = ref
+        .watch(userConnectionsProvider)
+        .maybeWhen(data: (list) => list.length, orElse: () => 0);
+
+    final myBundle =
+        ref.watch(myExperiencesProvider).valueOrNull ??
+        const MyExperiencesBundle();
+    final experiencesCount =
+        myBundle.upcoming.length + myBundle.attended.length;
 
     return Scaffold(
       backgroundColor: isDark
@@ -261,7 +78,7 @@ class ProfileScreen extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // ── Pinned Top Navigation Bar (Image 6 Screen 12) - Never drags down ──
+              // ── Pinned Top Navigation Bar ──
               Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 20,
@@ -372,7 +189,7 @@ class ProfileScreen extends ConsumerWidget {
                     children: [
                       const SizedBox(height: 12),
 
-                      // ── Open Artistic Profile Header Canvas (Image 6 Screen 12) ──
+                      // ── Open Artistic Profile Header Canvas ──
                       Stack(
                         clipBehavior: Clip.none,
                         alignment: Alignment.center,
@@ -419,7 +236,7 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                           ),
 
-                          // Lush Tropical Leaves Framing Avatar (Screen 12)
+                          // Lush Tropical Leaves Framing Avatar
                           const Positioned(
                             top: 10,
                             left: 10,
@@ -443,12 +260,12 @@ class ProfileScreen extends ConsumerWidget {
                             ),
                           ),
 
-                          // Profile Content flowing seamlessly
+                          // Profile Content
                           Padding(
                             padding: const EdgeInsets.symmetric(vertical: 12),
                             child: Column(
                               children: [
-                                // Avatar with Green Verified Badge (Image 6 Screen 12)
+                                // Avatar with Verified Badge only if genuinely verified
                                 Stack(
                                   clipBehavior: Clip.none,
                                   children: [
@@ -475,48 +292,48 @@ class ProfileScreen extends ConsumerWidget {
                                         child: AppSmartImage(
                                           imagePath: user?.avatarUrl,
                                           isAvatar: true,
-                                          nameHint: user?.displayName,
+                                          nameHint: displayName,
                                           fit: BoxFit.cover,
                                         ),
                                       ),
                                     ),
-                                    // Green Verified Badge
-                                    Positioned(
-                                      bottom: 2,
-                                      right: 2,
-                                      child: Container(
-                                        width: 24,
-                                        height: 24,
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF10B981),
-                                          shape: BoxShape.circle,
-                                          border: Border.all(
-                                            color: Colors.white,
-                                            width: 2,
-                                          ),
-                                          boxShadow: [
-                                            BoxShadow(
-                                              color: const Color(
-                                                0xFF10B981,
-                                              ).withValues(alpha: 0.4),
-                                              blurRadius: 6,
-                                              offset: const Offset(0, 2),
+                                    if (isVerified)
+                                      Positioned(
+                                        bottom: 2,
+                                        right: 2,
+                                        child: Container(
+                                          width: 24,
+                                          height: 24,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFF10B981),
+                                            shape: BoxShape.circle,
+                                            border: Border.all(
+                                              color: Colors.white,
+                                              width: 2,
                                             ),
-                                          ],
-                                        ),
-                                        child: const Icon(
-                                          Icons.check_rounded,
-                                          color: Colors.white,
-                                          size: 14,
+                                            boxShadow: [
+                                              BoxShadow(
+                                                color: const Color(
+                                                  0xFF10B981,
+                                                ).withValues(alpha: 0.4),
+                                                blurRadius: 6,
+                                                offset: const Offset(0, 2),
+                                              ),
+                                            ],
+                                          ),
+                                          child: const Icon(
+                                            Icons.check_rounded,
+                                            color: Colors.white,
+                                            size: 14,
+                                          ),
                                         ),
                                       ),
-                                    ),
                                   ],
                                 ),
 
                                 const SizedBox(height: 12),
 
-                                // User Name & Verification Icon (Adaptive for long names)
+                                // User Name & Verification Icon
                                 Padding(
                                   padding: const EdgeInsets.symmetric(
                                     horizontal: 16,
@@ -544,18 +361,20 @@ class ProfileScreen extends ConsumerWidget {
                                               ),
                                         ),
                                       ),
-                                      const SizedBox(width: 6),
-                                      const Icon(
-                                        Icons.verified_rounded,
-                                        size: 19,
-                                        color: Color(0xFF10B981),
-                                      ),
+                                      if (isVerified) ...[
+                                        const SizedBox(width: 6),
+                                        const Icon(
+                                          Icons.verified_rounded,
+                                          size: 19,
+                                          color: Color(0xFF10B981),
+                                        ),
+                                      ],
                                     ],
                                   ),
                                 ),
                                 const SizedBox(height: 4),
 
-                                // Subtitle: "Friend • Kolkata, India" (Friend in purple)
+                                // Subtitle: "Intent • City, Region"
                                 RichText(
                                   text: TextSpan(
                                     style: AppTypography.bodySmall.copyWith(
@@ -564,7 +383,8 @@ class ProfileScreen extends ConsumerWidget {
                                     ),
                                     children: [
                                       TextSpan(
-                                        text: user?.primaryIntent ?? 'Friend',
+                                        text:
+                                            user?.primaryIntent ?? 'Friendship',
                                         style: const TextStyle(
                                           color: Color(0xFF6366F1),
                                           fontWeight: FontWeight.w800,
@@ -578,27 +398,30 @@ class ProfileScreen extends ConsumerWidget {
                                     ],
                                   ),
                                 ),
+
                                 const SizedBox(height: 8),
 
                                 // Bio
-                                Text(
-                                  user?.bio ??
-                                      'Nature lover | Coffee enthusiast | Explorer',
-                                  textAlign: TextAlign.center,
-                                  style: AppTypography.bodyMedium.copyWith(
-                                    color: primaryTextColor.withValues(
-                                      alpha: 0.88,
+                                if (user?.bio != null &&
+                                    user!.bio!.trim().isNotEmpty)
+                                  Text(
+                                    user.bio!.trim(),
+                                    textAlign: TextAlign.center,
+                                    style: AppTypography.bodyMedium.copyWith(
+                                      color: primaryTextColor.withValues(
+                                        alpha: 0.88,
+                                      ),
+                                      fontSize: 13,
                                     ),
-                                    fontSize: 13,
                                   ),
-                                ),
+
                                 const SizedBox(height: 18),
 
-                                // Stats Organic Container (Image 6 Screen 12)
+                                // Real Stats Organic Container (Experiences & Connections)
                                 Container(
                                   padding: const EdgeInsets.symmetric(
                                     vertical: 14,
-                                    horizontal: 16,
+                                    horizontal: 24,
                                   ),
                                   decoration: BoxDecoration(
                                     color: cardBg,
@@ -624,30 +447,19 @@ class ProfileScreen extends ConsumerWidget {
                                         MainAxisAlignment.spaceEvenly,
                                     children: [
                                       _buildStatCol(
-                                        '24',
-                                        'Experiences',
+                                        '$experiencesCount',
+                                        'Experiences Joined',
                                         primaryTextColor,
                                         mutedTextColor,
                                       ),
                                       Container(
-                                        height: 28,
+                                        height: 30,
                                         width: 1,
                                         color: borderColor,
                                       ),
                                       _buildStatCol(
-                                        '78',
-                                        'Connections',
-                                        primaryTextColor,
-                                        mutedTextColor,
-                                      ),
-                                      Container(
-                                        height: 28,
-                                        width: 1,
-                                        color: borderColor,
-                                      ),
-                                      _buildStatCol(
-                                        '12',
-                                        'Followers',
+                                        '$connectionsCount',
+                                        'Mutual Connections',
                                         primaryTextColor,
                                         mutedTextColor,
                                       ),
@@ -657,7 +469,7 @@ class ProfileScreen extends ConsumerWidget {
 
                                 const SizedBox(height: 16),
 
-                                // Stadium Outline [ Edit Profile ] Button (Image 6 Screen 12)
+                                // Stadium Outline [ Edit Profile ] Button
                                 GestureDetector(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -711,78 +523,120 @@ class ProfileScreen extends ConsumerWidget {
 
                       const SizedBox(height: 18),
 
-                      // ── Go Premium Card ──
-                      GestureDetector(
-                        onTap: () => _showGoPremiumDialog(context, isDark),
+                      // ── Real Interests & Passions Card ──
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          borderRadius: BorderRadius.circular(22),
+                          border: Border.all(color: borderColor, width: 0.9),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.favorite_rounded,
+                                  size: 18,
+                                  color: Color(0xFFEC4899),
+                                ),
+                                const SizedBox(width: 8),
+                                Text(
+                                  'My Interests & Passions',
+                                  style: TextStyle(
+                                    color: primaryTextColor,
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 14.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 10),
+                            if (user?.interests != null &&
+                                user!.interests!.isNotEmpty)
+                              Wrap(
+                                spacing: 8,
+                                runSpacing: 8,
+                                children: user.interests!.map((interest) {
+                                  return Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 12,
+                                      vertical: 6,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isDark
+                                          ? Colors.white.withValues(alpha: 0.08)
+                                          : const Color(0xFFF3EEFC),
+                                      borderRadius: BorderRadius.circular(14),
+                                      border: Border.all(
+                                        color: borderColor,
+                                        width: 0.8,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      interest,
+                                      style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  );
+                                }).toList(),
+                              )
+                            else
+                              Text(
+                                'No interests added yet. Tap "Edit Profile" to add passions!',
+                                style: TextStyle(
+                                  color: mutedTextColor,
+                                  fontSize: 12,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 14),
+
+                      // ── Community Guidelines & Safety Card ──
+                      InkWell(
+                        onTap: () => context.push('/community-guidelines'),
+                        borderRadius: BorderRadius.circular(22),
                         child: Container(
                           padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             gradient: LinearGradient(
-                              colors: isDark
-                                  ? const [Color(0xFF2C1E4A), Color(0xFF1A132C)]
-                                  : const [
-                                      Color(
-                                        0xFFFFF9EE,
-                                      ), // warm pearlescent champagne cream
-                                      Color(0xFFFFF1D6), // soft honey gold glow
-                                    ],
-                              begin: Alignment.topLeft,
-                              end: Alignment.bottomRight,
+                              colors: [
+                                const Color(
+                                  0xFF10B981,
+                                ).withValues(alpha: isDark ? 0.15 : 0.08),
+                                const Color(
+                                  0xFF059669,
+                                ).withValues(alpha: isDark ? 0.06 : 0.03),
+                              ],
                             ),
                             borderRadius: BorderRadius.circular(22),
                             border: Border.all(
-                              color: isDark
-                                  ? const Color(
-                                      0xFFFFB800,
-                                    ).withValues(alpha: 0.35)
-                                  : const Color(
-                                      0xFFE5A93C,
-                                    ).withValues(alpha: 0.50),
-                              width: 1.2,
+                              color: const Color(
+                                0xFF10B981,
+                              ).withValues(alpha: 0.35),
                             ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: isDark
-                                    ? const Color(
-                                        0xFFFFB800,
-                                      ).withValues(alpha: 0.15)
-                                    : const Color(
-                                        0xFFE5A93C,
-                                      ).withValues(alpha: 0.22),
-                                blurRadius: 18,
-                                offset: const Offset(0, 5),
-                              ),
-                            ],
                           ),
                           child: Row(
                             children: [
                               Container(
-                                width: 44,
-                                height: 44,
+                                padding: const EdgeInsets.all(10),
                                 decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFFFB800),
-                                      Color(0xFFF59E0B),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
+                                  color: const Color(
+                                    0xFF10B981,
+                                  ).withValues(alpha: 0.18),
                                   shape: BoxShape.circle,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFF59E0B,
-                                      ).withValues(alpha: 0.35),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
                                 ),
                                 child: const Icon(
-                                  Icons.workspace_premium_rounded,
-                                  color: Colors.white,
-                                  size: 24,
+                                  Icons.menu_book_rounded,
+                                  color: Color(0xFF10B981),
+                                  size: 22,
                                 ),
                               ),
                               const SizedBox(width: 14),
@@ -790,100 +644,28 @@ class ProfileScreen extends ConsumerWidget {
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Row(
-                                      children: [
-                                        Text(
-                                          'Go Premium',
-                                          style: TextStyle(
-                                            color: isDark
-                                                ? Colors.white
-                                                : const Color(0xFF1E1435),
-                                            fontWeight: FontWeight.w900,
-                                            fontSize: 15.5,
-                                            letterSpacing: -0.2,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 6),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 6,
-                                            vertical: 1.5,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            gradient: const LinearGradient(
-                                              colors: [
-                                                Color(0xFFFFB800),
-                                                Color(0xFFF59E0B),
-                                              ],
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              8,
-                                            ),
-                                          ),
-                                          child: const Text(
-                                            'VIP',
-                                            style: TextStyle(
-                                              color: Colors.white,
-                                              fontWeight: FontWeight.w900,
-                                              fontSize: 9.5,
-                                              letterSpacing: 0.5,
-                                            ),
-                                          ),
-                                        ),
-                                      ],
+                                    Text(
+                                      'MELSAVA Community Guidelines',
+                                      style: TextStyle(
+                                        color: primaryTextColor,
+                                        fontWeight: FontWeight.w800,
+                                        fontSize: 13.5,
+                                      ),
                                     ),
                                     const SizedBox(height: 2),
                                     Text(
-                                      'Unlock who liked you & priority RSVP',
+                                      '10 core principles for authentic, safe social meetups.',
                                       style: TextStyle(
-                                        color: isDark
-                                            ? Colors.white.withValues(
-                                                alpha: 0.75,
-                                              )
-                                            : const Color(0xFF6B5E82),
+                                        color: mutedTextColor,
                                         fontSize: 11.5,
-                                        fontWeight: isDark
-                                            ? FontWeight.normal
-                                            : FontWeight.w500,
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
-                              Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                decoration: BoxDecoration(
-                                  gradient: const LinearGradient(
-                                    colors: [
-                                      Color(0xFFFF9D2E),
-                                      Color(0xFFFF7A00),
-                                    ],
-                                    begin: Alignment.topLeft,
-                                    end: Alignment.bottomRight,
-                                  ),
-                                  borderRadius: BorderRadius.circular(18),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: const Color(
-                                        0xFFFF7A00,
-                                      ).withValues(alpha: 0.38),
-                                      blurRadius: 10,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: const Text(
-                                  'Upgrade',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12.5,
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
+                              Icon(
+                                Icons.chevron_right_rounded,
+                                color: mutedTextColor,
                               ),
                             ],
                           ),
@@ -892,7 +674,7 @@ class ProfileScreen extends ConsumerWidget {
 
                       const SizedBox(height: 20),
 
-                      // ── My Joined Experiences Section (Screen 12) ──
+                      // ── My Joined Experiences Section ──
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
@@ -933,7 +715,7 @@ class ProfileScreen extends ConsumerWidget {
 
                       const SizedBox(height: 22),
 
-                      // ── Community Badges & Vibe Tags (Screen 12) ──
+                      // ── Safety & Community Badges ──
                       Text(
                         'Safety & Community Badges',
                         style: AppTypography.titleMedium.copyWith(
@@ -1005,7 +787,7 @@ class ProfileScreen extends ConsumerWidget {
                         ),
                       ),
 
-                      // Guaranteed clearance for bottom nav
+                      // Clearance for bottom nav
                       const SizedBox(height: 120),
                     ],
                   ),
@@ -1191,10 +973,10 @@ class ProfileScreen extends ConsumerWidget {
     Color mutedTextColor,
   ) {
     final badges = [
-      {'icon': '🌲', 'title': 'Nature Lover', 'desc': 'Joined 8 outdoor treks'},
-      {'icon': '☕', 'title': 'Coffee Buff', 'desc': 'Attended 12 café meetups'},
-      {'icon': '🛡️', 'title': 'Verified Host', 'desc': 'ID & Phone confirmed'},
-      {'icon': '⭐', 'title': 'Reliable RSVP', 'desc': '100% attendance rate'},
+      {'icon': '🌲', 'title': 'Nature Lover', 'desc': 'Joined outdoor treks'},
+      {'icon': '☕', 'title': 'Coffee Buff', 'desc': 'Attended café meetups'},
+      {'icon': '🛡️', 'title': 'Verified Host', 'desc': 'ID confirmed'},
+      {'icon': '⭐', 'title': 'Reliable RSVP', 'desc': 'Consistent attendance'},
     ];
 
     return GridView.builder(

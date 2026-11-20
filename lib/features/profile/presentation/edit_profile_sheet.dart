@@ -42,6 +42,7 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   late String _selectedCity;
   late String _selectedIntent;
   final Set<String> _selectedInterests = {};
+  XFile? _pendingAvatarFile;
   bool _isSaving = false;
 
   static const List<String> _avatarPresets = [
@@ -63,12 +64,12 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
 
   static const List<Map<String, dynamic>> _intentOptions = [
     {
-      'name': 'Friend',
+      'name': 'Friendship',
       'icon': Icons.people_alt_rounded,
       'color': Color(0xFF6366F1),
     },
     {
-      'name': 'Dating',
+      'name': 'Exploring Dating',
       'icon': Icons.favorite_rounded,
       'color': Color(0xFFEC4899),
     },
@@ -76,11 +77,6 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       'name': 'Activity Partner',
       'icon': Icons.extension_rounded,
       'color': Color(0xFFF97316),
-    },
-    {
-      'name': 'Serious Relationship',
-      'icon': Icons.auto_awesome_rounded,
-      'color': Color(0xFF8B5CF6),
     },
   ];
 
@@ -103,18 +99,13 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     final user = ref.read(currentUserProvider);
     final userLoc = ref.read(userLocationProvider);
 
-    _nameController = TextEditingController(text: user?.displayName ?? 'Sneha');
-    _bioController = TextEditingController(
-      text: user?.bio ?? 'Nature lover | Coffee enthusiast | Explorer',
-    );
+    _nameController = TextEditingController(text: user?.displayName ?? '');
+    _bioController = TextEditingController(text: user?.bio ?? '');
     _selectedAvatar = user?.avatarUrl ?? 'assets/images/sneha_avatar.png';
     _selectedCity = user?.city ?? userLoc.city;
-    _selectedIntent = user?.primaryIntent ?? 'Friend';
+    _selectedIntent = user?.primaryIntent ?? 'Friendship';
 
-    _selectedInterests.addAll(
-      user?.interests ??
-          ['Specialty Coffee', 'Weekend Trekking', 'Morning Yoga'],
-    );
+    _selectedInterests.addAll(user?.interests ?? []);
   }
 
   @override
@@ -130,21 +121,36 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
       final picker = ImagePicker();
       final picked = await picker.pickImage(
         source: ImageSource.gallery,
-        maxWidth: 600,
+        maxWidth: 800,
+        imageQuality: 85,
       );
       if (picked != null) {
-        setState(() => _selectedAvatar = picked.path);
+        setState(() {
+          _pendingAvatarFile = picked;
+          _selectedAvatar = picked.path;
+        });
       }
-    } catch (_) {
-      // Keep selected preset on fallback
+    } catch (e) {
+      debugPrint('Avatar pick error: $e');
     }
   }
 
   Future<void> _saveProfile() async {
     final name = _nameController.text.trim();
-    if (name.isEmpty) {
+    if (name.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please enter your display name')),
+        const SnackBar(
+          content: Text('Display name must be at least 2 characters'),
+        ),
+      );
+      return;
+    }
+
+    if (name.length > 50) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Display name cannot exceed 50 characters'),
+        ),
       );
       return;
     }
@@ -152,61 +158,88 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     HapticFeedback.mediumImpact();
     setState(() => _isSaving = true);
 
-    final currentUser = ref.read(currentUserProvider);
-    final updatedUser =
-        (currentUser ?? AppUser(id: 'user-local', email: 'admin@melsava.com'))
-            .copyWith(
-              displayName: name,
-              avatarUrl: _selectedAvatar,
+    try {
+      String finalAvatarUrl = _selectedAvatar;
+
+      // If user selected a new custom image from gallery, upload to Supabase Storage
+      if (_pendingAvatarFile != null) {
+        final uploadedUrl = await ref
+            .read(authRepositoryProvider)
+            .uploadAvatar(_pendingAvatarFile!);
+        if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
+          finalAvatarUrl = uploadedUrl;
+        }
+      }
+
+      final currentUser = ref.read(currentUserProvider);
+      final updatedUser =
+          (currentUser ??
+                  const AppUser(id: 'user-local', email: 'user@melsava.app'))
+              .copyWith(
+                displayName: name,
+                avatarUrl: finalAvatarUrl,
+                city: _selectedCity,
+                bio: _bioController.text.trim(),
+                primaryIntent: _selectedIntent,
+                interests: _selectedInterests.toList(),
+              );
+
+      // Persist atomically via Auth Repository
+      await ref.read(authRepositoryProvider).updateProfile(updatedUser);
+      ref.read(currentUserProvider.notifier).state = updatedUser;
+
+      // Sync Location Service if city changed
+      final matchedCity = WorldwideLocationService.featuredWorldCities
+          .firstWhere(
+            (c) =>
+                c.name.toLowerCase() == _selectedCity.toLowerCase() ||
+                c.city.toLowerCase() == _selectedCity.toLowerCase(),
+            orElse: () => WorldLocation(
+              name: _selectedCity,
               city: _selectedCity,
-              bio: _bioController.text.trim(),
-              primaryIntent: _selectedIntent,
-              interests: _selectedInterests.toList(),
-            );
-
-    // Persist via Auth Repository & SharedPreferences
-    await ref.read(authRepositoryProvider).updateProfile(updatedUser);
-    ref.read(currentUserProvider.notifier).state = updatedUser;
-
-    // Sync Location Service if city changed
-    final matchedCity = WorldwideLocationService.featuredWorldCities.firstWhere(
-      (c) =>
-          c.name.toLowerCase() == _selectedCity.toLowerCase() ||
-          c.city.toLowerCase() == _selectedCity.toLowerCase(),
-      orElse: () => WorldLocation(
-        name: _selectedCity,
-        city: _selectedCity,
-        country: 'India',
-        lat: 19.0760,
-        lon: 72.8777,
-      ),
-    );
-    await ref.read(userLocationProvider.notifier).setLocation(matchedCity);
-
-    if (!mounted) return;
-    setState(() => _isSaving = false);
-    Navigator.of(context).pop();
-
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        behavior: SnackBarBehavior.floating,
-        backgroundColor: const Color(0xFF10B981),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        content: const Row(
-          children: [
-            Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
-            SizedBox(width: 10),
-            Text(
-              'Profile updated successfully! ✨',
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: Colors.white,
-              ),
+              country: 'India',
+              lat: 19.0760,
+              lon: 72.8777,
             ),
-          ],
+          );
+      await ref.read(userLocationProvider.notifier).setLocation(matchedCity);
+
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF10B981),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Text(
+                'Profile updated successfully! ✨',
+                style: TextStyle(
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
         ),
-      ),
-    );
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _isSaving = false);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: AppColors.error,
+          content: Text('Failed to update profile: $e'),
+        ),
+      );
+    }
   }
 
   @override

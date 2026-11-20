@@ -32,6 +32,7 @@ abstract class AuthRepository {
   Future<void> deleteAccountPermanent();
   Future<void> restoreSession();
   Future<void> updateProfile(AppUser updatedUser);
+  Future<String?> uploadAvatar(dynamic file);
   void syncCachedUser(AppUser user);
 }
 
@@ -124,6 +125,8 @@ class SupabaseAuthRepository implements AuthRepository {
     String? bio;
     bool onboardingCompleted = false;
     bool ageVerified = false;
+    bool isVerified = false;
+    bool isSuspended = false;
     bool guidelinesAccepted = false;
     List<String> preferredActivityCategories = const [];
     List<String> availability = const [];
@@ -139,7 +142,9 @@ class SupabaseAuthRepository implements AuthRepository {
     try {
       final profileRow = await client
           .from('profiles')
-          .select('display_name, avatar_url, bio, city, onboarding_completed')
+          .select(
+            'display_name, avatar_url, bio, city, onboarding_completed, is_verified, is_suspended',
+          )
           .eq('id', user.id)
           .maybeSingle();
 
@@ -155,6 +160,8 @@ class SupabaseAuthRepository implements AuthRepository {
         city = profileRow['city'] as String?;
         onboardingCompleted =
             (profileRow['onboarding_completed'] as bool?) ?? false;
+        isVerified = (profileRow['is_verified'] as bool?) ?? false;
+        isSuspended = (profileRow['is_suspended'] as bool?) ?? false;
       }
     } catch (e) {
       debugPrint('[SupabaseAuthRepository] Failed to fetch profiles: $e');
@@ -292,6 +299,8 @@ class SupabaseAuthRepository implements AuthRepository {
       discoveryFormat: discoveryFormat,
       isEmailVerified: isEmailVerified,
       ageVerified: ageVerified,
+      isVerified: isVerified,
+      isSuspended: isSuspended,
       guidelinesAccepted: guidelinesAccepted,
       onboardingCompleted: onboardingCompleted,
     );
@@ -635,23 +644,103 @@ class SupabaseAuthRepository implements AuthRepository {
   @override
   Future<void> updateProfile(AppUser updatedUser) async {
     if (_hasLiveSupabase) {
-      await SupabaseService.client!
-          .from('profiles')
-          .update({
-            if (updatedUser.displayName != null)
-              'display_name': updatedUser.displayName,
-            if (updatedUser.avatarUrl != null)
-              'avatar_url': updatedUser.avatarUrl,
-            if (updatedUser.bio != null) 'bio': updatedUser.bio,
-            if (updatedUser.city != null) 'city': updatedUser.city,
-            'onboarding_completed': updatedUser.onboardingCompleted,
-            'updated_at': DateTime.now().toUtc().toIso8601String(),
-          })
-          .eq('id', updatedUser.id);
+      try {
+        await SupabaseService.client!.rpc(
+          'update_user_profile',
+          params: {
+            'p_display_name': updatedUser.displayName ?? '',
+            'p_avatar_url': updatedUser.avatarUrl ?? '',
+            'p_bio': updatedUser.bio ?? '',
+            'p_city': updatedUser.city ?? '',
+            'p_interests': updatedUser.interests ?? <String>[],
+            'p_primary_intent': updatedUser.primaryIntent ?? '',
+            'p_secondary_intents': updatedUser.secondaryIntents,
+            'p_preferred_categories': updatedUser.preferredActivityCategories,
+            'p_discovery_preferences': {
+              'min_age': updatedUser.discoveryMinAge,
+              'max_age': updatedUser.discoveryMaxAge,
+              'max_distance_km': updatedUser.discoveryMaxDistanceKm,
+              'format': updatedUser.discoveryFormat,
+            },
+          },
+        );
+      } catch (e) {
+        debugPrint(
+          '[SupabaseAuthRepository] update_user_profile RPC error: $e',
+        );
+        await SupabaseService.client!
+            .from('profiles')
+            .update({
+              if (updatedUser.displayName != null)
+                'display_name': updatedUser.displayName,
+              if (updatedUser.avatarUrl != null)
+                'avatar_url': updatedUser.avatarUrl,
+              if (updatedUser.bio != null) 'bio': updatedUser.bio,
+              if (updatedUser.city != null) 'city': updatedUser.city,
+              'onboarding_completed': updatedUser.onboardingCompleted,
+              'updated_at': DateTime.now().toUtc().toIso8601String(),
+            })
+            .eq('id', updatedUser.id);
+      }
     }
 
     _cachedUser = updatedUser;
     _controller.add(_cachedUser);
+  }
+
+  @override
+  Future<String?> uploadAvatar(dynamic file) async {
+    if (!_hasLiveSupabase) return null;
+    final user = _cachedUser ?? currentUser;
+    if (user == null) {
+      throw Exception('Authentication required to upload avatar.');
+    }
+
+    Uint8List bytes;
+    String extension = 'jpg';
+
+    if (file is Uint8List) {
+      bytes = file;
+    } else if (file != null) {
+      try {
+        bytes = await (file as dynamic).readAsBytes();
+        final path = (file as dynamic).path?.toString() ?? '';
+        if (path.toLowerCase().endsWith('.png')) {
+          extension = 'png';
+        } else if (path.toLowerCase().endsWith('.webp')) {
+          extension = 'webp';
+        }
+      } catch (e) {
+        throw Exception('Failed to read image bytes: $e');
+      }
+    } else {
+      throw Exception('Invalid image file.');
+    }
+
+    final fileName =
+        'avatar_${DateTime.now().millisecondsSinceEpoch}.$extension';
+    final storagePath = '${user.id}/$fileName';
+
+    try {
+      await SupabaseService.client!.storage
+          .from('avatars')
+          .uploadBinary(
+            storagePath,
+            bytes,
+            fileOptions: FileOptions(
+              contentType: 'image/$extension',
+              upsert: true,
+            ),
+          );
+
+      final publicUrl = SupabaseService.client!.storage
+          .from('avatars')
+          .getPublicUrl(storagePath);
+      return publicUrl;
+    } catch (e) {
+      debugPrint('[SupabaseAuthRepository] uploadAvatar error: $e');
+      rethrow;
+    }
   }
 
   @override
@@ -698,20 +787,53 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> deleteAccountPermanent() async {
     _ensureBackendAvailable();
     if (_hasLiveSupabase) {
+      bool deleted = false;
+      String? lastError;
+
+      // 1. Try Supabase Edge Function 'delete-account' first
       try {
-        await SupabaseService.client!.rpc('delete_user_account');
+        final res = await SupabaseService.client!.functions.invoke(
+          'delete-account',
+        );
+        if (res.status == 200) {
+          deleted = true;
+        } else {
+          lastError =
+              res.data?['error']?.toString() ??
+              'Edge Function status: ${res.status}';
+        }
       } catch (e) {
-        debugPrint('[AuthRepository] deleteAccountPermanent RPC error: $e');
+        lastError = e.toString();
+        debugPrint('[AuthRepository] delete-account Edge Function error: $e');
+      }
+
+      // 2. Fallback to delete_user_account_permanent RPC if Edge Function was unavailable
+      if (!deleted) {
         try {
-          if (_cachedUser != null) {
-            await SupabaseService.client!
-                .from('profiles')
-                .delete()
-                .eq('id', _cachedUser!.id);
+          final res = await SupabaseService.client!.rpc(
+            'delete_user_account_permanent',
+            params: {'p_confirmation': 'DELETE'},
+          );
+          if (res != null && res['success'] == true) {
+            deleted = true;
           }
-        } catch (_) {}
+        } catch (rpcErr) {
+          lastError = rpcErr.toString();
+          debugPrint(
+            '[AuthRepository] delete_user_account_permanent RPC error: $rpcErr',
+          );
+        }
+      }
+
+      // If both server methods failed, STOP. Never delete profiles row alone!
+      if (!deleted) {
+        throw Exception(
+          'Failed to permanently delete account from server: $lastError. Your account was not deleted.',
+        );
       }
     }
+
+    // Only sign out after confirmed permanent server deletion
     await signOut();
   }
 

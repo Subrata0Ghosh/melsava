@@ -235,6 +235,87 @@ String _formatTimeAgo(DateTime? dt) {
   return '${(diff.inDays / 7).floor()}w ago';
 }
 
+/// Represents a blocked user profile.
+class BlockedUserModel {
+  final String blockedId;
+  final String displayName;
+  final String avatarUrl;
+  final DateTime? blockedAt;
+
+  const BlockedUserModel({
+    required this.blockedId,
+    required this.displayName,
+    required this.avatarUrl,
+    this.blockedAt,
+  });
+
+  factory BlockedUserModel.fromMap(Map<String, dynamic> map) {
+    DateTime? dt;
+    final rawDt = map['blocked_at'] ?? map['created_at'];
+    if (rawDt != null) {
+      dt = DateTime.tryParse(rawDt.toString());
+    }
+    return BlockedUserModel(
+      blockedId: map['blocked_id']?.toString() ?? '',
+      displayName: (map['display_name'] as String?)?.trim().isNotEmpty == true
+          ? (map['display_name'] as String).trim()
+          : 'MELSAVA Member',
+      avatarUrl: (map['avatar_url'] as String?)?.trim() ?? '',
+      blockedAt: dt,
+    );
+  }
+}
+
+/// Represents a submitted community moderation report.
+class ModerationReportModel {
+  final String reportId;
+  final String reportedUserId;
+  final String reportedName;
+  final String reportedAvatar;
+  final String reportedContentType;
+  final String? reportedContentId;
+  final String reason;
+  final String? description;
+  final String status;
+  final DateTime? createdAt;
+
+  const ModerationReportModel({
+    required this.reportId,
+    required this.reportedUserId,
+    required this.reportedName,
+    required this.reportedAvatar,
+    required this.reportedContentType,
+    this.reportedContentId,
+    required this.reason,
+    this.description,
+    required this.status,
+    this.createdAt,
+  });
+
+  factory ModerationReportModel.fromMap(Map<String, dynamic> map) {
+    DateTime? dt;
+    final rawDt = map['created_at'];
+    if (rawDt != null) {
+      dt = DateTime.tryParse(rawDt.toString());
+    }
+    return ModerationReportModel(
+      reportId: map['report_id']?.toString() ?? map['id']?.toString() ?? '',
+      reportedUserId: map['reported_user_id']?.toString() ?? '',
+      reportedName: (map['reported_name'] as String?)?.trim().isNotEmpty == true
+          ? (map['reported_name'] as String).trim()
+          : 'MELSAVA Member',
+      reportedAvatar: (map['reported_avatar'] as String?)?.trim() ?? '',
+      reportedContentType:
+          map['reported_content_type']?.toString() ?? 'profile',
+      reportedContentId: map['reported_content_id']?.toString(),
+      reason: map['reason']?.toString() ?? 'Other concern',
+      description: map['description']?.toString(),
+      status: map['status']?.toString() ?? 'pending',
+      createdAt: dt,
+    );
+  }
+}
+
 /// Contract for connections and messaging data.
 abstract class ConnectionsRepository {
   Future<List<ConnectionModel>> fetchConnections();
@@ -247,12 +328,28 @@ abstract class ConnectionsRepository {
   Future<bool> sendMessage(String conversationId, String content);
   Future<int> markConversationRead(String conversationId);
   Future<String?> getOrCreateConversation(String connectionId);
+  Future<List<BlockedUserModel>> fetchBlockedUsers();
   Future<bool> blockUser(String partnerId);
+  Future<bool> unblockUser(String blockedId);
   Future<bool> reportUser({
     required String reportedUserId,
     required String reason,
     String? description,
+    String? contentType,
+    String? contentId,
     String? conversationId,
+  });
+  Future<bool> isCurrentUserModerator();
+  Future<List<ModerationReportModel>> fetchModerationReports({
+    String status = 'pending',
+  });
+  Future<bool> resolveModerationReport(String reportId, String status);
+  Future<bool> applyModerationAction({
+    required String userId,
+    required String actionType,
+    required String reason,
+    String? reportId,
+    DateTime? expiresAt,
   });
   RealtimeChannel? subscribeToConversationMessages({
     required String conversationId,
@@ -392,20 +489,78 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
   }
 
   @override
+  Future<List<BlockedUserModel>> fetchBlockedUsers() async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final rows = await _client!.rpc('get_blocked_users');
+      if (rows is List) {
+        return rows
+            .whereType<Map>()
+            .map((r) => BlockedUserModel.fromMap(Map<String, dynamic>.from(r)))
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] fetchBlockedUsers error: $e');
+      return const [];
+    }
+  }
+
+  @override
   Future<bool> blockUser(String partnerId) async {
     if (!_hasLiveSupabase || partnerId.isEmpty) return false;
     try {
-      final currentUserId = _client!.auth.currentUser?.id;
-      if (currentUserId == null) return false;
-
-      await _client!.from('blocks').upsert({
-        'blocker_id': currentUserId,
-        'blocked_id': partnerId,
-      });
-      return true;
+      final res = await _client!.rpc(
+        'block_user',
+        params: {'p_blocked_id': partnerId},
+      );
+      return res == true;
     } catch (e) {
-      debugPrint('[ConnectionsRepository] blockUser error: $e');
-      return false;
+      debugPrint('[ConnectionsRepository] blockUser RPC error: $e');
+      try {
+        final currentUserId = _client!.auth.currentUser?.id;
+        if (currentUserId == null) return false;
+
+        await _client!.from('blocks').upsert({
+          'blocker_id': currentUserId,
+          'blocked_id': partnerId,
+        });
+        return true;
+      } catch (tableErr) {
+        debugPrint(
+          '[ConnectionsRepository] blockUser table fallback error: $tableErr',
+        );
+        return false;
+      }
+    }
+  }
+
+  @override
+  Future<bool> unblockUser(String blockedId) async {
+    if (!_hasLiveSupabase || blockedId.isEmpty) return false;
+    try {
+      final res = await _client!.rpc(
+        'unblock_user',
+        params: {'p_blocked_id': blockedId},
+      );
+      return res == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] unblockUser RPC error: $e');
+      try {
+        final currentUserId = _client!.auth.currentUser?.id;
+        if (currentUserId == null) return false;
+
+        await _client!.from('blocks').delete().match({
+          'blocker_id': currentUserId,
+          'blocked_id': blockedId,
+        });
+        return true;
+      } catch (tableErr) {
+        debugPrint(
+          '[ConnectionsRepository] unblockUser table fallback error: $tableErr',
+        );
+        return false;
+      }
     }
   }
 
@@ -414,25 +569,132 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
     required String reportedUserId,
     required String reason,
     String? description,
+    String? contentType,
+    String? contentId,
     String? conversationId,
   }) async {
     if (!_hasLiveSupabase || reportedUserId.isEmpty) return false;
-    try {
-      final currentUserId = _client!.auth.currentUser?.id;
-      if (currentUserId == null) return false;
+    final finalContentType =
+        contentType ?? (conversationId != null ? 'conversation' : 'profile');
+    final finalContentId = contentId ?? conversationId;
 
-      await _client!.from('reports').insert({
-        'reporter_id': currentUserId,
-        'reported_user_id': reportedUserId,
-        'reported_content_type': 'conversation',
-        if (conversationId != null && conversationId.isNotEmpty)
-          'reported_content_id': conversationId,
-        'reason': reason,
-        'description': description,
-      });
-      return true;
+    try {
+      final res = await _client!.rpc(
+        'submit_user_report',
+        params: {
+          'p_reported_user_id': reportedUserId,
+          'p_reason': reason,
+          if (description != null && description.isNotEmpty)
+            'p_description': description,
+          'p_content_type': finalContentType,
+          if (finalContentId != null && finalContentId.isNotEmpty)
+            'p_content_id': finalContentId,
+        },
+      );
+      return res != null && res['success'] == true;
     } catch (e) {
-      debugPrint('[ConnectionsRepository] reportUser error: $e');
+      debugPrint('[ConnectionsRepository] submit_user_report RPC error: $e');
+      try {
+        final currentUserId = _client!.auth.currentUser?.id;
+        if (currentUserId == null) return false;
+
+        await _client!.from('reports').insert({
+          'reporter_id': currentUserId,
+          'reported_user_id': reportedUserId,
+          'reported_content_type': finalContentType,
+          if (finalContentId != null && finalContentId.isNotEmpty)
+            'reported_content_id': finalContentId,
+          'reason': reason,
+          if (description != null && description.isNotEmpty)
+            'description': description,
+          'status': 'pending',
+        });
+        return true;
+      } catch (insertErr) {
+        debugPrint(
+          '[ConnectionsRepository] reportUser table fallback error: $insertErr',
+        );
+        return false;
+      }
+    }
+  }
+
+  @override
+  Future<bool> isCurrentUserModerator() async {
+    if (!_hasLiveSupabase) return false;
+    try {
+      final res = await _client!.rpc('is_moderator');
+      return res == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] is_moderator error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<List<ModerationReportModel>> fetchModerationReports({
+    String status = 'pending',
+  }) async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final rows = await _client!.rpc(
+        'get_moderation_reports',
+        params: {'p_status': status},
+      );
+      if (rows is List) {
+        return rows
+            .whereType<Map>()
+            .map(
+              (r) =>
+                  ModerationReportModel.fromMap(Map<String, dynamic>.from(r)),
+            )
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] fetchModerationReports error: $e');
+      return const [];
+    }
+  }
+
+  @override
+  Future<bool> resolveModerationReport(String reportId, String status) async {
+    if (!_hasLiveSupabase || reportId.isEmpty) return false;
+    try {
+      final res = await _client!.rpc(
+        'resolve_moderation_report',
+        params: {'p_report_id': reportId, 'p_new_status': status},
+      );
+      return res == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] resolveModerationReport error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> applyModerationAction({
+    required String userId,
+    required String actionType,
+    required String reason,
+    String? reportId,
+    DateTime? expiresAt,
+  }) async {
+    if (!_hasLiveSupabase || userId.isEmpty) return false;
+    try {
+      final res = await _client!.rpc(
+        'apply_moderation_action',
+        params: {
+          'p_user_id': userId,
+          'p_action_type': actionType,
+          'p_reason': reason,
+          if (reportId != null && reportId.isNotEmpty) 'p_report_id': reportId,
+          if (expiresAt != null) 'p_expires_at': expiresAt.toIso8601String(),
+        },
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] applyModerationAction error: $e');
       return false;
     }
   }
@@ -523,4 +785,22 @@ final conversationMessagesProvider = FutureProvider.autoDispose
     .family<List<ChatMessageModel>, String>((ref, conversationId) async {
       final repo = ref.watch(connectionsRepositoryProvider);
       return repo.fetchMessages(conversationId);
+    });
+
+final blockedUsersProvider = FutureProvider.autoDispose<List<BlockedUserModel>>(
+  (ref) async {
+    final repo = ref.watch(connectionsRepositoryProvider);
+    return repo.fetchBlockedUsers();
+  },
+);
+
+final isModeratorProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final repo = ref.watch(connectionsRepositoryProvider);
+  return repo.isCurrentUserModerator();
+});
+
+final moderationReportsProvider = FutureProvider.autoDispose
+    .family<List<ModerationReportModel>, String>((ref, status) async {
+      final repo = ref.watch(connectionsRepositoryProvider);
+      return repo.fetchModerationReports(status: status);
     });

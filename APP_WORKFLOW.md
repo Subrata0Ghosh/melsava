@@ -435,28 +435,80 @@ When an exact match is confirmed:
 
 ---
 
-## M. Profile Management
+## M. Profile Management, Safety & Account Settings
 
-### Profile Tab
-Displays and allows editing of:
+### Profile Tab (`ProfileScreen`)
+Displays real authenticated user details:
+- **Profile Photo**: Rendered via `AppSmartImage`, with green verified badge rendered strictly if `user.isVerified == true`.
+- **Display Name & Location**: Actual display name (never hard-coded demo fallbacks like "Sneha") and selected city.
+- **Bio**: Genuine bio text or friendly prompt to add one.
+- **Real Statistics**: Displays real attended/upcoming experiences joined count and real mutual connections count. Fake follower metrics ("12 Followers") are completely omitted.
+- **Interests & Passions**: Real selected interests chips.
+- **Safety Card**: Direct one-tap navigation to the 10 Community Guidelines.
 
-| Section | Content |
-|---|---|
-| Photo | Profile photograph with edit option |
-| Display Name | Editable name |
-| Bio | Short introduction text |
-| Interests | Selected interest tags |
-| Intentions | Connection intentions (with primary) |
-| Activities | Preferred activity categories |
-| Location | Broad city/area |
+### Edit Profile Sheet (`EditProfileSheet`)
+Full-featured interactive sheet allowing real-time edits:
+- **Custom Photo Upload**: Select from device gallery or camera via `ImagePicker`, uploaded directly to Supabase Storage `avatars` bucket (`avatars/${userId}/...`).
+- **Display Name**: Validated to between 2 and 50 characters.
+- **Bio**: Short introduction text.
+- **Location & City**: Worldwide city selector.
+- **Intentions**: Primary connection intention (Friendship, Exploring Dating, Activity Partner).
+- **Interests**: Multiselect interest tags.
+- **Atomic Persistence**: Persisted atomically via `update_user_profile` RPC, updating `profiles`, `profile_interests`, `profile_intentions`, and `profile_private`. Retains input and provides error feedback on failure.
 
-### Settings & Controls
-- **Edit Profile** — Modify any profile section
-- **Privacy Controls** — What information is visible to others
-- **Notification Settings** — Push notification preferences
-- **Community Guidelines** — Review guidelines
-- **Account Deletion** — Permanently delete account and data
-- **Sign Out** — End current session
+### Block Management (`BlockedProfilesScreen`)
+- Accessible from Settings → Privacy & Safety → Blocked Profiles.
+- Powered by `get_blocked_users()` RPC and `blockedUsersProvider`.
+- Displays real list of blocked users with avatars, names, and blocked dates.
+- Provides immediate "Unblock" action with confirmation dialog, cache invalidation, and real-time reflection across Connections and Inbox.
+
+### Confidential Reporting System (`ReportDialog`)
+- Modal report dialog accessible from conversation menus, connection profiles, and experience participant cards.
+- 9 Canonical Report Categories:
+  1. *Inappropriate or offensive behavior*
+  2. *Harassment or unwanted contact*
+  3. *Hate speech or discrimination*
+  4. *Commercial solicitation or spam*
+  5. *Misrepresentation or fake profile*
+  6. *Safety concern at an activity*
+  7. *No-show or unexcused absence*
+  8. *Non-consensual contact or privacy violation*
+  9. *Other community guideline concern*
+- Enforces 500-character max limit on descriptions with counter.
+- Strictly confidential storage via `submit_user_report` RPC.
+- Asynchronous submission state with loading spinner; never closes prematurely on network failure.
+
+### Community Guidelines (`CommunityGuidelinesScreen`)
+- Dedicated screen detailing MELSAVA's 10 Core Guidelines:
+  1. Authentic Identity
+  2. Vetted Public Spaces Only
+  3. Zero Tolerance for Harassment
+  4. Explicit Consent & Boundaries
+  5. Punctuality & RSVP Etiquette
+  6. Non-Commercial Gathering
+  7. Privacy & Discretion
+  8. Substance & Alcohol Moderation
+  9. Inclusion & Kindness
+  10. Proactive Safety & Reporting
+- Accessible from Settings, Profile, and Report dialogs.
+
+### Basic Moderation Console (`ModerationScreen`)
+- Restricted to verified community moderators (`is_moderator()` / `isModeratorProvider`).
+- Filter reports by status: Pending, Reviewed, Resolved, Dismissed, All.
+- Moderator Actions:
+  - **Dismiss**: Resolves report as dismissed without penalty.
+  - **Issue Warning**: Records formal warning in `moderation_actions` audit log.
+  - **Suspend Account**: Sets `profiles.is_suspended = TRUE` and records action, revoking access to all conversations and circles.
+
+### Account Deletion & Deactivation
+- **Temporary Deactivation**: Sets `is_deactivated = TRUE`, hides profile and activities, preserves connections for return.
+- **Permanent Account Deletion**:
+  - Requires explicit `'DELETE'` confirmation.
+  - Executed via `delete-account` Supabase Edge Function (Deno) or `delete_user_account_permanent` RPC.
+  - Purges user avatar from Supabase Storage `avatars` bucket.
+  - Cascades profile foreign keys (blocks, reports, choices, connections, conversations).
+  - Deletes user from Supabase Auth via Admin API.
+  - Never deletes `profiles` record alone on failure; rethrows clear errors while keeping user session intact until confirmed server completion.
 
 ---
 

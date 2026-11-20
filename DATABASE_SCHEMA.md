@@ -426,6 +426,19 @@ Push notification tokens.
 
 ---
 
+### 22. `moderators` (Migration 014)
+
+Platform moderation roles and access control.
+
+| Column | Type | Constraints | Description |
+|--------|------|-------------|-------------|
+| `user_id` | UUID (PK) | FK → profiles(id) ON DELETE CASCADE | Moderator's profile ID |
+| `created_at` | TIMESTAMPTZ | DEFAULT now() | Role assignment timestamp |
+
+**RLS:** Self-read (`auth.uid() = user_id`) or admin role from JWT.
+
+---
+
 ## Custom Enum Types
 
 | Type | Values |
@@ -479,6 +492,16 @@ Push notification tokens.
 | `get_or_create_conversation_for_connection(UUID)` | 013 | Safe RPC: gets or creates 2-member conversation for mutual connection |
 | `send_conversation_message(UUID, TEXT)` | 013 | Secure RPC: server sender ID (`auth.uid()`), whitespace trim, 1000 char maximum |
 | `mark_conversation_read(UUID)` | 013 | Secure RPC: atomic read receipt marking for incoming peer messages |
+| `update_user_profile(...)` | 014 | Atomic RPC: updates display name, avatar, bio, city, interests, and intentions while strictly protecting sensitive system columns (`id`, `is_verified`, `is_suspended`) |
+| `block_user(UUID)` | 014 | Safety RPC: blocks target member, rejects self-blocking and duplicate blocks |
+| `unblock_user(UUID)` | 014 | Safety RPC: removes block relation between caller and target member |
+| `get_blocked_users()` | 014 | Safety RPC: returns authentic list of blocked profiles for settings management |
+| `submit_user_report(UUID, TEXT, TEXT, TEXT, UUID)` | 014 | Moderation RPC: validates 9 canonical reasons, enforces 500-char max, maintains reporter confidentiality |
+| `is_moderator()` | 014 | Security helper: checks JWT admin claims and `moderators` table |
+| `get_moderation_reports(TEXT)` | 014 | Moderation RPC: filtered report queue for authorized moderators |
+| `resolve_moderation_report(UUID, TEXT)` | 014 | Moderation RPC: updates report status (reviewed, resolved, dismissed) |
+| `apply_moderation_action(UUID, TEXT, TEXT, UUID, TIMESTAMPTZ)` | 014 | Moderation RPC: records moderation action and immediately suspends account when action is suspension/ban |
+| `delete_user_account_permanent(TEXT)` | 014 | Account RPC: requires explicit confirmation keyword 'DELETE', cascades all user data safely |
 
 ---
 

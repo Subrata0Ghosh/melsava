@@ -9,6 +9,7 @@ import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../../connections/data/connections_repository.dart';
 
 /// Screen 13 (from 15-screen master mosaic): Complete Functional Settings Screen
 ///
@@ -39,6 +40,7 @@ class SettingsScreen extends ConsumerWidget {
         ? const Color(0xFF332A45)
         : const Color(0xFFEDE9FE);
     final currentUser = ref.watch(currentUserProvider);
+    final isModerator = ref.watch(isModeratorProvider).valueOrNull ?? false;
 
     return Scaffold(
       backgroundColor: isDark
@@ -145,7 +147,8 @@ class SettingsScreen extends ConsumerWidget {
                           icon: Icons.lock_outline_rounded,
                           title: 'Privacy & Safety',
                           subtitle: 'Radar ghost mode & venue verification',
-                          onTap: () => _showPrivacySafetySheet(context, isDark),
+                          onTap: () =>
+                              _showPrivacySafetySheet(context, ref, isDark),
                           primaryTextColor: primaryTextColor,
                           mutedTextColor: mutedTextColor,
                           isDark: isDark,
@@ -172,6 +175,16 @@ class SettingsScreen extends ConsumerWidget {
                         ),
                         _buildDivider(borderColor),
                         _buildSettingsRow(
+                          icon: Icons.menu_book_rounded,
+                          title: 'Community Guidelines',
+                          subtitle: '10 core rules for respectful meetups',
+                          onTap: () => context.push('/community-guidelines'),
+                          primaryTextColor: primaryTextColor,
+                          mutedTextColor: mutedTextColor,
+                          isDark: isDark,
+                        ),
+                        _buildDivider(borderColor),
+                        _buildSettingsRow(
                           icon: Icons.info_outline_rounded,
                           title: 'About MELSAVA',
                           subtitle: 'v2.0.0 (Build 2026) · Philosophy & terms',
@@ -180,6 +193,18 @@ class SettingsScreen extends ConsumerWidget {
                           mutedTextColor: mutedTextColor,
                           isDark: isDark,
                         ),
+                        if (isModerator) ...[
+                          _buildDivider(borderColor),
+                          _buildSettingsRow(
+                            icon: Icons.admin_panel_settings_outlined,
+                            title: 'Moderation Console',
+                            subtitle: 'Review flagged members & reports',
+                            onTap: () => context.push('/moderation'),
+                            primaryTextColor: primaryTextColor,
+                            mutedTextColor: mutedTextColor,
+                            isDark: isDark,
+                          ),
+                        ],
                       ],
                     ),
 
@@ -371,8 +396,6 @@ class SettingsScreen extends ConsumerWidget {
     final borderColor = isDark
         ? const Color(0xFF382E4D)
         : const Color(0xFFEDE9FE);
-
-    bool is2faEnabled = true;
 
     showModalBottomSheet(
       context: context,
@@ -715,7 +738,7 @@ class SettingsScreen extends ConsumerWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Two-Factor Authentication',
+                                'Two-Factor Authentication (TOTP)',
                                 style: TextStyle(
                                   color: primaryTextColor,
                                   fontWeight: FontWeight.w700,
@@ -723,9 +746,7 @@ class SettingsScreen extends ConsumerWidget {
                                 ),
                               ),
                               Text(
-                                is2faEnabled
-                                    ? 'Protected with SMS code on sign in'
-                                    : 'Disabled (Not recommended)',
+                                'Authenticator app (TOTP) support coming soon for enhanced account security.',
                                 style: TextStyle(
                                   color: mutedTextColor,
                                   fontSize: 11,
@@ -733,24 +754,6 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                             ],
                           ),
-                        ),
-                        Switch.adaptive(
-                          value: is2faEnabled,
-                          activeColor: AppColors.brightViolet,
-                          onChanged: (val) {
-                            HapticFeedback.lightImpact();
-                            setSheetState(() => is2faEnabled = val);
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text(
-                                  val
-                                      ? '2FA Enabled successfully'
-                                      : '2FA Disabled',
-                                ),
-                                duration: const Duration(seconds: 2),
-                              ),
-                            );
-                          },
                         ),
                       ],
                     ),
@@ -1242,20 +1245,34 @@ class SettingsScreen extends ConsumerWidget {
                           );
                           if (confirm != true || !context.mounted) return;
                           final messenger = ScaffoldMessenger.of(context);
-                          await ref
-                              .read(authRepositoryProvider)
-                              .deleteAccountPermanent();
-                          ref.read(currentUserProvider.notifier).state = null;
-                          if (context.mounted) {
-                            context.go('/welcome');
-                            messenger.showSnackBar(
-                              const SnackBar(
-                                content: Text(
-                                  'Your MELSAVA account and personal data have been permanently deleted.',
+                          try {
+                            await ref
+                                .read(authRepositoryProvider)
+                                .deleteAccountPermanent();
+                            ref.read(currentUserProvider.notifier).state = null;
+                            if (context.mounted) {
+                              context.go('/welcome');
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    'Your MELSAVA account and personal data have been permanently deleted.',
+                                  ),
+                                  duration: Duration(seconds: 4),
                                 ),
-                                duration: Duration(seconds: 4),
-                              ),
-                            );
+                              );
+                            }
+                          } catch (err) {
+                            if (context.mounted) {
+                              messenger.showSnackBar(
+                                SnackBar(
+                                  backgroundColor: AppColors.error,
+                                  content: Text(
+                                    'Account deletion failed: $err',
+                                  ),
+                                  duration: const Duration(seconds: 5),
+                                ),
+                              );
+                            }
                           }
                         },
                         child: const Text(
@@ -1642,7 +1659,11 @@ class SettingsScreen extends ConsumerWidget {
   // ──────────────────────────────────────────────────────────────────────────
   // 3. PRIVACY & SAFETY SHEET
   // ──────────────────────────────────────────────────────────────────────────
-  void _showPrivacySafetySheet(BuildContext context, bool isDark) {
+  void _showPrivacySafetySheet(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+  ) {
     HapticFeedback.lightImpact();
     final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
     final primaryTextColor = isDark
@@ -1668,237 +1689,289 @@ class SettingsScreen extends ConsumerWidget {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(28)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setSheetState) => Padding(
-          padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
-          child: SingleChildScrollView(
-            physics: const ClampingScrollPhysics(),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Center(
-                  child: Container(
-                    width: 44,
-                    height: 4.5,
-                    decoration: BoxDecoration(
-                      color: mutedTextColor.withValues(alpha: 0.35),
-                      borderRadius: BorderRadius.circular(3),
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(8),
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF10B981).withValues(alpha: 0.15),
-                        shape: BoxShape.circle,
-                      ),
-                      child: const Icon(
-                        Icons.lock_person_rounded,
-                        color: Color(0xFF10B981),
-                        size: 22,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Privacy & Safety Controls',
-                            style: AppTypography.titleMedium.copyWith(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 18,
-                              color: primaryTextColor,
-                            ),
-                          ),
-                          Text(
-                            'Control visibility and review public venue guarantees',
-                            style: TextStyle(
-                              color: mutedTextColor,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.close_rounded, color: mutedTextColor),
-                      onPressed: () => Navigator.of(context).pop(),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 18),
+      builder: (ctx) {
+        final blockedCount = ref
+            .watch(blockedUsersProvider)
+            .maybeWhen(data: (list) => list.length, orElse: () => 0);
 
-                // Vetted Venues Pledge Card
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [
-                        const Color(
-                          0xFF10B981,
-                        ).withValues(alpha: isDark ? 0.2 : 0.12),
-                        const Color(
-                          0xFF059669,
-                        ).withValues(alpha: isDark ? 0.08 : 0.04),
-                      ],
-                    ),
-                    borderRadius: BorderRadius.circular(18),
-                    border: Border.all(
-                      color: const Color(0xFF10B981).withValues(alpha: 0.35),
+        return StatefulBuilder(
+          builder: (context, setSheetState) => Padding(
+            padding: const EdgeInsets.fromLTRB(20, 14, 20, 24),
+            child: SingleChildScrollView(
+              physics: const ClampingScrollPhysics(),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 44,
+                      height: 4.5,
+                      decoration: BoxDecoration(
+                        color: mutedTextColor.withValues(alpha: 0.35),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
                   ),
-                  child: Row(
+                  const SizedBox(height: 16),
+                  Row(
                     children: [
-                      const Icon(
-                        Icons.verified_user_rounded,
-                        color: Color(0xFF10B981),
-                        size: 26,
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: 0.15),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.lock_person_rounded,
+                          color: Color(0xFF10B981),
+                          size: 22,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Text(
-                              'Vetted Public Venues Only',
-                              style: TextStyle(
-                                color: Color(0xFF10B981),
+                            Text(
+                              'Privacy & Safety Controls',
+                              style: AppTypography.titleMedium.copyWith(
                                 fontWeight: FontWeight.w800,
-                                fontSize: 13.5,
+                                fontSize: 18,
+                                color: primaryTextColor,
                               ),
                             ),
-                            const SizedBox(height: 2),
                             Text(
-                              'MELSAVA strictly restricts meetups to certified public spaces (licensed cafés, public trails, registered studios). Private addresses are never permitted.',
+                              'Control visibility and review public venue guarantees',
                               style: TextStyle(
-                                color: primaryTextColor.withValues(alpha: 0.85),
-                                fontSize: 11,
+                                color: mutedTextColor,
+                                fontSize: 11.5,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ],
-                  ),
-                ),
-
-                const SizedBox(height: 14),
-
-                Container(
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: borderColor, width: 0.9),
-                  ),
-                  child: Column(
-                    children: [
-                      _buildSwitchTile(
-                        title: 'Public Activity Radar',
-                        subtitle:
-                            'Appear on radar for other attendees joining the same events',
-                        value: publicRadar,
-                        onChanged: (val) =>
-                            setSheetState(() => publicRadar = val),
-                        primaryTextColor: primaryTextColor,
-                        mutedTextColor: mutedTextColor,
-                      ),
-                      Divider(
-                        height: 1,
-                        color: borderColor,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                      _buildSwitchTile(
-                        title: 'Incognito Ghost Mode',
-                        subtitle:
-                            'Browse experiences completely hidden from discovery',
-                        value: ghostMode,
-                        onChanged: (val) =>
-                            setSheetState(() => ghostMode = val),
-                        primaryTextColor: primaryTextColor,
-                        mutedTextColor: mutedTextColor,
-                      ),
-                      Divider(
-                        height: 1,
-                        color: borderColor,
-                        indent: 16,
-                        endIndent: 16,
-                      ),
-                      _buildSwitchTile(
-                        title: 'Display Active City',
-                        subtitle:
-                            'Let other attendees know your home city badge',
-                        value: showCity,
-                        onChanged: (val) => setSheetState(() => showCity = val),
-                        primaryTextColor: primaryTextColor,
-                        mutedTextColor: mutedTextColor,
+                      IconButton(
+                        icon: Icon(Icons.close_rounded, color: mutedTextColor),
+                        onPressed: () => Navigator.of(context).pop(),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 18),
 
-                const SizedBox(height: 14),
-
-                // Blocked Users tile
-                InkWell(
-                  onTap: () {
-                    HapticFeedback.lightImpact();
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(
-                        content: Text(
-                          'No users currently blocked. You have a clean roster!',
-                        ),
-                      ),
-                    );
-                  },
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 14,
-                    ),
+                  // Vetted Venues Pledge Card
+                  Container(
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
-                      color: cardBg,
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: borderColor, width: 0.9),
+                      gradient: LinearGradient(
+                        colors: [
+                          const Color(
+                            0xFF10B981,
+                          ).withValues(alpha: isDark ? 0.2 : 0.12),
+                          const Color(
+                            0xFF059669,
+                          ).withValues(alpha: isDark ? 0.08 : 0.04),
+                        ],
+                      ),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(
+                        color: const Color(0xFF10B981).withValues(alpha: 0.35),
+                      ),
                     ),
                     child: Row(
                       children: [
                         const Icon(
-                          Icons.block_flipped,
-                          size: 20,
-                          color: AppColors.error,
+                          Icons.verified_user_rounded,
+                          color: Color(0xFF10B981),
+                          size: 26,
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Text(
-                            'Blocked Profiles (0)',
-                            style: TextStyle(
-                              color: primaryTextColor,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 13.5,
-                            ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Vetted Public Venues Only',
+                                style: TextStyle(
+                                  color: Color(0xFF10B981),
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 13.5,
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'MELSAVA strictly restricts meetups to certified public spaces (licensed cafés, public trails, registered studios). Private addresses are never permitted.',
+                                style: TextStyle(
+                                  color: primaryTextColor.withValues(
+                                    alpha: 0.85,
+                                  ),
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
                           ),
-                        ),
-                        Icon(
-                          Icons.chevron_right_rounded,
-                          color: mutedTextColor,
-                          size: 20,
                         ),
                       ],
                     ),
                   ),
-                ),
-              ],
+
+                  const SizedBox(height: 14),
+
+                  Container(
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: borderColor, width: 0.9),
+                    ),
+                    child: Column(
+                      children: [
+                        _buildSwitchTile(
+                          title: 'Public Activity Radar',
+                          subtitle:
+                              'Appear on radar for other attendees joining the same events',
+                          value: publicRadar,
+                          onChanged: (val) =>
+                              setSheetState(() => publicRadar = val),
+                          primaryTextColor: primaryTextColor,
+                          mutedTextColor: mutedTextColor,
+                        ),
+                        Divider(
+                          height: 1,
+                          color: borderColor,
+                          indent: 16,
+                          endIndent: 16,
+                        ),
+                        _buildSwitchTile(
+                          title: 'Incognito Ghost Mode',
+                          subtitle:
+                              'Browse experiences completely hidden from discovery',
+                          value: ghostMode,
+                          onChanged: (val) =>
+                              setSheetState(() => ghostMode = val),
+                          primaryTextColor: primaryTextColor,
+                          mutedTextColor: mutedTextColor,
+                        ),
+                        Divider(
+                          height: 1,
+                          color: borderColor,
+                          indent: 16,
+                          endIndent: 16,
+                        ),
+                        _buildSwitchTile(
+                          title: 'Display Active City',
+                          subtitle:
+                              'Let other attendees know your home city badge',
+                          value: showCity,
+                          onChanged: (val) =>
+                              setSheetState(() => showCity = val),
+                          primaryTextColor: primaryTextColor,
+                          mutedTextColor: mutedTextColor,
+                        ),
+                      ],
+                    ),
+                  ),
+
+                  const SizedBox(height: 14),
+
+                  // Blocked Users tile
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/blocked-profiles');
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: borderColor, width: 0.9),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.block_flipped,
+                            size: 20,
+                            color: AppColors.error,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Blocked Profiles ($blockedCount)',
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: mutedTextColor,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Community Guidelines tile
+                  InkWell(
+                    onTap: () {
+                      Navigator.of(context).pop();
+                      context.push('/community-guidelines');
+                    },
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 14,
+                      ),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: borderColor, width: 0.9),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(
+                            Icons.menu_book_rounded,
+                            size: 20,
+                            color: AppColors.brightViolet,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              'Community Guidelines',
+                              style: TextStyle(
+                                color: primaryTextColor,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 13.5,
+                              ),
+                            ),
+                          ),
+                          Icon(
+                            Icons.chevron_right_rounded,
+                            color: mutedTextColor,
+                            size: 20,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-      ),
+        );
+      },
     );
   }
 

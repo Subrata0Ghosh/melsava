@@ -150,6 +150,11 @@ class _InMemoryAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<String?> uploadAvatar(dynamic file) async {
+    return 'https://example.com/uploaded_avatar.png';
+  }
+
+  @override
   void syncCachedUser(AppUser user) {
     _user = user;
     _controller.add(_user);

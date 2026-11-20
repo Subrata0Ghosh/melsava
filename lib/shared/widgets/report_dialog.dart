@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/constants/app_constants.dart';
 import '../../core/constants/app_typography.dart';
@@ -9,7 +11,7 @@ import 'secondary_button.dart';
 /// safety concerns, or guideline violations.
 class ReportDialog extends StatefulWidget {
   final String targetTitle;
-  final Function(String reason, String description) onSubmit;
+  final FutureOr<dynamic> Function(String reason, String description) onSubmit;
 
   const ReportDialog({
     super.key,
@@ -20,7 +22,8 @@ class ReportDialog extends StatefulWidget {
   static Future<void> show(
     BuildContext context, {
     required String targetTitle,
-    required Function(String reason, String description) onSubmit,
+    required FutureOr<dynamic> Function(String reason, String description)
+    onSubmit,
   }) {
     return showDialog(
       context: context,
@@ -34,17 +37,22 @@ class ReportDialog extends StatefulWidget {
 }
 
 class _ReportDialogState extends State<ReportDialog> {
-  final List<String> _reasons = [
+  static const List<String> _reasons = [
     'Inappropriate or offensive behavior',
-    'Commercial solicitation or spam',
     'Harassment or unwanted contact',
+    'Hate speech or discrimination',
+    'Commercial solicitation or spam',
     'Misrepresentation or fake profile',
     'Safety concern at an activity',
-    'Other concern',
+    'No-show or unexcused absence',
+    'Non-consensual contact or privacy violation',
+    'Other community guideline concern',
   ];
 
   String? _selectedReason;
   final TextEditingController _descController = TextEditingController();
+  bool _isSubmitting = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -52,15 +60,86 @@ class _ReportDialogState extends State<ReportDialog> {
     super.dispose();
   }
 
+  Future<void> _handleSubmit() async {
+    if (_selectedReason == null || _isSubmitting) return;
+
+    setState(() {
+      _isSubmitting = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final result = await widget.onSubmit(
+        _selectedReason!,
+        _descController.text.trim(),
+      );
+
+      // If callback explicitly returned false, treat as failure
+      if (result == false) {
+        if (!mounted) return;
+        setState(() {
+          _isSubmitting = false;
+          _errorMessage =
+              'Could not submit report right now. Please check your connection and try again.';
+        });
+        return;
+      }
+
+      if (!mounted) return;
+      Navigator.of(context).pop();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFF10B981),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          content: const Row(
+            children: [
+              Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+              SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Report submitted safely. Our moderation team will review it immediately.',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: Colors.white,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isSubmitting = false;
+        _errorMessage = 'Report submission failed: $e';
+      });
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final dialogBg = isDark ? const Color(0xFF221A33) : AppColors.white;
+    final primaryTextColor = isDark
+        ? AppColors.darkTextPrimary
+        : AppColors.deepPlum;
+    final mutedTextColor = isDark
+        ? AppColors.darkMutedText
+        : AppColors.mutedText;
+
     return Dialog(
-      backgroundColor: AppColors.white,
+      backgroundColor: dialogBg,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppConstants.cardRadiusLarge),
       ),
       insetPadding: const EdgeInsets.symmetric(
         horizontal: AppConstants.spacingLG,
+        vertical: 24,
       ),
       child: SingleChildScrollView(
         child: Padding(
@@ -69,28 +148,78 @@ class _ReportDialogState extends State<ReportDialog> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              Text(
-                'Report ${widget.targetTitle}',
-                style: AppTypography.headlineSmall.copyWith(
-                  color: AppColors.deepPlum,
-                  fontWeight: FontWeight.w700,
-                ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.error.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.flag_rounded,
+                      color: AppColors.error,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Report ${widget.targetTitle}',
+                      style: AppTypography.headlineSmall.copyWith(
+                        color: primaryTextColor,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 18,
+                      ),
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: AppConstants.spacingSM),
               Text(
-                'Your report is strictly confidential. The other person will never be told who submitted it.',
+                'Your report is strictly confidential. The other member will never be notified who submitted it.',
                 style: AppTypography.bodySmall.copyWith(
-                  color: AppColors.mutedText,
+                  color: mutedTextColor,
+                  fontSize: 12,
+                ),
+              ),
+              const SizedBox(height: 8),
+
+              // Community Guidelines direct shortcut
+              InkWell(
+                onTap: () {
+                  context.push('/community-guidelines');
+                },
+                child: Row(
+                  children: [
+                    const Icon(
+                      Icons.menu_book_rounded,
+                      size: 14,
+                      color: AppColors.brightViolet,
+                    ),
+                    const SizedBox(width: 6),
+                    Text(
+                      'Review Community Guidelines',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.brightViolet,
+                        decoration: TextDecoration.underline,
+                      ),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: AppConstants.spacingMD),
+
               Text(
-                'Reason',
+                'Reason for report',
                 style: AppTypography.labelMedium.copyWith(
-                  fontWeight: FontWeight.w600,
+                  fontWeight: FontWeight.w700,
+                  color: primaryTextColor,
                 ),
               ),
-              const SizedBox(height: AppConstants.spacingSM),
+              const SizedBox(height: AppConstants.spacingXS),
               ..._reasons.map((reason) {
                 return RadioListTile<String>(
                   value: reason,
@@ -98,25 +227,81 @@ class _ReportDialogState extends State<ReportDialog> {
                   dense: true,
                   contentPadding: EdgeInsets.zero,
                   activeColor: AppColors.mauve,
-                  title: Text(reason, style: AppTypography.bodyMedium),
-                  onChanged: (val) => setState(() => _selectedReason = val),
+                  title: Text(
+                    reason,
+                    style: AppTypography.bodyMedium.copyWith(
+                      color: primaryTextColor,
+                      fontSize: 13,
+                    ),
+                  ),
+                  onChanged: _isSubmitting
+                      ? null
+                      : (val) => setState(() => _selectedReason = val),
                 );
               }),
-              const SizedBox(height: AppConstants.spacingMD),
+              const SizedBox(height: AppConstants.spacingSM),
+
               TextField(
                 controller: _descController,
                 maxLines: 3,
-                style: AppTypography.bodyMedium,
+                maxLength: 500,
+                enabled: !_isSubmitting,
+                style: AppTypography.bodyMedium.copyWith(
+                  color: primaryTextColor,
+                ),
                 decoration: InputDecoration(
-                  hintText: 'Additional details (optional)...',
-                  hintStyle: AppTypography.bodySmall,
+                  hintText:
+                      'Provide additional context (optional, max 500 chars)...',
+                  hintStyle: AppTypography.bodySmall.copyWith(
+                    color: mutedTextColor,
+                  ),
+                  counterStyle: TextStyle(color: mutedTextColor, fontSize: 11),
+                  filled: true,
+                  fillColor: isDark
+                      ? Colors.white.withValues(alpha: 0.05)
+                      : const Color(0xFFF9F7FB),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(
                       AppConstants.buttonRadiusSmall,
                     ),
+                    borderSide: BorderSide(
+                      color: isDark ? Colors.white24 : const Color(0xFFE5DEFF),
+                    ),
                   ),
                 ),
               ),
+
+              if (_errorMessage != null) ...[
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.error_outline_rounded,
+                        color: AppColors.error,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          _errorMessage!,
+                          style: const TextStyle(
+                            color: AppColors.error,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+
               const SizedBox(height: AppConstants.spacingLG),
               Row(
                 children: [
@@ -124,31 +309,21 @@ class _ReportDialogState extends State<ReportDialog> {
                     child: SecondaryButton(
                       label: 'Cancel',
                       height: 44,
-                      onPressed: () => Navigator.of(context).pop(),
+                      onPressed: _isSubmitting
+                          ? null
+                          : () => Navigator.of(context).pop(),
                     ),
                   ),
                   const SizedBox(width: AppConstants.spacingMD),
                   Expanded(
                     child: PrimaryButton(
-                      label: 'Submit',
+                      label: _isSubmitting ? 'Submitting...' : 'Submit',
                       height: 44,
                       backgroundColor: AppColors.deepPlum,
-                      onPressed: _selectedReason == null
+                      isLoading: _isSubmitting,
+                      onPressed: (_selectedReason == null || _isSubmitting)
                           ? null
-                          : () {
-                              widget.onSubmit(
-                                _selectedReason!,
-                                _descController.text,
-                              );
-                              Navigator.of(context).pop();
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Report submitted. Thank you for keeping our community safe.',
-                                  ),
-                                ),
-                              );
-                            },
+                          : _handleSubmit,
                     ),
                   ),
                 ],

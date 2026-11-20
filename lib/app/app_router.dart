@@ -21,6 +21,9 @@ import '../features/main_shell/main_shell_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
 import '../features/onboarding/presentation/profile_onboarding_screen.dart';
 import '../features/profile/presentation/about_melsava_screen.dart';
+import '../features/profile/presentation/blocked_profiles_screen.dart';
+import '../features/profile/presentation/community_guidelines_screen.dart';
+import '../features/profile/presentation/moderation_screen.dart';
 import '../features/profile/presentation/profile_screen.dart';
 import '../features/profile/presentation/settings_screen.dart';
 
@@ -177,6 +180,24 @@ class AppRouter {
         GoRoute(
           path: '/settings',
           builder: (context, state) => const SettingsScreen(),
+        ),
+
+        // Blocked Profiles
+        GoRoute(
+          path: '/blocked-profiles',
+          builder: (context, state) => const BlockedProfilesScreen(),
+        ),
+
+        // Community Guidelines
+        GoRoute(
+          path: '/community-guidelines',
+          builder: (context, state) => const CommunityGuidelinesScreen(),
+        ),
+
+        // Moderation Console
+        GoRoute(
+          path: '/moderation',
+          builder: (context, state) => const ModerationScreen(),
         ),
 
         // Welcome & Auth routes (Smooth fluid switching between pages)

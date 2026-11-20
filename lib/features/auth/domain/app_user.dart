@@ -20,6 +20,8 @@ class AppUser {
   final String discoveryFormat;
   final bool isEmailVerified;
   final bool ageVerified;
+  final bool isVerified;
+  final bool isSuspended;
   final bool guidelinesAccepted;
   final bool onboardingCompleted;
 
@@ -41,6 +43,8 @@ class AppUser {
     this.discoveryFormat = 'Both',
     this.isEmailVerified = false,
     this.ageVerified = false,
+    this.isVerified = false,
+    this.isSuspended = false,
     this.guidelinesAccepted = false,
     this.onboardingCompleted = false,
   });
@@ -71,6 +75,8 @@ class AppUser {
     String? discoveryFormat,
     bool? isEmailVerified,
     bool? ageVerified,
+    bool? isVerified,
+    bool? isSuspended,
     bool? guidelinesAccepted,
     bool? onboardingCompleted,
   }) {
@@ -94,6 +100,8 @@ class AppUser {
       discoveryFormat: discoveryFormat ?? this.discoveryFormat,
       isEmailVerified: isEmailVerified ?? this.isEmailVerified,
       ageVerified: ageVerified ?? this.ageVerified,
+      isVerified: isVerified ?? this.isVerified,
+      isSuspended: isSuspended ?? this.isSuspended,
       guidelinesAccepted: guidelinesAccepted ?? this.guidelinesAccepted,
       onboardingCompleted: onboardingCompleted ?? this.onboardingCompleted,
     );

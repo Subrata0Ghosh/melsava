@@ -201,4 +201,44 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 - **`send_conversation_message(p_conversation_id, p_content)`**: Server-validated plain text messaging with character limit (1,000 chars) and server-stamped timestamp.
 - **`mark_conversation_read(p_conversation_id)`**: Atomic read receipt updater for incoming unread messages.
 
+---
+
+## Phase 5 Security Hardening, Moderation & Safety Architecture (`014_phase5_safety_and_profile.sql`)
+
+### 19. Phase 4 Security Preflight (Migration 014 Hardening)
+- **Direct Messages INSERT Policy Dropped**: Direct client insertion on `public.messages` is completely disabled. All message delivery must pass through `send_conversation_message` RPC which validates conversation membership, active mutual connection, absence of blocks, account non-suspension, trims whitespace, and stamps `sender_id = auth.uid()`.
+- **Direct Messages UPDATE Policy Dropped**: Direct client updates on `public.messages` are completely disabled. Recipients cannot alter content, sender ID, or timestamps. Read receipt status is modified exclusively by `mark_conversation_read` RPC.
+- **Revocation of Direct Privileges**: `REVOKE INSERT, UPDATE ON public.messages FROM anon, authenticated;` is enforced at the database privilege level.
+- **Strengthened `can_access_conversation(UUID)`**: Explicitly verifies both caller and recipient accounts are active and un-suspended, confirms membership, and checks blocks in both directions (`blocker_id = A AND blocked_id = B OR blocker_id = B AND blocked_id = A`).
+
+### 20. Atomic Profile Update Protection (`update_user_profile`)
+- Replaces partial client-side table writes with a single atomic `SECURITY DEFINER` RPC.
+- Strictly validates display name length (2–50 characters) and trims input.
+- Updates `profiles`, `profile_interests`, `profile_intentions`, and `profile_private` in a single transaction.
+- **Security Boundary**: Directly prevents client modification of protected system fields (`id`, `is_verified`, `is_suspended`, `date_of_birth`).
+
+### 21. Real Block & Unblock System
+- `block_user(p_blocked_id UUID)`: Enforces `p_blocked_id != auth.uid()` (rejects self-blocking) and handles idempotency with `ON CONFLICT DO NOTHING`.
+- `unblock_user(p_blocked_id UUID)`: Removes block relation cleanly.
+- `get_blocked_users()`: Returns authentic blocked accounts for Settings management, joining `public.profiles` safely.
+
+### 22. Real Reporting & Moderation Infrastructure
+- `submit_user_report(UUID, TEXT, TEXT, TEXT, UUID)`:
+  - Validates 9 canonical categories: Harassment or unwanted contact, Impersonation or fake profile, Underage user concern, Commercial solicitation or spam, Inappropriate behavior at meetup, No-show without notice, Hate speech or discrimination, Safety or privacy concern, Other.
+  - Enforces 500-character max on additional context.
+  - Rejects self-reporting and verifies reported target exists in `public.profiles`.
+  - Reporter identity is strictly confidential; reports are hidden from the reported user.
+- **Moderation Access Control**:
+  - `public.moderators` table protected by RLS.
+  - `is_moderator()` security helper evaluates JWT claims (`role IN ('admin', 'moderator')`) or membership in `public.moderators`.
+  - `get_moderation_reports(p_status)`: Accessible only to authorized moderators.
+  - `resolve_moderation_report(p_report_id, p_new_status)`: Updates status (`reviewed`, `resolved`, `dismissed`).
+  - `apply_moderation_action(...)`: Logs administrative action in `moderation_actions` and instantly flips `is_suspended = TRUE` on `public.profiles` for suspensions and bans.
+
+### 23. Permanent Account Deletion Safeguards (`delete_user_account_permanent`)
+- Dedicated `delete-account` Supabase Edge Function validates Bearer JWT, cleans up avatars in Supabase Storage (`avatars/${userId}`), cascades database records, and removes credentials via Supabase Auth Admin API (`supabaseAdmin.auth.admin.deleteUser`).
+- Database fallback RPC `delete_user_account_permanent(TEXT)` requires explicit keyword `'DELETE'`.
+- Cleanly deletes associated blocks, reports, and moderation records before deleting `public.profiles` to avoid orphan records.
+- Completely removed dangerous client-side fallback of deleting `public.profiles` directly, preventing half-deleted or desynchronized accounts.
+
 

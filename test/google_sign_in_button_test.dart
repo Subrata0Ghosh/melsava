@@ -102,6 +102,11 @@ class _FakeGoogleAuthRepository implements AuthRepository {
   Future<void> updateProfile(AppUser updatedUser) async {
     _user = updatedUser;
   }
+
+  @override
+  Future<String?> uploadAvatar(dynamic file) async {
+    return 'https://example.com/uploaded_avatar.png';
+  }
 }
 
 void main() {

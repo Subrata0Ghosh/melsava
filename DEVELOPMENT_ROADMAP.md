@@ -144,12 +144,53 @@ This roadmap tracks the incremental delivery of MELSAVA following the specificat
 
 ---
 
-## Phase 5 — Safety, Moderation & Account Settings (Planned)
-- [ ] User profile viewer & editor.
-- [ ] Block list management & immediate unmatching.
-- [ ] Content reporting dialog with categorized reasons.
-- [ ] Account deletion (GDPR/privacy-compliant erasure cascade).
-- [ ] Community Guidelines viewer.
+## Phase 5 — Safety, Moderation, Profile Management & Account Settings (Completed)
+- [x] **Phase 4 Security Preflight & Database RPCs (`014_phase5_safety_and_profile.sql`)**:
+  - Dropped client direct `INSERT` and `UPDATE` policies on `public.messages` and revoked direct mutation privileges from `anon` and `authenticated`.
+  - Strengthened `can_access_conversation(UUID)` to verify active session, caller & partner non-suspended profile state, and non-existence of blocks in either direction.
+  - Implemented atomic `update_user_profile(...)` RPC updating `profiles`, `profile_interests`, `profile_intentions`, and `profile_private` preferences without exposing sensitive verification columns.
+  - Real block management RPCs: `block_user(UUID)`, `unblock_user(UUID)`, `get_blocked_users()` rejecting self-blocking and duplicate blocks.
+  - Real content reporting RPC: `submit_user_report(UUID, TEXT, TEXT, TEXT, UUID)` enforcing 9 canonical reasons, 500-character description limit, and confidential reporter storage.
+  - Moderation infrastructure: `public.moderators` table, `is_moderator()` helper, `get_moderation_reports()` query, `resolve_moderation_report()` resolution, and `apply_moderation_action()` recording actions with immediate account suspension support.
+  - Permanent account deletion RPC: `delete_user_account_permanent(TEXT)` requiring explicit `'DELETE'` confirmation keyword, cascading all profile FKs, and cleaning auth users.
+- [x] **Supabase Edge Function (`supabase/functions/delete-account/index.ts`)**:
+  - Deno edge function validating Bearer JWT, removing user avatar storage objects from `avatars` bucket, purging user rows, and invoking Supabase Admin Auth API (`auth.admin.deleteUser`).
+- [x] **Auth & Profile Management (`auth_repository.dart`, `app_user.dart`)**:
+  - Extended `AppUser` model with `isVerified` and `isSuspended` fields.
+  - Hydrated `is_verified` and `is_suspended` flags from Supabase `public.profiles`.
+  - Implemented `uploadAvatar(file)` uploading custom photo to Supabase Storage `avatars/${userId}/...`.
+  - Implemented atomic `updateProfile` calling `update_user_profile` RPC.
+  - Completely eradicated the dangerous `from('profiles').delete()` fallback; throws on error without premature sign out or cache wipe.
+- [x] **Real Profile Viewer & Editor (`profile_screen.dart`, `edit_profile_sheet.dart`)**:
+  - Replaced demo fallback ("Sneha") with real authenticated user profile data.
+  - Enforced verified badge visibility exclusively when `user.isVerified == true`.
+  - Displayed real experience and mutual connection counts; eliminated fake "12 followers" metric.
+  - Replaced fake "Go Premium" card with real Interests & Passions chips, intentions, and Community Guidelines link.
+  - Edit Profile Sheet supports custom avatar upload via `ImagePicker`, display name validation (2-50 chars), bio, city, intentions, and interest selections.
+- [x] **Block Management & Blocked Profiles Screen (`blocked_profiles_screen.dart`)**:
+  - Screen displaying real blocked users, avatars, and blocked dates with loading, empty, and error states.
+  - Unblock action with `ConfirmationDialog` and cache invalidation across connections and inbox threads.
+- [x] **Confidential Reporting System (`report_dialog.dart`)**:
+  - Updated to 9 canonical reasons with 500-character max limit and character counter.
+  - Asynchronous submission with loading spinner, disabled double-tap prevention, and error-retaining state.
+  - Direct shortcut linking to Community Guidelines.
+- [x] **Community Guidelines Screen (`community_guidelines_screen.dart`)**:
+  - 10 comprehensive guidelines for authentic identity, vetted public venues, consent, punctuality, and anti-harassment.
+  - Accessible from Settings, Profile, and Report dialogs.
+- [x] **Moderation Management Screen (`moderation_screen.dart`)**:
+  - Restricted to authenticated moderators (`isModeratorProvider`).
+  - Interactive status tabs (Pending, Reviewed, Resolved, Dismissed, All).
+  - Moderator actions: Dismiss, Issue Formal Warning, and Suspend Account.
+- [x] **Settings Screen Audit (`settings_screen.dart`)**:
+  - Replaced fake SMS 2FA switch with clear informational TOTP tile.
+  - Replaced fake remote device sessions with real current session information.
+  - Wired real blocked count and direct navigation to `/blocked-profiles`.
+  - Connected direct navigation to `/community-guidelines` and conditional `/moderation` tile for moderators.
+  - Hardened account deletion with clear error handling.
+- [x] **Automated Verification**:
+  - `phase5_safety_and_settings_test.dart` passing comprehensive unit and widget tests.
+  - All test suites passing in `flutter test`.
+  - `flutter analyze` passing with 0 warnings or errors.
 
 ---
 

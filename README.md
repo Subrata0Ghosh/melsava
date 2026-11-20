@@ -90,9 +90,10 @@ supabase/migrations/010_experience_circle_hub.sql
 supabase/migrations/011_connections_and_inbox_rpcs.sql
 supabase/migrations/012_phase3_hardening.sql
 supabase/migrations/013_phase4_connections_and_realtime.sql
+supabase/migrations/014_phase5_safety_and_profile.sql
 ```
 
-*(Alternatively, for Phase 4 directly execute `supabase/PHASE_4_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
+*(Alternatively, for Phase 5 directly execute `supabase/PHASE_5_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
 
 ### 5. Run the App
 
@@ -120,17 +121,19 @@ lib/
 ├── features/
 │   ├── auth/                    # Authentication screens & logic
 │   ├── onboarding/              # Profile setup flow
-│   ├── profile/                 # Profile management
+│   ├── profile/                 # Profile management, blocked list, guidelines, moderation
 │   ├── discovery/               # Discover screen
 │   ├── experiences/             # Experience browsing & details
 │   ├── connections/             # Mutual connections
-│   ├── chat/                    # Messaging
-│   └── safety/                  # Reporting & moderation
+│   ├── chat/                    # Realtime messaging & read receipts
+│   └── safety/                  # Reporting, blocking & moderation
 └── shared/
     ├── models/                  # Data models
     └── widgets/                 # Shared UI components
 
 supabase/
+├── functions/                   # Supabase Edge Functions (Deno/TypeScript)
+│   └── delete-account/          # Secure account deletion Edge Function
 └── migrations/                  # Versioned SQL migrations
 ```
 
@@ -141,8 +144,10 @@ supabase/
 | 1 | Foundation, Authentication & Hardened Onboarding | ✅ Completed |
 | 2 | Live Experience Discovery, Joining & My Circles | ✅ Completed |
 | 3 | Real Attendance, Private Mutual Choice & Connection Creation | ✅ Completed |
-| 4 | Connections & Realtime Messaging | ⬜ Planned |
-| 5 | Safety, Moderation & Account Settings | ⬜ Planned |
+| 4 | Connections & Realtime Messaging | ✅ Completed |
+| 5 | Safety, Moderation & Account Settings | ✅ Completed |
+| 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
+| 7 | Closed Beta & Production Launch | ⬜ Planned |
 | 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
 | 7 | Closed Beta & Production Launch | ⬜ Planned |
 

@@ -1,877 +1,711 @@
-# MELSAVA — PHASE 4: REAL CONNECTIONS, SUPABASE REALTIME CHAT & READ RECEIPTS
+# MELSAVA — PHASE 5: SAFETY, MODERATION, PROFILE MANAGEMENT & ACCOUNT SETTINGS
 
-Work inside my EXISTING MELSAVA Flutter repository.
+Work inside my existing MELSAVA Flutter repository.
 
 Repository:
 https://github.com/Subrata0Ghosh/melsava
 
 ## MAIN OBJECTIVE
 
-Implement a complete real connection and messaging system using Flutter, Riverpod, Supabase PostgreSQL and Supabase Realtime.
+Complete MELSAVA's real user profile management, safety, reporting, blocking, account deletion and settings workflows.
 
-Phase 1: Completed.
-Phase 2: Completed.
-Phase 3: Marked completed in the current roadmap.
-Phase 4: To be implemented now.
+Phase 1: Foundation, Authentication & Onboarding — Completed.
 
-Do not rebuild the app.
+Phase 2: Experience Discovery, Joining & My Circles — Completed.
+
+Phase 3: Attendance, Private Mutual Choices & Connection Creation — Implemented.
+
+Phase 4: Connections & Realtime Messaging — Core implementation present; final security verification required.
+
+Phase 5: Safety, Moderation & Account Settings — Implement now.
+
+Do not rebuild the application.
 
 Do not redesign existing screens.
 
-Do not replace the design system.
+Do not replace the existing UI or technology stack.
 
-Reuse the existing MELSAVA UI, data models, repositories, providers, migrations and mutual-connection workflow wherever possible.
+Keep the existing MELSAVA visual identity:
+- Warm Ivory
+- Deep Plum
+- Mauve
+- Soft Coral
+- Sage
+- Manrope and Inter
+- Botanical decorations
+- Existing rounded cards
+- Light and Dark themes
 
-The final user experience should be:
+Use Flutter, Dart, Riverpod, GoRouter and Supabase.
 
-Experience completed
-→ Mutual compatible selection
-→ Connection created
-→ Connection appears in Connections
-→ Conversation appears in Inbox
-→ User opens conversation
-→ Send and receive actual messages
-→ Realtime delivery
-→ Read receipts
-→ Block/report available within chat.
+Do not use PHP.
+
+Do not introduce unnecessary paid APIs or services.
 
 ---
 
-# PART 1 — INSPECT THE CURRENT PROJECT
+# PART 1 — INSPECT THE EXISTING PROJECT
 
-Read:
+Before coding, inspect:
 
 - README.md
 - DEVELOPMENT_ROADMAP.md
 - APP_WORKFLOW.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
+- lib/features/profile/presentation/profile_screen.dart
+- lib/features/profile/presentation/edit_profile_sheet.dart
+- lib/features/profile/presentation/settings_screen.dart
+- lib/features/auth/data/auth_repository.dart
+- lib/shared/widgets/report_dialog.dart
 - lib/features/connections/data/connections_repository.dart
-- lib/features/connections/presentation/connections_screen.dart
-- lib/features/chat/presentation/inbox_screen.dart
 - lib/features/chat/presentation/conversation_screen.dart
-- lib/features/experiences/data/post_experience_repository.dart
-- lib/shared/widgets/mutual_match_celebration_dialog.dart
-- Existing router and shared widgets
-- All existing SQL migrations 001 through 009
-- Existing unit and widget tests
+- lib/features/experiences/presentation/experience_hub_sheet.dart
+- Existing Supabase migrations through 013, including the actual Phase 4 migration.
+- Existing tests.
 
-Understand existing tables:
+Understand the real profile, block, report, moderation, storage and account-deletion schemas.
 
-- connections
-- conversations
-- conversation_members
-- messages
-- profiles
-- experiences
-- blocks
-- reports
+Reuse existing functionality whenever possible.
 
-Do not invent database columns.
-
-Inspect the actual schema before creating migration files.
-
-Check the current deployed migration history if Supabase CLI access is available.
-
-The current Flutter repository expects these RPC functions:
-
-- get_user_connections
-- get_user_inbox_threads
-- get_conversation_messages
-- send_conversation_message
-- get_or_create_conversation_for_connection
-
-Search every existing migration before creating them.
-
-If any already exists, reuse and verify it instead of creating a duplicate.
+Do not create duplicate tables or repositories.
 
 ---
 
-# PART 2 — REQUIRED PHASE 3 HARDENING
+# PART 2 — REQUIRED PHASE 4 SECURITY PREFLIGHT
 
-Before Phase 4, fix the following two important issues through a new migration.
+Before Phase 5, fix these issues in the existing Phase 4 implementation.
+
+Review migration 013.
+
+### A. Message INSERT policy
+
+The current messages INSERT policy permits direct insertion by an authenticated conversation member.
+
+Message insertion should use the validated send_conversation_message RPC.
+
+Remove or restrict direct client insertion and revoke unnecessary INSERT privileges.
+
+### B. Message UPDATE policy
+
+The current messages UPDATE policy allows a non-sender to update message rows beyond the is_read field.
+
+Prevent recipients from changing:
+- Message content.
+- Sender ID.
+- Conversation ID.
+- Created timestamp.
+
+Only the validated mark_conversation_read RPC should change read receipts.
+
+Use appropriately restricted database privileges and RLS.
+
+Do not rely on Flutter to restrict which database columns a client can modify.
+
+### C. Conversation access
+
+Review can_access_conversation(UUID).
+
+Ensure it validates:
+- Authenticated conversation membership.
+- Valid mutual connection for direct conversations.
+- Correct conversation participants.
+- Account suspension state.
+- Blocks in either direction.
+
+### D. Realtime and inbox
+
+Verify active conversation subscriptions, cleanup, duplicate-message protection and incoming message behaviour.
+
+Add suitable realtime updates or invalidation for the inbox thread list.
+
+Do not create multiple subscriptions for a single active conversation.
+
+### E. Error handling
+
+Do not silently turn RPC errors into an empty inbox, zero read count or success-looking state.
+
+Preserve error information for Riverpod and the UI.
+
+Use a new numbered migration after checking the existing migration history and deployed migrations.
 
 Do not modify previously applied migrations.
 
-Use the next available migration number after inspecting the repository.
+---
 
-### A. Host attendance completion
+# PART 3 — REAL PROFILE VIEWER AND EDITOR
 
-Inspect:
+Existing files:
+- profile_screen.dart
+- edit_profile_sheet.dart
 
-complete_experience_and_mark_attendance(UUID, UUID[])
+The existing editor contains:
+- Demo display-name fallback such as Sneha.
+- Demo avatar presets.
+- Local image file paths.
+- Hard-coded sample interests and cities.
+- An update that does not fully persist interests and intentions.
 
-Current issue:
-The function checks that the experience has started but does not check that its scheduled duration has finished.
+Replace these behaviours.
 
-It also does not reject every invalid attendee ID before reporting success.
+### Profile screen
 
-Fix:
+Load the real authenticated user's profile from Supabase.
 
-1. Require an authenticated host.
-2. Lock the experience row.
-3. Verify the correct host.
-4. Reject cancelled and draft experiences.
-5. Verify current time is at or after the scheduled end time using starts_at and duration_minutes, or the actual end-time field if the schema has one.
-6. Validate the entire attendee array.
-7. Reject duplicate user IDs.
-8. Reject IDs that do not belong to an eligible joined membership.
-9. Do not silently ignore invalid attendance IDs.
-10. Keep the operation atomic.
-11. Do not allow regular members to update their own attendance status.
+Display:
+- Actual display name.
+- Actual profile photo.
+- Actual bio.
+- Actual broad location.
+- Actual interests.
+- Actual connection intentions.
+- Actual activity preferences.
+- Real verification state, only when truly verified.
 
-If duration information is missing, return a clear validation error rather than completing the experience prematurely.
+Remove fake information:
+- Static 24 experiences.
+- Static 78 connections.
+- Static 12 followers.
+- Always-visible green verification badge.
+- Fake online or compatibility metrics.
+- Default Sneha profile.
 
-If the experience is already completed, implement a safe, clearly defined idempotent result. Do not let an ordinary retry silently alter finalized attendance records.
+Where real statistics are not supported, hide the metric rather than inventing a value.
 
-### B. Private choice submission concurrency
+Keep the current MELSAVA profile design.
 
-Inspect:
+### Edit profile
 
-submit_post_experience_choices(UUID, JSONB)
+Implement real editing for:
+- Display name.
+- Profile photograph.
+- Bio.
+- City and broad area.
+- Interests.
+- Activity preferences.
+- Primary connection intention.
+- Secondary connection intentions.
+- Availability and discovery preferences.
 
-Current concern:
-Concurrent reciprocal submissions can happen before either transaction sees the other submission.
+Use existing database tables and the schema's actual enum values.
 
-Use an appropriate transaction-level lock, such as locking the parent experience row with FOR UPDATE before checking and inserting the submission.
+### Profile image upload
 
-This should serialize post-experience submissions for the same experience and prevent missed mutual connections.
+Use the existing Supabase Storage avatars bucket if appropriate.
 
-Also inspect the current UI payload.
+Requirements:
+1. Select image from device gallery.
+2. Validate JPG, PNG and WEBP.
+3. Compress before upload.
+4. Upload to a user-specific storage path.
+5. Save the returned public or approved storage URL in profiles.avatar_url.
+6. Replace the existing avatar only after the new upload succeeds.
+7. Remove obsolete user-owned images safely.
+8. Show upload progress and errors.
+9. Never store a local device path as a production avatar URL.
+10. Do not use demo avatar presets as real member profiles.
 
-- Validate all submitted participant IDs.
-- Reject self-selection.
-- Reject participants who did not attend the same experience.
-- Reject invalid choice types instead of silently converting them.
-- Reject duplicate participant entries.
-- Ensure submission semantics are consistent with the current UI's No Connection defaults.
-- Permit an empty selection only when there are genuinely no eligible peers.
-- Prevent retry from creating duplicate connections, conversations or notifications.
+### Persistence
 
-Preserve the existing exact compatibility rules:
+The existing auth repository updateProfile() currently updates profile fields but does not fully persist the user's selected interests and intentions.
 
-Friendship + Friendship = Friendship.
+Fix this using the existing repository architecture.
 
-Activity Partner + Activity Partner = Activity Partner.
+Use an atomic RPC or safe ordered operations to update:
+- profiles.
+- profile_interests.
+- profile_intentions.
+- Relevant discovery preferences.
 
-Explore Dating + Explore Dating = Dating.
+Do not allow clients to modify:
+- User ID.
+- Date of birth.
+- Verification status.
+- Suspension status.
+- Admin role.
+- Moderation status.
 
-Different intentions = No connection.
+Update the cached current user only after the database save succeeds.
 
-Never automatically upgrade the relationship intention.
+If a save fails, retain the entered form values and show a Retry option.
 
-Add regression tests for these two hardening changes.
+Never display "Profile updated successfully" before confirmed database success.
 
 ---
 
-# PART 3 — CREATE PHASE 4 SQL MIGRATION
+# PART 4 — BLOCK MANAGEMENT
 
-Create a new migration:
+The existing chat screen can block a person, but the Settings screen currently uses a hard-coded empty blocked-profiles message.
 
-011_phase4_connections_and_realtime.sql
+Implement a real Blocked Profiles screen.
 
-Use the next available version if the migration history has changed.
+### Block user
 
-Never modify migration 009 or any previously applied migration.
+Reuse the existing blocks table.
 
-The migration must provide the missing database RPCs.
+Requirements:
+- Derive blocker_id from auth.uid().
+- Never accept a caller-supplied blocker_id.
+- Prevent blocking yourself.
+- Prevent duplicate records.
+- Require confirmation.
+- Show success only after the database confirms.
+- Invalidate connections, inbox and discovery providers after blocking.
 
-## A. get_user_connections()
+### Blocked profiles screen
 
-No caller-supplied user ID.
+Display real blocked accounts.
 
-Always use auth.uid().
+Show:
+- Profile photo.
+- Display name.
+- Block date.
+- Unblock action.
 
-Return actual connections belonging to the authenticated user.
+If no blocked profiles:
 
-Required response information where supported:
+"You haven't blocked anyone."
 
-- connection_id
-- conversation_id
-- partner_id
-- partner_name
-- partner_avatar
-- partner_bio
-- connection_type
-- experience_id
-- experience_title
-- last_message
-- last_message_at
+Add:
+- Loading.
+- Empty.
+- Error.
+- Retry.
+- Confirmation before unblocking.
+
+### Unblock
+
+After unblocking:
+- Remove the block record.
+- Refresh relevant providers.
+- Do not automatically restore a previous conversation or relationship.
+- A fresh connection must require the normal mutual consent process.
+
+Ensure blocks take effect across:
+- Discover.
+- Experience recommendations.
+- Joining shared experiences, where required.
+- Connections.
+- Inbox.
+- Chat.
+- Reconnect selections.
+
+Do not delete historical chat records merely because someone blocked another user.
+
+---
+
+# PART 5 — REAL REPORTING SYSTEM
+
+Existing:
+- reports table.
+- moderation_actions table.
+- ReportDialog widget.
+- reportUser() repository method.
+
+The current ReportDialog invokes its callback, closes immediately and displays success without waiting for the database result.
+
+Fix this.
+
+### Reporting types
+
+Support:
+- Report profile.
+- Report message.
+- Report conversation.
+- Report experience.
+- Report host.
+- Report circle, if the relevant entity exists.
+
+Report reasons:
+- Harassment or unwanted contact.
+- Fake or misleading profile.
+- Inappropriate or offensive content.
+- Spam or solicitation.
+- Unsafe behaviour.
+- Underage account.
+- Fraud or financial solicitation.
+- Unsafe experience or host.
+- Other.
+
+Allow optional explanation.
+
+Maximum description length: 500 characters.
+
+### Reporting workflow
+
+1. Open report dialog.
+2. Select a reason.
+3. Optionally enter details.
+4. Validate input.
+5. Submit to Supabase.
+6. Disable duplicate submission while processing.
+7. Wait for the actual server response.
+8. Close only after confirmed success.
+9. Show the appropriate success or error message.
+
+Success:
+
+"Your report has been submitted for review. Thank you for helping keep MELSAVA safe."
+
+Failure:
+
+"We couldn't submit your report. Please try again."
+
+Reporter identity must remain private from the reported user.
+
+Ensure the reported content ID and reported user ID correspond to the actual entity.
+
+Do not allow users to report unrelated IDs or manufacture arbitrary report records.
+
+Use the actual existing reports table and RLS.
+
+---
+
+# PART 6 — BASIC MODERATION MANAGEMENT
+
+MELSAVA must have a way for an authorised moderator to review submitted reports.
+
+Do not give this functionality to ordinary users.
+
+Implement a minimal internal moderation workflow using the existing reports and moderation_actions tables.
+
+### Admin authorization
+
+Use a secure server-controlled role.
+
+A role can be stored in Supabase Auth app_metadata and checked through a secure JWT-based database helper.
+
+Do not use a user-editable profiles.is_admin field.
+
+Do not allow ordinary users to grant themselves moderator privileges.
+
+Do not place a service-role key in Flutter.
+
+### Admin moderation features
+
+Create an admin-only route and screen.
+
+It should show:
+- Pending reports.
+- Reviewed reports.
+- Resolved reports.
+- Dismissed reports.
+
+Allow authorized moderators to:
+- Open a report.
+- View the report reason and description.
+- View the relevant reported content if access is authorized.
+- Mark a report reviewed.
+- Resolve or dismiss a report.
+- Issue an appropriate warning.
+- Suspend an account where justified.
+
+Write moderation_actions records for actual enforcement actions.
+
+Maintain an audit trail:
+- Moderator.
+- Affected account.
+- Action.
+- Reason.
+- Timestamp.
+- Optional expiry.
+
+Do not automatically suspend someone merely because a report was submitted.
+
+All moderator functions must be server-side authorized and audited.
+
+Do not expose reporter private details to reported users.
+
+Keep the moderation UI simple. This is an internal tool, not a full enterprise admin dashboard.
+
+---
+
+# PART 7 — FIX ACCOUNT DEACTIVATION AND DELETION
+
+IMPORTANT SECURITY TASK.
+
+Existing auth_repository.deleteAccountPermanent() has a dangerous fallback:
+
+If delete_user_account fails, it attempts to delete only the public profiles record and then signs the user out.
+
+This does not guarantee deletion of the underlying Supabase Auth account.
+
+Remove this fallback completely.
+
+Never display a successful deletion message unless actual account deletion has been confirmed.
+
+### Permanent account deletion
+
+Use a secure Supabase Edge Function.
+
+Suggested name:
+
+delete-account
 
 Requirements:
 
-- Include either side of the canonical user pair.
-- Return only mutual connections.
-- Exclude blocked relationships.
-- Exclude suspended accounts.
-- Join approved public profile fields only.
-- Join the actual originating experience.
-- Join the associated conversation.
-- Include a genuine last message when one exists.
-- Return a useful empty list for an account with no connections.
-- Sort by most recent conversation activity, then connection creation.
+1. Verify the authenticated user's JWT server-side.
+2. Confirm the request is for the authenticated user only.
+3. Require an appropriate recent reauthentication or fresh-authentication confirmation.
+4. Verify the user explicitly confirmed permanent deletion.
+5. Clean up user-owned avatar objects in Supabase Storage.
+6. Verify existing database foreign-key cascades.
+7. Delete or appropriately anonymize associated personal data according to the deletion policy.
+8. Remove the actual Supabase Auth user using the server-side Admin API.
+9. Return an explicit result only after the operation succeeds.
 
-Do not return private profile information.
+Store SUPABASE_SERVICE_ROLE_KEY only as a Supabase Edge Function secret.
 
-Do not fabricate compatibility scores.
+Never expose it through:
+- Flutter.
+- GitHub.
+- .env files included in the APK.
+- Dart constants.
+- Client-side RPC parameters.
 
-Do not fabricate online status.
+The client must never be allowed to delete arbitrary user accounts.
 
-Do not return fake last messages.
+### Failed deletion
 
-## B. get_user_inbox_threads()
+If the Edge Function fails:
+- Do not delete only the profile row.
+- Do not automatically sign the user out.
+- Preserve a clear error message.
+- Allow a safe retry.
+- Log server errors without exposing private user information.
 
-No caller-supplied user ID.
+Only clear local authentication state after the server confirms deletion or a separately verified successful sign-out.
 
-Use auth.uid().
+### Deactivation
 
-Return actual conversation threads belonging to the caller.
+If full deactivation is supported, implement it properly with a real server operation.
 
-Fields:
+Otherwise remove the nonfunctional deactivation option rather than displaying a fake success.
 
-- conversation_id
-- connection_id
-- partner_id
-- partner_name
-- partner_avatar
-- connection_type
-- experience_name
-- last_message
-- last_message_at
-- unread_count
-
-Requirements:
-
-- Only conversations where the caller is a member.
-- Include only valid mutual connections.
-- Exclude blocked relationships.
-- Exclude suspended accounts.
-- Retrieve the most recent message using an efficient query.
-- Calculate unread messages as messages from the other participant where is_read = FALSE.
-- Return real unread counts.
-- Sort by conversation activity.
-- Handle conversations with no messages.
-
-Avoid N+1 queries.
-
-Add suitable indexes where required.
-
-## C. get_conversation_messages()
-
-Parameters:
-
-p_conversation_id UUID
-
-Optionally support:
-- p_limit
-- p_before
-
-if appropriate for pagination.
-
-Return:
-
-- message_id
-- sender_id
-- content
-- is_read
-- created_at
-- is_me
-
-Requirements:
-
-- Require authentication.
-- Verify the caller belongs to the conversation.
-- Verify the associated mutual connection is valid.
-- Check that neither participant has blocked the other.
-- Exclude unavailable or suspended participants where appropriate.
-- Return chronological messages.
-- Support a sensible initial limit, such as the latest 50 messages.
-- Never permit reading an unrelated conversation.
-- Do not expose private account data.
-
-## D. get_or_create_conversation_for_connection()
-
-Parameters:
-
-p_connection_id UUID
-
-Requirements:
-
-- Authentication required.
-- Verify caller is user_a_id or user_b_id.
-- Verify an actual mutual connection exists.
-- Check block status.
-- Check account status.
-- Return the existing conversation if it exists.
-- Create one only when a valid mutual connection exists but the conversation is missing.
-- Ensure exactly two eligible conversation members.
-- Use ON CONFLICT or equivalent safeguards.
-- Never create conversations without mutual connections.
-
-Prefer reusing the conversation that Phase 3 already created.
-
-## E. send_conversation_message()
-
-Parameters:
-
-p_conversation_id UUID
-p_content TEXT
-
-Requirements:
-
-1. Require authentication.
-2. Get sender ID only from auth.uid().
-3. Validate that the caller is a conversation member.
-4. Validate the associated connection.
-5. Check that the other user has not blocked the caller and that the caller has not blocked the other user.
-6. Reject suspended accounts.
-7. Trim leading and trailing whitespace.
-8. Reject empty content.
-9. Reject messages longer than 1,000 characters.
-10. Insert the message using the real sender ID.
-11. Set created_at on the server.
-12. Update conversations.updated_at.
-13. Return the actual inserted message.
-14. Do not allow the caller to specify sender_id.
-
-Do not trust client-provided timestamps or sender identity.
-
-Keep message content as plain text for the initial MVP. Do not implement HTML rendering.
-
-## F. mark_conversation_read()
-
-Parameters:
-
-p_conversation_id UUID
-
-Requirements:
-
-- Only an actual conversation participant.
-- Only update messages sent by the other user.
-- Never allow marking someone else's unrelated conversation as read.
-- Check block and conversation eligibility.
-- Update is_read to TRUE.
-- Return the number of updated messages.
-- Repeated execution should be safe.
-
-Use the existing messages.is_read column if appropriate.
-
-Do not add another read-status table unnecessarily.
+Do not add a paid deletion provider.
 
 ---
 
-# PART 4 — MESSAGE AND CONNECTION SECURITY
+# PART 8 — COMMUNITY GUIDELINES
 
-Inspect and tighten existing RLS policies.
+Create a Community Guidelines screen.
 
-Important: the current message policies in the original RLS migration primarily check conversation membership. The implementation must also check that the connection remains valid and has not been blocked.
+Use simple and understandable rules.
 
-Create a carefully secured helper such as:
+Include:
+1. Adults only.
+2. Respect consent and personal boundaries.
+3. No harassment or unwanted contact.
+4. No scams, financial solicitations or impersonation.
+5. Be respectful at in-person experiences.
+6. No threatening or discriminatory content.
+7. Respect private identity and personal information.
+8. Report unsafe conduct.
+9. Follow activity host and venue rules.
+10. Respect blocks and mutual-choice decisions.
 
-can_access_conversation(p_conversation_id UUID)
+Link the page from:
+- Profile settings.
+- Safety centre.
+- Relevant experience screens.
 
-It must verify:
-
-- Authenticated caller.
-- Valid conversation membership.
-- Valid associated connection.
-- No block in either direction.
-- No suspended participant.
-
-Use SECURITY DEFINER only where needed.
-
-Use a fixed search_path.
-
-Revoke execution from unnecessary roles.
-
-Grant only the appropriate authenticated access.
-
-Apply it to:
-
-- Conversation reads.
-- Conversation member reads.
-- Message reads.
-- Any other relevant policies.
-
-Prevent direct client message INSERT and unrestricted UPDATE if writes are routed through the new RPCs.
-
-For sending messages, use the validated server function.
-
-For read receipts, use mark_conversation_read().
-
-Do not expose conversation membership data to unrelated users.
-
-### Blocking behaviour
-
-The existing block action must have an immediate backend effect.
-
-Once User A blocks User B:
-
-- Neither can send new messages to the other.
-- The blocked conversation must no longer be returned in normal inbox queries.
-- The conversation should no longer appear in mutual connection discovery.
-- Realtime message access must stop for the blocked pair.
-- Existing connection records must not be re-created automatically.
-
-Do not delete historical messages simply because a user blocks someone, unless the actual account deletion policy requires it.
-
-The UI must clearly confirm whether the block succeeded.
+Reuse the existing typography, cards and visual identity.
 
 ---
 
-# PART 5 — ENABLE SUPABASE REALTIME
+# PART 9 — SETTINGS AND PREFERENCES
 
-Use the existing messages table.
+Audit the current settings screen carefully.
 
-Add public.messages to the supabase_realtime publication in an idempotent migration block.
+Some settings currently represent local UI-only behavior, not actual security integrations.
 
-Check whether:
-- The publication already exists.
-- The messages table is already registered.
+Remove fake claims.
 
-Do not fail migration because a publication/table entry already exists.
+Examples:
+- The local Two-Factor Authentication toggle must not claim SMS-based authentication is enabled.
+- Fake active device sessions must not be displayed as real sessions.
+- Blocked Profiles must load actual rows.
+- Premium activation must not display success without a real purchase.
+- Notification settings must clearly identify what is actually supported.
 
-Ensure Realtime access follows the appropriate messages SELECT RLS rules.
+For features not implemented:
+- Remove them from production UI, or
+- Clearly label them as unavailable.
 
-Use Supabase Realtime subscriptions in Flutter.
+Never present a simulated security setting as active protection.
 
-Subscribe to:
+Persist appropriate user preferences with existing local storage or Supabase, depending on whether they need to follow the account across devices.
 
-- New messages.
-- Message read-status changes.
+Do not add a paid notification service.
 
-Filter by conversation_id.
-
-The client must:
-
-1. Load initial messages from Supabase.
-2. Subscribe to Realtime events.
-3. Merge incoming messages by unique ID.
-4. Avoid duplicate messages.
-5. Keep messages in chronological order.
-6. Unsubscribe when the conversation screen is disposed.
-7. Refresh or re-establish the subscription after reconnection.
-8. Mark received messages as read when the conversation is actively open.
-
-Do not subscribe forever after leaving a screen.
-
-Do not use polling as the main chat update mechanism.
-
-Keep Realtime traffic limited to the active conversation and the user's necessary inbox updates.
-
-No paid chat provider is needed.
+Do not build subscriptions or payment processing in Phase 5.
 
 ---
 
-# PART 6 — CONNECT THE EXISTING CONNECTIONS REPOSITORY
+# PART 10 — PROFILE AND SETTINGS TESTING
 
-Existing file:
+### Profile tests
 
-lib/features/connections/data/connections_repository.dart
+- Existing profile loads correctly.
+- Profile data is not replaced by sample values.
+- Valid edit persists.
+- Failed edit preserves form values.
+- Profile photo uploads to user-owned storage.
+- Local image path is never persisted as production URL.
+- Interests persist correctly.
+- Intentions persist correctly.
+- Private date of birth remains private.
+- Verified status is not editable by the user.
+- Fake profile statistics are not displayed.
 
-Keep the current repository architecture.
+### Block tests
 
-Make its current methods functional:
+- Block user.
+- Prevent self-block.
+- Prevent duplicate block.
+- Load own blocked users.
+- Unblock successfully.
+- Blocked user cannot chat.
+- Blocked user is excluded from matching and appropriate discovery flows.
+- Existing conversation does not reopen merely because the block is removed.
 
-- fetchConnections()
-- fetchInboxThreads()
-- fetchMessages()
-- sendMessage()
-- getOrCreateConversation()
-- blockUser()
-- reportUser()
+### Reporting tests
 
-Use the exact new RPC names and parameter names.
+- Valid report inserts once.
+- Invalid reason rejected.
+- Empty reason rejected.
+- Description maximum enforced.
+- Incorrect reported ID rejected.
+- Only reporter can view their own report.
+- Reporter identity remains private.
+- Report dialog waits for success.
+- Failed report does not show success.
 
-Do not add another repository class duplicating this feature.
+### Account deletion tests
 
-### Important error-handling correction
+- Invalid user JWT rejected.
+- Account deletion request requires current-user authorization.
+- Recent authentication requirement enforced.
+- Storage cleanup failure handled safely.
+- Edge Function failure never causes profile-only deletion.
+- Successful deletion removes Auth account.
+- Database cascade is verified.
+- Failed deletion leaves an accurate error state.
+- Deleted user cannot restore the deleted session.
 
-Currently several methods catch Supabase errors and return an empty list or false.
+### Moderation tests
 
-This makes a backend failure appear as an empty inbox or a successful-looking empty conversation.
-
-Change this.
-
-- Log useful errors without logging private message content.
-- Rethrow data-fetch failures so Riverpod receives AsyncError.
-- Return typed results or clear failure information for mutation operations.
-- Do not silently return success.
-- Do not convert network failures to empty data.
-
-Update ConnectionModel and InboxThreadModel.
-
-Remove fake fields or defaults:
-
-- isOnline must not automatically be TRUE.
-- compatibilityScore must not default to 92.
-- Do not show online dots unless actual presence is implemented.
-- Do not display invented compatibility statistics.
-
-Presence is not required for Phase 4.
-
-Do not add a paid presence service.
-
----
-
-# PART 7 — REAL CONNECTIONS SCREEN
-
-Existing file:
-
-lib/features/connections/presentation/connections_screen.dart
-
-Preserve the existing MELSAVA visual design.
-
-Requirements:
-
-- Load from userConnectionsProvider.
-- Display actual connections.
-- Group or section connections by originating shared experience.
-- Preserve useful connection-type filters.
-- Show correct mutual connection type.
-- Display actual profile photographs or the existing initials placeholder.
-- Show originating experience context.
-- Display actual last-message preview when available.
-- Sort using real activity timestamps.
-- Navigate to the associated conversation ID.
-- Pull to refresh.
-
-Remove:
-- Fake online indicators.
-- Fabricated compatibility percentage.
-- Sample people.
-- Hard-coded last messages.
-
-Keep existing Light and Dark modes.
-
-Add proper loading, error, retry and empty states.
-
-Suggested empty text:
-
-"No connections yet."
-
-"Your next meaningful connection could begin with your next experience."
-
-Do not display invented member profiles.
+- Normal users cannot access moderation screens or RPCs.
+- Users cannot promote themselves to moderator.
+- Authorized moderator can review reports.
+- Moderation actions are recorded.
+- Reported users cannot see reporter identity.
+- Ordinary reports do not automatically suspend accounts.
 
 ---
 
-# PART 8 — REAL INBOX
-
-Existing file:
-
-lib/features/chat/presentation/inbox_screen.dart
-
-Connect it to get_user_inbox_threads().
-
-Features:
-
-- All conversations.
-- Unread.
-- Shared experience conversations.
-- Search by actual partner name or last message.
-- Last message preview.
-- Actual timestamp.
-- Actual unread count.
-- Actual shared experience context.
-- Tap to open a real conversation.
-
-Remove false online indicators and sample member data.
-
-When a new message arrives:
-- Update the thread preview.
-- Update unread count.
-- Move the thread to the top.
-- Refresh the associated connection data where needed.
-
-Provide pull-to-refresh.
-
-Display proper loading, empty, error and retry states.
-
-Do not show an empty state when the RPC failed.
-
----
-
-# PART 9 — REAL CONVERSATION SCREEN
-
-Existing file:
-
-lib/features/chat/presentation/conversation_screen.dart
-
-Keep the existing visual design.
-
-Remove:
-
-- _fallbackMessages.
-- Rohan/Sneha hard-coded avatar selection.
-- Local fake-send behaviour.
-- Any demo-only conversation fallback in release builds.
-
-A conversation must require a valid conversation ID or a valid connection ID from which the secure RPC can resolve one.
-
-If a valid conversation cannot be resolved, show an honest error state. Do not create fake messages.
-
-### Message display
-
-Use real Supabase messages.
-
-Message bubbles must show:
-
-- Actual text.
-- Actual sender.
-- Actual timestamp.
-- Sent/received style.
-- Real read receipt where applicable.
-
-### Sending
-
-- Trim message input.
-- Reject whitespace-only messages.
-- Maximum 1,000 characters.
-- Disable send during the request.
-- Show a sending state.
-- Save through send_conversation_message().
-- Clear the input only after confirmed success.
-- Preserve the message draft on failure.
-- Show retry.
-- Do not leave failed optimistic messages appearing as sent.
-
-### Realtime
-
-Use a properly disposed Supabase channel.
-
-When a new message arrives:
-
-- Add it once.
-- Sort chronologically.
-- Scroll to the bottom when appropriate.
-- Mark incoming messages read when the screen is visible.
-
-When the screen closes, unsubscribe.
-
-### Read receipts
-
-Reuse is_read.
-
-For messages sent by the current user:
-
-- One check: successfully sent.
-- Read indicator: the other participant has read the message.
-
-Do not pretend messages have been read.
-
-### Connection context
-
-Replace generic fake labels with real shared experience context.
-
-Example:
-
-"You both reconnected after Coffee & Conversation."
-
-If experience details are unavailable, omit the banner rather than invent information.
-
-### Chat safety controls
-
-Keep the existing report and block controls.
-
-Make both real and error-aware.
-
-If a report fails, do not display "Report submitted".
-
-If a block fails, do not display "User blocked".
-
-On successful block:
-- Remove the relevant connection from current providers.
-- Remove the conversation from the inbox.
-- Prevent further communication.
-- Return the user to a safe screen.
-
----
-
-# PART 10 — REALTIME RIVERPOD ARCHITECTURE
-
-The current conversationMessagesProvider is a FutureProvider.
-
-Replace or extend it with a properly managed realtime architecture.
-
-Suggested design:
-
-- FutureProvider or repository method for initial message loading.
-- StreamProvider family for active conversation updates.
-- A repository subscription method.
-- Proper channel cleanup on provider disposal.
-- Inbox thread refresh/invalidation when messages change.
-- Read-receipt updates reflected in the conversation.
-
-Do not create duplicate channels on rebuild.
-
-Do not open multiple subscriptions for the same conversation without a reason.
-
-Use typed message models.
-
-Keep SQL calls out of widget build methods.
-
-Keep state management maintainable for a solo Flutter developer.
-
----
-
-# PART 11 — TESTING
-
-Create Phase 4 tests.
-
-### Database/RPC tests
-
-1. User A can load their real connections.
-2. User B can load their own connections.
-3. User A cannot access a conversation they do not belong to.
-4. Unrelated User C cannot read messages.
-5. Valid connection can resolve a conversation.
-6. Invalid connection cannot create a conversation.
-7. Empty message is rejected.
-8. Whitespace-only message is rejected.
-9. Message over 1,000 characters is rejected.
-10. Valid message is saved with auth.uid() as sender.
-11. Caller cannot forge sender_id.
-12. Suspended users cannot send.
-13. Blocked participants cannot send.
-14. Blocked participants cannot read through the normal conversation RPC.
-15. Read RPC updates only incoming messages.
-16. Repeating mark-read is safe.
-17. Conversation list includes the correct last message.
-18. Unread counts are accurate.
-19. Duplicate conversations are prevented.
-20. RPC results do not expose private profile data.
-
-### Realtime tests
-
-21. User A sends a message.
-22. User B receives the inserted message without refreshing manually.
-23. User B opens the conversation.
-24. User A receives the correct read-state update.
-25. Message events do not create duplicate Flutter bubbles.
-26. Unsubscribing stops further event handling.
-27. Reconnection refreshes the message list.
-
-### Flutter tests
-
-- Connection loading.
-- Connections empty state.
-- Connection error and retry.
-- Inbox loading.
-- Inbox unread filter.
-- Search.
-- Message loading.
-- Empty conversation.
-- Message send success.
-- Message send failure.
-- Retry preserving draft.
-- Realtime incoming message.
-- Read receipt update.
-- Block confirmation and success.
-- Report confirmation and actual failure handling.
+# PART 11 — PRESERVE AND IMPROVE THE CURRENT UI
+
+Keep:
+- Existing warm ivory and deep plum design.
+- Mauve, coral and sage accents.
+- Manrope and Inter typography.
+- Botanical decorations.
+- Existing profile layout.
+- Current settings layout.
+- Existing dialogs and bottom sheets.
 - Light and Dark themes.
 
-### Two-account manual verification
+Do not create a new design system.
 
-Use two separate authenticated Supabase accounts that have a real Phase 3 connection.
+Improve visual details only where needed for real functionality.
 
-1. User A opens Connections.
-2. User B opens Connections.
-3. Both see the same valid mutual connection.
-4. User A opens Inbox.
-5. User B opens Inbox.
-6. User A sends a message.
-7. User B receives it without refreshing.
-8. User B replies.
-9. User A receives the reply.
-10. User B reads User A's earlier message.
-11. User A sees the updated read receipt.
-12. User A restarts the app.
-13. Previous conversations and messages are still present.
-14. User A blocks User B.
-15. Both accounts are prevented from continuing communication through the blocked conversation.
+Remove fake statistics, sample user information, nonfunctional toggles and simulated success messages.
 
-Do not use simulated matches to claim this works.
+Every async operation must have:
+- Loading.
+- Success.
+- Error.
+- Retry where sensible.
 
-Use actual Supabase accounts and database rows.
+Preserve user-entered data when an operation fails.
+
+Use accessible buttons and confirmations.
 
 ---
 
-# PART 12 — UPDATE DOCUMENTATION
+# PART 12 — LOW-COST REQUIREMENTS
+
+Do not add:
+- Dedicated VPS.
+- Paid moderation API.
+- Paid AI API.
+- Paid notification service.
+- Paid analytics.
+- New paid component framework.
+- Paid account deletion provider.
+- Subscription processing.
+
+Reuse:
+- Supabase.
+- Existing PostgreSQL tables.
+- Supabase Storage.
+- Supabase Edge Functions.
+- Existing Flutter packages.
+
+Keep the admin moderation workflow minimal.
+
+---
+
+# PART 13 — DOCUMENTATION
 
 Update:
 
+- README.md
 - DEVELOPMENT_ROADMAP.md
 - APP_WORKFLOW.md
 - DATABASE_SCHEMA.md
 - SECURITY_AND_RLS.md
-- README.md
 
 Document:
+- Profile update mechanism.
+- Avatar storage paths.
+- Block/unblock behaviour.
+- Report categories and permissions.
+- Moderator role setup.
+- Moderation procedures.
+- Account deletion endpoint.
+- Data cleanup and cascade behavior.
+- New migrations and deployment steps.
 
-- New SQL migration files.
-- All new RPC functions.
-- Realtime publication configuration.
-- RLS policy changes.
-- Message sending and read status.
-- Block enforcement.
-- Flutter realtime lifecycle.
-- Actual tests and results.
+Reconcile Phase 4 documentation with the actual implementation of migration 013 before marking it complete.
 
-Phase 4 should remain incomplete until the necessary backend and multi-account verification work has passed.
-
----
-
-# PART 13 — RESOURCE AND COST RULES
-
-Keep MELSAVA low-cost.
-
-Use existing:
-
-- Flutter.
-- Riverpod.
-- Supabase PostgreSQL.
-- Supabase Realtime.
-- Existing database tables.
-- Existing chat UI.
-
-Do not add:
-
-- A dedicated VPS.
-- Firebase database.
-- Paid chat service.
-- Paid WebSocket provider.
-- AI chat API.
-- Video calls.
-- Paid presence tracking.
-- New paid Flutter template.
-- New UI component framework.
-
-Use Supabase Realtime within the existing project's quotas.
+Update Phase 5 status only for verified completed features.
 
 ---
 
 # PART 14 — FINAL ACCEPTANCE CRITERIA
 
-Phase 4 is complete only when:
+Phase 5 is complete only when:
 
-1. Connections are loaded from real Supabase records.
-2. Inbox is loaded from real conversations.
-3. All expected RPC functions exist in migrations.
-4. Messages are loaded from PostgreSQL.
-5. Message sending works across two accounts.
-6. Realtime delivery works without manual refresh.
-7. Read receipts work.
-8. Unread counts update correctly.
-9. Connection context is real.
-10. No fabricated people, messages, online indicators or scores remain.
-11. Blocked pairs cannot continue normal communication.
-12. Reporting displays success only after confirmed database insertion.
-13. Message RLS and RPC security are tested.
-14. The existing MELSAVA UI remains intact.
-15. Loading, empty and error states work.
-16. No new critical analyzer issues.
-17. All implemented tests pass.
+1. Profile updates persist to Supabase.
+2. Profile photos use actual Supabase Storage uploads.
+3. Interests and intentions persist.
+4. No fake profile statistics remain.
+5. Verified status is accurate.
+6. Blocked-user list displays real database records.
+7. Unblocking works.
+8. Reports are submitted and confirmed correctly.
+9. A report failure never produces a success message.
+10. Moderation access is restricted to authorized moderators.
+11. Moderation actions are recorded.
+12. Account deletion removes the actual Auth account.
+13. The deletion fallback cannot remove only the profile and falsely claim success.
+14. Community Guidelines are accessible.
+15. Fake security switches and fake session status are removed or properly implemented.
+16. The existing MELSAVA design is preserved.
+17. Database and Edge Function security are tested.
+18. Flutter analysis and tests pass.
 
 Run:
 
@@ -879,40 +713,38 @@ dart format .
 flutter analyze
 flutter test
 
-Execute database tests and, where available, Supabase local tests.
-
-Manually test with two real accounts.
+Test actual Supabase operations where the local environment permits.
 
 Do not claim that tests passed unless they actually ran.
 
 Report:
-
 - Files changed.
-- SQL migrations created.
-- Functions implemented.
+- SQL migrations.
+- Edge Functions.
 - RLS changes.
-- Realtime setup steps.
-- Tests executed and their results.
-- Manual Supabase deployment instructions.
-- Remaining problems.
+- New moderator permissions.
+- Actual test results.
+- Required Supabase secrets and deployment commands.
+- Remaining limitations.
 
 ## STRICT SCOPE
 
-This is Phase 4 only, plus the small required Phase 3 hardening corrections.
+This is Phase 5 only.
 
-Do not redesign Discover.
-Do not rebuild authentication.
-Do not rebuild onboarding.
-Do not rebuild experience joining.
-Do not change the mutual matching product concept.
-Do not add subscriptions or paid features.
-Do not add AI.
-Do not add video or voice calling.
+Do not rebuild:
+- Authentication.
+- Profile onboarding.
+- Discover.
+- Experience discovery.
+- Joining.
+- Attendance.
+- Mutual connection logic.
+- Basic messaging.
 
-Preserve the existing MELSAVA design and code architecture.
+Do not add paid services or subscriptions.
 
-Implement incrementally, test the real user workflow and STOP after Phase 4.
+Fix the Phase 4 message-write security issue as a mandatory preflight, then implement Phase 5.
 
-CORE REQUIREMENT:
+Preserve the existing MELSAVA architecture and visual design.
 
-A user must only be able to read, send or receive messages in a valid mutual connection, and every new message must be saved securely and delivered to the other eligible participant through Supabase Realtime.
+Work incrementally, verify real operations, update documentation and STOP when Phase 5 is complete.
