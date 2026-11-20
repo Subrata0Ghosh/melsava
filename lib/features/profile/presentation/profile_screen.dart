@@ -9,6 +9,7 @@ import '../../../core/services/location_providers.dart';
 import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
+import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../connections/data/connections_repository.dart';
 import '../../experiences/data/experiences_repository.dart';
@@ -727,6 +728,8 @@ class ProfileScreen extends ConsumerWidget {
                       const SizedBox(height: 10),
 
                       _buildBadgesGrid(
+                        user,
+                        myBundle,
                         isDark,
                         cardBg,
                         borderColor,
@@ -966,18 +969,129 @@ class ProfileScreen extends ConsumerWidget {
   }
 
   Widget _buildBadgesGrid(
+    AppUser? user,
+    MyExperiencesBundle myBundle,
     bool isDark,
     Color cardBg,
     Color borderColor,
     Color primaryTextColor,
     Color mutedTextColor,
   ) {
-    final badges = [
-      {'icon': '🌲', 'title': 'Nature Lover', 'desc': 'Joined outdoor treks'},
-      {'icon': '☕', 'title': 'Coffee Buff', 'desc': 'Attended café meetups'},
-      {'icon': '🛡️', 'title': 'Verified Host', 'desc': 'ID confirmed'},
-      {'icon': '⭐', 'title': 'Reliable RSVP', 'desc': 'Consistent attendance'},
-    ];
+    final isVerified = user?.isVerified == true;
+    final attendedCount = myBundle.attended.length;
+    final interests = (user?.interests ?? [])
+        .map((i) => i.toLowerCase().trim())
+        .toList();
+
+    final List<Map<String, dynamic>> badges = [];
+
+    // 1. Verification Badge (Real ID / Selfie Check from DB)
+    if (isVerified) {
+      badges.add({
+        'icon': '🛡️',
+        'title': 'Verified Member',
+        'desc': 'ID & Profile Confirmed',
+        'unlocked': true,
+      });
+    } else {
+      badges.add({
+        'icon': '🔒',
+        'title': 'ID Verification',
+        'desc': 'Complete ID check',
+        'unlocked': false,
+      });
+    }
+
+    // 2. Attendance Badge (Real confirmed circle attendance)
+    if (attendedCount > 0) {
+      badges.add({
+        'icon': '⭐',
+        'title': 'Reliable RSVP',
+        'desc': '$attendedCount ${attendedCount == 1 ? 'circle' : 'circles'} attended',
+        'unlocked': true,
+      });
+    } else {
+      badges.add({
+        'icon': '⭐',
+        'title': 'First Circle',
+        'desc': 'Attend a circle to earn',
+        'unlocked': false,
+      });
+    }
+
+    // 3. Host / Community Badge (Real curated host role)
+    final isHost = user != null &&
+        (myBundle.upcoming.any((e) => e.hostId == user.id) ||
+            myBundle.attended.any((e) => e.hostId == user.id) ||
+            user.email.toLowerCase().contains('admin'));
+    if (isHost) {
+      badges.add({
+        'icon': '🌿',
+        'title': 'Curated Host',
+        'desc': 'Verified circle guide',
+        'unlocked': true,
+      });
+    } else if (interests.any((i) => i.contains('nature') || i.contains('hike') || i.contains('trek'))) {
+      badges.add({
+        'icon': '🌲',
+        'title': 'Nature Lover',
+        'desc': 'Outdoor explorer',
+        'unlocked': true,
+      });
+    } else if (interests.any((i) => i.contains('coffee') || i.contains('tea'))) {
+      badges.add({
+        'icon': '☕',
+        'title': 'Coffee Buff',
+        'desc': 'Café culture lover',
+        'unlocked': true,
+      });
+    } else {
+      badges.add({
+        'icon': '🌱',
+        'title': 'New Explorer',
+        'desc': 'Joined MELSAVA',
+        'unlocked': true,
+      });
+    }
+
+    // 4. Passion / Creative Badge (Derived from real user interests)
+    if (interests.any((i) => i.contains('photo'))) {
+      badges.add({
+        'icon': '📷',
+        'title': 'Visual Creator',
+        'desc': 'Photography enthusiast',
+        'unlocked': true,
+      });
+    } else if (interests.any((i) => i.contains('art') || i.contains('pottery') || i.contains('craft'))) {
+      badges.add({
+        'icon': '🎨',
+        'title': 'Creative Spirit',
+        'desc': 'Arts & culture lover',
+        'unlocked': true,
+      });
+    } else if (interests.any((i) => i.contains('mindful') || i.contains('yoga') || i.contains('meditat'))) {
+      badges.add({
+        'icon': '🧘',
+        'title': 'Mindful Soul',
+        'desc': 'Wellness & peace',
+        'unlocked': true,
+      });
+    } else if (interests.any((i) => i.contains('coffee') || i.contains('tea')) &&
+        !badges.any((b) => b['title'] == 'Coffee Buff')) {
+      badges.add({
+        'icon': '☕',
+        'title': 'Coffee Buff',
+        'desc': 'Café culture lover',
+        'unlocked': true,
+      });
+    } else {
+      badges.add({
+        'icon': '✨',
+        'title': 'Authentic Self',
+        'desc': 'Real community vibes',
+        'unlocked': true,
+      });
+    }
 
     return GridView.builder(
       shrinkWrap: true,
@@ -991,40 +1105,49 @@ class ProfileScreen extends ConsumerWidget {
       ),
       itemBuilder: (context, index) {
         final b = badges[index];
-        return Container(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-          decoration: BoxDecoration(
-            color: cardBg,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: borderColor, width: 0.9),
-          ),
-          child: Row(
-            children: [
-              Text(b['icon']!, style: const TextStyle(fontSize: 22)),
-              const SizedBox(width: 8),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      b['title']!,
-                      style: TextStyle(
-                        color: primaryTextColor,
-                        fontWeight: FontWeight.w700,
-                        fontSize: 12,
-                      ),
-                    ),
-                    Text(
-                      b['desc']!,
-                      style: TextStyle(color: mutedTextColor, fontSize: 9.5),
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                    ),
-                  ],
-                ),
+        final isUnlocked = b['unlocked'] as bool? ?? true;
+        return Opacity(
+          opacity: isUnlocked ? 1.0 : 0.62,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: isUnlocked ? borderColor : borderColor.withValues(alpha: 0.5),
+                width: 0.9,
               ),
-            ],
+            ),
+            child: Row(
+              children: [
+                Text(b['icon'] as String, style: const TextStyle(fontSize: 22)),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        b['title'] as String,
+                        style: TextStyle(
+                          color: isUnlocked
+                              ? primaryTextColor
+                              : mutedTextColor,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        b['desc'] as String,
+                        style: TextStyle(color: mutedTextColor, fontSize: 9.5),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         );
       },

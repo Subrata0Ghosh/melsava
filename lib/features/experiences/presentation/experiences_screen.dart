@@ -738,17 +738,27 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                           if (_selectedMyCircleTab == 0) {
                             cardFooter = Row(
                               children: [
-                                TextButton(
+                                OutlinedButton(
                                   onPressed: () => _handleCancelMembership(exp),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFFEF4444),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 6,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: isDark
+                                        ? AppColors.softCoral
+                                        : const Color(0xFFDC2626),
+                                    side: BorderSide(
+                                      color: (isDark
+                                              ? AppColors.softCoral
+                                              : const Color(0xFFDC2626))
+                                          .withValues(alpha: 0.35),
+                                      width: 1,
                                     ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 8,
+                                    ),
+                                    minimumSize: const Size(0, 36),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                   ),
                                   child: const Text(
                                     'Cancel RSVP',
@@ -759,71 +769,50 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                   ),
                                 ),
                                 const Spacer(),
-                                Flexible(
-                                  child: Wrap(
-                                    alignment: WrapAlignment.end,
-                                    crossAxisAlignment:
-                                        WrapCrossAlignment.center,
-                                    spacing: 8,
-                                    runSpacing: 4,
-                                    children: [
-                                      if (currentUser?.id == exp.hostId)
-                                        ElevatedButton.icon(
-                                          onPressed: () =>
-                                              HostAttendanceSheet.show(
-                                                context,
-                                                experience: exp,
-                                              ),
-                                          icon: const Icon(
-                                            Icons.fact_check_rounded,
-                                            size: 14,
-                                          ),
-                                          label: const Text('Attendance'),
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor: const Color(
-                                              0xFF10B981,
-                                            ),
-                                            foregroundColor: Colors.white,
-                                            elevation: 0,
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 12,
-                                              vertical: 8,
-                                            ),
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(12),
-                                            ),
-                                          ),
+                                GestureDetector(
+                                  onTap: () {
+                                    HapticFeedback.lightImpact();
+                                    ExperienceHubSheet.show(
+                                      context,
+                                      experience: exp,
+                                    );
+                                  },
+                                  child: Container(
+                                    height: 38,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 18,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: AppColors.purpleGradient,
+                                      borderRadius: BorderRadius.circular(20),
+                                      boxShadow: [
+                                        BoxShadow(
+                                          color: AppColors.primaryPurple
+                                              .withValues(alpha: 0.3),
+                                          blurRadius: 8,
+                                          offset: const Offset(0, 3),
                                         ),
-                                      ElevatedButton.icon(
-                                        onPressed: () =>
-                                            ExperienceHubSheet.show(
-                                              context,
-                                              experience: exp,
-                                            ),
-                                        icon: const Icon(
+                                      ],
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: const [
+                                        Icon(
                                           Icons.hub_rounded,
                                           size: 15,
+                                          color: Colors.white,
                                         ),
-                                        label: const Text('Open Hub'),
-                                        style: ElevatedButton.styleFrom(
-                                          backgroundColor: isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple,
-                                          foregroundColor: Colors.white,
-                                          elevation: 0,
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 8.5,
-                                          ),
-                                          shape: RoundedRectangleBorder(
-                                            borderRadius: BorderRadius.circular(
-                                              12,
-                                            ),
+                                        SizedBox(width: 6),
+                                        Text(
+                                          'Circle Hub',
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontWeight: FontWeight.w700,
+                                            fontSize: 12.5,
                                           ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
                                 ),
                               ],
@@ -847,23 +836,33 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                     ),
                                   ),
                                 ),
-                                TextButton(
+                                OutlinedButton(
                                   onPressed: () => _handleCancelMembership(exp),
-                                  style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFFEF4444),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 4,
-                                      vertical: 6,
+                                  style: OutlinedButton.styleFrom(
+                                    foregroundColor: isDark
+                                        ? AppColors.softCoral
+                                        : const Color(0xFFDC2626),
+                                    side: BorderSide(
+                                      color: (isDark
+                                              ? AppColors.softCoral
+                                              : const Color(0xFFDC2626))
+                                          .withValues(alpha: 0.35),
+                                      width: 1,
                                     ),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 14,
+                                      vertical: 7,
+                                    ),
+                                    minimumSize: const Size(0, 34),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
                                   ),
                                   child: const Text(
                                     'Leave Waitlist',
                                     style: TextStyle(
                                       fontSize: 12,
-                                      fontWeight: FontWeight.w700,
+                                      fontWeight: FontWeight.w600,
                                     ),
                                   ),
                                 ),
@@ -921,29 +920,47 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                           } else if (_selectedMyCircleTab == 3 &&
                               !exp.isCompleted &&
                               currentUser?.id == exp.hostId) {
-                            cardFooter = SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton.icon(
-                                onPressed: () => HostAttendanceSheet.show(
+                            cardFooter = GestureDetector(
+                              onTap: () {
+                                HapticFeedback.mediumImpact();
+                                HostAttendanceSheet.show(
                                   context,
                                   experience: exp,
+                                );
+                              },
+                              child: Container(
+                                width: double.infinity,
+                                height: 42,
+                                decoration: BoxDecoration(
+                                  gradient: AppColors.purpleGradient,
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.primaryPurple
+                                          .withValues(alpha: 0.28),
+                                      blurRadius: 8,
+                                      offset: const Offset(0, 3),
+                                    ),
+                                  ],
                                 ),
-                                icon: const Icon(
-                                  Icons.fact_check_rounded,
-                                  size: 15,
-                                ),
-                                label: const Text('Confirm Attendance'),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF10B981),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 9,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
+                                child: Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: const [
+                                    Icon(
+                                      Icons.fact_check_rounded,
+                                      size: 16,
+                                      color: Colors.white,
+                                    ),
+                                    SizedBox(width: 7),
+                                    Text(
+                                      'Confirm Attendance',
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontWeight: FontWeight.w700,
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ),
                             );
