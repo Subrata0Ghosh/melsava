@@ -12,6 +12,7 @@
 -- ============================================================================
 
 -- 1. Get User Connections
+DROP FUNCTION IF EXISTS public.get_user_connections();
 CREATE OR REPLACE FUNCTION public.get_user_connections()
 RETURNS TABLE (
     connection_id        UUID,
@@ -86,6 +87,7 @@ GRANT EXECUTE ON FUNCTION public.get_user_connections() TO authenticated;
 
 
 -- 2. Get User Inbox Threads
+DROP FUNCTION IF EXISTS public.get_user_inbox_threads();
 CREATE OR REPLACE FUNCTION public.get_user_inbox_threads()
 RETURNS TABLE (
     conversation_id      UUID,
@@ -164,6 +166,7 @@ GRANT EXECUTE ON FUNCTION public.get_user_inbox_threads() TO authenticated;
 
 
 -- 3. Send Conversation Message
+DROP FUNCTION IF EXISTS public.send_conversation_message(UUID, TEXT);
 CREATE OR REPLACE FUNCTION public.send_conversation_message(
     p_conversation_id UUID,
     p_content         TEXT
@@ -211,6 +214,7 @@ GRANT EXECUTE ON FUNCTION public.send_conversation_message(UUID, TEXT) TO authen
 
 
 -- 4. Get Conversation Messages
+DROP FUNCTION IF EXISTS public.get_conversation_messages(UUID);
 CREATE OR REPLACE FUNCTION public.get_conversation_messages(
     p_conversation_id UUID
 )
@@ -267,6 +271,7 @@ GRANT EXECUTE ON FUNCTION public.get_conversation_messages(UUID) TO authenticate
 
 
 -- 5. Get or Create Conversation for Connection
+DROP FUNCTION IF EXISTS public.get_or_create_conversation_for_connection(UUID);
 CREATE OR REPLACE FUNCTION public.get_or_create_conversation_for_connection(
     p_connection_id UUID
 )

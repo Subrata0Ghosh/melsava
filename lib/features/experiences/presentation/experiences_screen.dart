@@ -572,6 +572,7 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
 
           // ── Tab 2: My Circles ──
           Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               // Sub-Tabs: Upcoming, Waitlisted, Attended, Past
               Padding(

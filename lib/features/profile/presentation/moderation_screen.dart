@@ -139,10 +139,12 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
         showBottomLeaf: true,
         leafStyle: BotanicalLeafStyle.wildGrass,
         leafColors: BotanicalLeafDecoration.warmOlive,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
+        child: SizedBox.expand(
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               // ── Top Header ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -263,8 +265,9 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
           ),
         ),
       ),
-    );
-  }
+    ),
+  );
+}
 
   Widget _buildModeratorBody({
     required BuildContext context,

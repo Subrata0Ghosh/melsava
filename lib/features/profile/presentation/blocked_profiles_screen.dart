@@ -39,10 +39,12 @@ class BlockedProfilesScreen extends ConsumerWidget {
         showBottomLeaf: true,
         leafStyle: BotanicalLeafStyle.wildGrass,
         leafColors: BotanicalLeafDecoration.warmOlive,
-        child: SafeArea(
-          bottom: false,
-          child: Column(
-            children: [
+        child: SizedBox.expand(
+          child: SafeArea(
+            bottom: false,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
               // ── Pinned Top Header ──
               Padding(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
@@ -386,6 +388,7 @@ class BlockedProfilesScreen extends ConsumerWidget {
           ),
         ),
       ),
-    );
+    ),
+  );
   }
 }

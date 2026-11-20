@@ -9,12 +9,15 @@
 -- ----------------------------------------------------------------------------
 
 DROP POLICY IF EXISTS "messages_insert" ON public.messages;
+DROP POLICY IF EXISTS "messages_insert_sender" ON public.messages;
 REVOKE INSERT ON public.messages FROM anon, authenticated;
 
 DROP POLICY IF EXISTS "messages_update" ON public.messages;
+DROP POLICY IF EXISTS "messages_update_read" ON public.messages;
 REVOKE UPDATE ON public.messages FROM anon, authenticated;
 
 DROP POLICY IF EXISTS "messages_select" ON public.messages;
+DROP POLICY IF EXISTS "messages_select_member" ON public.messages;
 CREATE POLICY "messages_select"
     ON public.messages FOR SELECT
     USING (public.can_access_conversation(conversation_id));
