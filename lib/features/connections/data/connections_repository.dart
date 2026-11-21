@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
+import '../../chat/e2ee/e2ee_service.dart';
 
 /// Represents a mutual connection formed from an attended experience.
 class ConnectionModel {
@@ -176,6 +177,12 @@ class ChatMessageModel {
   final DateTime createdAt;
   final bool isMe;
   final String time;
+  final bool isEncrypted;
+  final String? encryptedPayload;
+  final String? recipientId;
+  final int senderDeviceId;
+  final int recipientDeviceId;
+  final String? clientRequestId;
 
   const ChatMessageModel({
     required this.id,
@@ -185,6 +192,12 @@ class ChatMessageModel {
     required this.createdAt,
     required this.isMe,
     required this.time,
+    this.isEncrypted = false,
+    this.encryptedPayload,
+    this.recipientId,
+    this.senderDeviceId = 1,
+    this.recipientDeviceId = 1,
+    this.clientRequestId,
   });
 
   factory ChatMessageModel.fromMap(Map<String, dynamic> map) {
@@ -209,18 +222,35 @@ class ChatMessageModel {
       createdAt: dt,
       isMe: isMe,
       time: '$hour:$minute $period',
+      isEncrypted: map['is_encrypted'] == true,
+      encryptedPayload: map['encrypted_payload']?.toString(),
+      recipientId: map['recipient_id']?.toString(),
+      senderDeviceId: (map['sender_device_id'] as num?)?.toInt() ?? 1,
+      recipientDeviceId: (map['recipient_device_id'] as num?)?.toInt() ?? 1,
+      clientRequestId: map['client_request_id']?.toString(),
     );
   }
 
-  ChatMessageModel copyWith({bool? isRead}) {
+  ChatMessageModel copyWith({
+    bool? isRead,
+    String? content,
+    bool? isEncrypted,
+    String? encryptedPayload,
+  }) {
     return ChatMessageModel(
       id: id,
       senderId: senderId,
-      content: content,
+      content: content ?? this.content,
       isRead: isRead ?? this.isRead,
       createdAt: createdAt,
       isMe: isMe,
       time: time,
+      isEncrypted: isEncrypted ?? this.isEncrypted,
+      encryptedPayload: encryptedPayload ?? this.encryptedPayload,
+      recipientId: recipientId,
+      senderDeviceId: senderDeviceId,
+      recipientDeviceId: recipientDeviceId,
+      clientRequestId: clientRequestId,
     );
   }
 }
@@ -379,6 +409,12 @@ abstract class ConnectionsRepository {
     DateTime? before,
   });
   Future<bool> sendMessage(String conversationId, String content);
+  Future<bool> sendEncryptedMessage({
+    required String conversationId,
+    required String recipientId,
+    required String plaintext,
+    String? clientRequestId,
+  });
   Future<int> markConversationRead(String conversationId);
   Future<String?> getOrCreateConversation(String connectionId);
   Future<List<BlockedUserModel>> fetchBlockedUsers();
@@ -432,10 +468,20 @@ abstract class ConnectionsRepository {
 
 /// Production Supabase-backed implementation of [ConnectionsRepository].
 class SupabaseConnectionsRepository implements ConnectionsRepository {
-  bool get _hasLiveSupabase =>
-      SupabaseService.isConfigured && SupabaseService.client != null;
+  final SupabaseClient? _customClient;
+  final E2eeService _e2eeService;
 
-  SupabaseClient? get _client => SupabaseService.client;
+  SupabaseConnectionsRepository({
+    SupabaseClient? client,
+    E2eeService? e2eeService,
+  })  : _customClient = client,
+        _e2eeService = e2eeService ?? E2eeService();
+
+  bool get _hasLiveSupabase =>
+      (_customClient != null || SupabaseService.client != null) &&
+      SupabaseService.isConfigured;
+
+  SupabaseClient? get _client => _customClient ?? SupabaseService.client;
 
   @override
   Future<List<ConnectionModel>> fetchConnections() async {
@@ -493,14 +539,67 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
         },
       );
       if (rows is List) {
-        return rows
-            .whereType<Map>()
-            .map((r) => ChatMessageModel.fromMap(Map<String, dynamic>.from(r)))
-            .toList();
+        final messages = <ChatMessageModel>[];
+        for (final r in rows) {
+          var msg = ChatMessageModel.fromMap(Map<String, dynamic>.from(r as Map));
+          if (msg.isEncrypted &&
+              msg.encryptedPayload != null &&
+              msg.encryptedPayload!.isNotEmpty) {
+            try {
+              final decrypted = await _e2eeService.decryptMessage(
+                messageId: msg.id,
+                senderUserId: msg.senderId,
+                encryptedPayload: msg.encryptedPayload!,
+                senderDeviceId: msg.senderDeviceId,
+              );
+              msg = msg.copyWith(content: decrypted);
+            } catch (e) {
+              debugPrint('[ConnectionsRepository] Decryption failure for msg ${msg.id}: $e');
+              msg = msg.copyWith(content: '🔒 [Encrypted message]');
+            }
+          }
+          messages.add(msg);
+        }
+        return messages;
       }
       return const [];
     } catch (e) {
       debugPrint('[ConnectionsRepository] fetchMessages RPC error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> sendEncryptedMessage({
+    required String conversationId,
+    required String recipientId,
+    required String plaintext,
+    String? clientRequestId,
+  }) async {
+    if (!_hasLiveSupabase || conversationId.isEmpty || plaintext.trim().isEmpty) {
+      return false;
+    }
+
+    try {
+      // 1. Encrypt on sender device via Signal Protocol Double Ratchet
+      final encryptedPayload = await _e2eeService.encryptMessage(
+        recipientUserId: recipientId,
+        plaintext: plaintext.trim(),
+      );
+
+      // 2. Deliver encrypted payload to Supabase RPC (zero plaintext sent)
+      final res = await _client!.rpc(
+        'send_e2ee_conversation_message',
+        params: {
+          'p_conversation_id': conversationId,
+          'p_recipient_id': recipientId,
+          'p_encrypted_payload': encryptedPayload,
+          'p_client_request_id': ?clientRequestId,
+        },
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] sendEncryptedMessage RPC error: $e');
       rethrow;
     }
   }
@@ -740,10 +839,25 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
             column: 'conversation_id',
             value: conversationId,
           ),
-          callback: (payload) {
+          callback: (payload) async {
             final newRecord = payload.newRecord;
             if (newRecord.isNotEmpty) {
-              final msg = ChatMessageModel.fromMap(newRecord);
+              var msg = ChatMessageModel.fromMap(newRecord);
+              if (msg.isEncrypted &&
+                  msg.encryptedPayload != null &&
+                  msg.encryptedPayload!.isNotEmpty) {
+                try {
+                  final decrypted = await _e2eeService.decryptMessage(
+                    messageId: msg.id,
+                    senderUserId: msg.senderId,
+                    encryptedPayload: msg.encryptedPayload!,
+                    senderDeviceId: msg.senderDeviceId,
+                  );
+                  msg = msg.copyWith(content: decrypted);
+                } catch (e) {
+                  msg = msg.copyWith(content: '🔒 [Encrypted message]');
+                }
+              }
               onMessageInserted(msg);
             }
           },
@@ -882,7 +996,8 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
 // ----------------------------------------------------------------------------
 
 final connectionsRepositoryProvider = Provider<ConnectionsRepository>((ref) {
-  return SupabaseConnectionsRepository();
+  final e2ee = ref.watch(e2eeServiceProvider);
+  return SupabaseConnectionsRepository(e2eeService: e2ee);
 });
 
 final userConnectionsProvider =

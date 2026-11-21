@@ -142,6 +142,14 @@ class _FakePhase5ConnectionsRepository implements ConnectionsRepository {
   Future<bool> sendMessage(String conversationId, String content) async => true;
 
   @override
+  Future<bool> sendEncryptedMessage({
+    required String conversationId,
+    required String recipientId,
+    required String plaintext,
+    String? clientRequestId,
+  }) async => true;
+
+  @override
   Future<int> markConversationRead(String conversationId) async => 0;
 
   @override

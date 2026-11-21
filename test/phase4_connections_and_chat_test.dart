@@ -55,6 +55,16 @@ class MockConnectionsRepository implements ConnectionsRepository {
   }
 
   @override
+  Future<bool> sendEncryptedMessage({
+    required String conversationId,
+    required String recipientId,
+    required String plaintext,
+    String? clientRequestId,
+  }) async {
+    return sendMessage(conversationId, plaintext);
+  }
+
+  @override
   Future<int> markConversationRead(String conversationId) async {
     didMarkRead = true;
     lastMarkedConversationId = conversationId;
