@@ -612,11 +612,9 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                             children: [
                                               Expanded(
                                                 child: Text(
-                                                  thread.lastMessage.contains('[Encrypted Message]')
-                                                      ? '🔒 End-to-end encrypted message'
-                                                      : (thread.lastMessage.isNotEmpty
-                                                            ? thread.lastMessage
-                                                            : 'Say hi to your new connection!'),
+                                                  thread.lastMessage.isNotEmpty
+                                                      ? thread.lastMessage
+                                                      : 'Say hi to your new connection!',
                                                   maxLines: 1,
                                                   overflow:
                                                       TextOverflow.ellipsis,
@@ -630,9 +628,6 @@ class _InboxScreenState extends ConsumerState<InboxScreen> {
                                                             ? FontWeight.w700
                                                             : FontWeight.w400,
                                                         fontSize: 12.5,
-                                                        fontStyle: thread.lastMessage.contains('[Encrypted Message]')
-                                                            ? FontStyle.italic
-                                                            : FontStyle.normal,
                                                       ),
                                                 ),
                                               ),

@@ -218,41 +218,6 @@ class _ReportDialogState extends State<ReportDialog> {
                   ],
                 ),
               ),
-              if (widget.isE2eeConversation) ...[
-                const SizedBox(height: 10),
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: AppColors.primaryPurple.withValues(alpha: 0.08),
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.primaryPurple.withValues(alpha: 0.2),
-                      width: 0.8,
-                    ),
-                  ),
-                  child: Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Icon(
-                        Icons.shield_outlined,
-                        size: 16,
-                        color: AppColors.primaryPurple,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'E2EE Safety Notice: MELSAVA messages are end-to-end encrypted; moderators cannot read chat history. The reason and details you provide below will serve as official moderation evidence.',
-                          style: TextStyle(
-                            fontSize: 11,
-                            height: 1.35,
-                            color: isDark ? Colors.white70 : AppColors.deepPlum,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
               const SizedBox(height: AppConstants.spacingMD),
 
               Text(

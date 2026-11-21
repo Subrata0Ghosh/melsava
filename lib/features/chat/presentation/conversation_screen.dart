@@ -8,7 +8,6 @@ import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/report_dialog.dart';
 import '../../connections/data/connections_repository.dart';
-import 'security_info_screen.dart';
 
 class ConversationScreen extends ConsumerStatefulWidget {
   final String participantName;
@@ -411,75 +410,13 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                       color: primaryTextColor,
                     ),
                   ),
-                  Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        'Connected Peer',
-                        style: AppTypography.bodySmall.copyWith(
-                          color: mutedTextColor,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                      const SizedBox(width: 5),
-                      InkWell(
-                        onTap: () {
-                          if (widget.partnerId != null &&
-                              widget.partnerId!.isNotEmpty) {
-                            SecurityInfoScreen.show(
-                              context,
-                              participantName: widget.participantName,
-                              partnerId: widget.partnerId!,
-                            );
-                          }
-                        },
-                        borderRadius: BorderRadius.circular(10),
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 6,
-                            vertical: 1.5,
-                          ),
-                          decoration: BoxDecoration(
-                            color: (isDark
-                                    ? AppColors.brightViolet
-                                    : AppColors.primaryPurple)
-                                .withValues(alpha: 0.12),
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(
-                              color: (isDark
-                                      ? AppColors.brightViolet
-                                      : AppColors.primaryPurple)
-                                  .withValues(alpha: 0.25),
-                              width: 0.8,
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                Icons.lock_rounded,
-                                size: 9.5,
-                                color: isDark
-                                    ? AppColors.brightViolet
-                                    : AppColors.primaryPurple,
-                              ),
-                              const SizedBox(width: 3),
-                              Text(
-                                'E2EE',
-                                style: TextStyle(
-                                  color: isDark
-                                      ? AppColors.brightViolet
-                                      : AppColors.primaryPurple,
-                                  fontSize: 9.5,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
-                    ],
+                  Text(
+                    'Connected Peer',
+                    style: AppTypography.bodySmall.copyWith(
+                      color: mutedTextColor,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
                 ],
               ),
@@ -491,19 +428,10 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
             icon: Icon(Icons.more_vert, color: primaryTextColor),
             color: isDark ? AppColors.darkElevated : AppColors.white,
             onSelected: (value) async {
-              if (value == 'security') {
-                if (widget.partnerId != null && widget.partnerId!.isNotEmpty) {
-                  SecurityInfoScreen.show(
-                    context,
-                    participantName: widget.participantName,
-                    partnerId: widget.partnerId!,
-                  );
-                }
-              } else if (value == 'report') {
+              if (value == 'report') {
                 ReportDialog.show(
                   context,
                   targetTitle: widget.participantName,
-                  isE2eeConversation: true,
                   onSubmit: (reason, desc) async {
                     if (widget.partnerId != null &&
                         widget.partnerId!.isNotEmpty) {
@@ -575,27 +503,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
               }
             },
             itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'security',
-                child: Row(
-                  children: [
-                    Icon(
-                      Icons.lock_outline_rounded,
-                      size: 18,
-                      color: isDark
-                          ? AppColors.brightViolet
-                          : AppColors.primaryPurple,
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(
-                        'Encryption & Safety',
-                        style: TextStyle(color: primaryTextColor),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
               PopupMenuItem(
                 value: 'report',
                 child: Row(
@@ -933,18 +840,6 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (msg.isEncrypted) ...[
-                                  Icon(
-                                    Icons.lock_rounded,
-                                    size: 9.5,
-                                    color: msg.isMe
-                                        ? Colors.white.withValues(alpha: 0.75)
-                                        : (isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple),
-                                  ),
-                                  const SizedBox(width: 3.5),
-                                ],
                                 Text(
                                   msg.time,
                                   style: AppTypography.bodySmall.copyWith(

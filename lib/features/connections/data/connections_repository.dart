@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
-import '../../chat/e2ee/e2ee_service.dart';
 
 /// Represents a mutual connection formed from an attended experience.
 class ConnectionModel {
@@ -469,13 +468,10 @@ abstract class ConnectionsRepository {
 /// Production Supabase-backed implementation of [ConnectionsRepository].
 class SupabaseConnectionsRepository implements ConnectionsRepository {
   final SupabaseClient? _customClient;
-  final E2eeService _e2eeService;
 
   SupabaseConnectionsRepository({
     SupabaseClient? client,
-    E2eeService? e2eeService,
-  })  : _customClient = client,
-        _e2eeService = e2eeService ?? E2eeService();
+  }) : _customClient = client;
 
   bool get _hasLiveSupabase =>
       (_customClient != null || SupabaseService.client != null) &&
@@ -541,27 +537,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       if (rows is List) {
         final messages = <ChatMessageModel>[];
         for (final r in rows) {
-          var msg = ChatMessageModel.fromMap(Map<String, dynamic>.from(r as Map));
-          final currentUid = _client?.auth.currentUser?.id;
-          final isFromMe = currentUid != null && msg.senderId == currentUid;
-
-          if (msg.isEncrypted &&
-              !isFromMe &&
-              msg.encryptedPayload != null &&
-              msg.encryptedPayload!.isNotEmpty) {
-            try {
-              final decrypted = await _e2eeService.decryptMessage(
-                messageId: msg.id,
-                senderUserId: msg.senderId,
-                encryptedPayload: msg.encryptedPayload!,
-                senderDeviceId: msg.senderDeviceId,
-              );
-              msg = msg.copyWith(content: decrypted);
-            } catch (e) {
-              debugPrint('[ConnectionsRepository] Decryption failure for msg ${msg.id}: $e');
-              // If decryption fails, preserve any existing content rather than forcing ugly placeholder
-            }
-          }
+          final msg = ChatMessageModel.fromMap(Map<String, dynamic>.from(r as Map));
           messages.add(msg);
         }
         return messages;
@@ -580,32 +556,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
     required String plaintext,
     String? clientRequestId,
   }) async {
-    if (!_hasLiveSupabase || conversationId.isEmpty || plaintext.trim().isEmpty) {
-      return false;
-    }
-
-    try {
-      // 1. Encrypt on sender device via Signal Protocol Double Ratchet
-      final encryptedPayload = await _e2eeService.encryptMessage(
-        recipientUserId: recipientId,
-        plaintext: plaintext.trim(),
-      );
-
-      // 2. Deliver encrypted payload to Supabase RPC (zero plaintext sent)
-      final res = await _client!.rpc(
-        'send_e2ee_conversation_message',
-        params: {
-          'p_conversation_id': conversationId,
-          'p_recipient_id': recipientId,
-          'p_encrypted_payload': encryptedPayload,
-          'p_client_request_id': ?clientRequestId,
-        },
-      );
-      return res != null && res['success'] == true;
-    } catch (e) {
-      debugPrint('[ConnectionsRepository] sendEncryptedMessage RPC error: $e');
-      rethrow;
-    }
+    return sendMessage(conversationId, plaintext);
   }
 
   @override
@@ -843,28 +794,10 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
             column: 'conversation_id',
             value: conversationId,
           ),
-          callback: (payload) async {
+          callback: (payload) {
             final newRecord = payload.newRecord;
             if (newRecord.isNotEmpty) {
-              var msg = ChatMessageModel.fromMap(newRecord);
-              final currentUid = _client?.auth.currentUser?.id;
-              final isFromMe = currentUid != null && msg.senderId == currentUid;
-              if (msg.isEncrypted &&
-                  !isFromMe &&
-                  msg.encryptedPayload != null &&
-                  msg.encryptedPayload!.isNotEmpty) {
-                try {
-                  final decrypted = await _e2eeService.decryptMessage(
-                    messageId: msg.id,
-                    senderUserId: msg.senderId,
-                    encryptedPayload: msg.encryptedPayload!,
-                    senderDeviceId: msg.senderDeviceId,
-                  );
-                  msg = msg.copyWith(content: decrypted);
-                } catch (e) {
-                  debugPrint('[ConnectionsRepository] Realtime decryption error for ${msg.id}: $e');
-                }
-              }
+              final msg = ChatMessageModel.fromMap(newRecord);
               onMessageInserted(msg);
             }
           },
@@ -1003,8 +936,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
 // ----------------------------------------------------------------------------
 
 final connectionsRepositoryProvider = Provider<ConnectionsRepository>((ref) {
-  final e2ee = ref.watch(e2eeServiceProvider);
-  return SupabaseConnectionsRepository(e2eeService: e2ee);
+  return SupabaseConnectionsRepository();
 });
 
 final userConnectionsProvider =

@@ -40,10 +40,8 @@ dependencies:
   geolocator: ^14.1.2
   google_sign_in: ^7.2.0
 
-  # End-to-End Encryption & Native Secure Storage
-  libsignal_protocol_dart: ^0.8.2
+  # Native Secure Storage
   flutter_secure_storage: ^11.2.0
-  qr_flutter: ^4.1.0
 
 dev_dependencies:
   flutter_test:
