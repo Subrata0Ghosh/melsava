@@ -176,12 +176,6 @@ class ChatMessageModel {
   final DateTime createdAt;
   final bool isMe;
   final String time;
-  final bool isEncrypted;
-  final String? encryptedPayload;
-  final String? recipientId;
-  final int senderDeviceId;
-  final int recipientDeviceId;
-  final String? clientRequestId;
 
   const ChatMessageModel({
     required this.id,
@@ -191,12 +185,6 @@ class ChatMessageModel {
     required this.createdAt,
     required this.isMe,
     required this.time,
-    this.isEncrypted = false,
-    this.encryptedPayload,
-    this.recipientId,
-    this.senderDeviceId = 1,
-    this.recipientDeviceId = 1,
-    this.clientRequestId,
   });
 
   factory ChatMessageModel.fromMap(Map<String, dynamic> map) {
@@ -221,20 +209,12 @@ class ChatMessageModel {
       createdAt: dt,
       isMe: isMe,
       time: '$hour:$minute $period',
-      isEncrypted: map['is_encrypted'] == true,
-      encryptedPayload: map['encrypted_payload']?.toString(),
-      recipientId: map['recipient_id']?.toString(),
-      senderDeviceId: (map['sender_device_id'] as num?)?.toInt() ?? 1,
-      recipientDeviceId: (map['recipient_device_id'] as num?)?.toInt() ?? 1,
-      clientRequestId: map['client_request_id']?.toString(),
     );
   }
 
   ChatMessageModel copyWith({
     bool? isRead,
     String? content,
-    bool? isEncrypted,
-    String? encryptedPayload,
   }) {
     return ChatMessageModel(
       id: id,
@@ -244,12 +224,6 @@ class ChatMessageModel {
       createdAt: createdAt,
       isMe: isMe,
       time: time,
-      isEncrypted: isEncrypted ?? this.isEncrypted,
-      encryptedPayload: encryptedPayload ?? this.encryptedPayload,
-      recipientId: recipientId,
-      senderDeviceId: senderDeviceId,
-      recipientDeviceId: recipientDeviceId,
-      clientRequestId: clientRequestId,
     );
   }
 }
