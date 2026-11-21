@@ -1,14 +1,11 @@
 import math
-import struct
-import wave
 import subprocess
 import os
-import sys
 from PIL import Image, ImageDraw, ImageFont, ImageFilter
 
 OUTPUT_DIR = "playstore_assets"
 VIDEO_PATH = os.path.join(OUTPUT_DIR, "melsava_promo_video.mp4")
-AUDIO_PATH = os.path.join(OUTPUT_DIR, "temp_soundtrack.wav")
+AUDIO_PATH = os.path.join(OUTPUT_DIR, "music_piano_27s.mp3")
 
 WIDTH = 1920
 HEIGHT = 1080
@@ -27,74 +24,7 @@ def get_font(path, size):
         return ImageFont.load_default()
 
 # -------------------------------------------------------------
-# 1. Synthesize Ambient Uplifting Soundtrack (Python Wave)
-# -------------------------------------------------------------
-def generate_soundtrack(filename, duration, sample_rate=44100):
-    if os.path.exists(filename) and os.path.getsize(filename) > 1000000:
-        print("Soundtrack already exists, using cached audio...")
-        return
-    print("Generating custom melodic soundtrack...")
-    num_samples = int(duration * sample_rate)
-    
-    # Harmonic Progression: A -> F#m -> D -> E
-    chords = [
-        [220.0, 277.18, 329.63, 440.0, 110.0],  # A
-        [185.0, 220.0, 277.18, 370.0, 92.5],   # F#m
-        [146.83, 185.0, 220.0, 293.66, 73.4],  # D
-        [164.81, 207.65, 246.94, 329.63, 82.4] # E
-    ]
-    chord_len = 3.375
-    
-    samples = []
-    for i in range(num_samples):
-        t = i / sample_rate
-        chord_idx = int((t / chord_len) % len(chords))
-        freqs = chords[chord_idx]
-        
-        vibrato = 1.0 + 0.003 * math.sin(2 * math.pi * 5.0 * t)
-        val = 0.0
-        
-        # Chord tones
-        for idx, f in enumerate(freqs):
-            vol = 0.12 if idx < 3 else (0.16 if idx == 4 else 0.08)
-            t_in_chord = t % chord_len
-            env = min(1.0, t_in_chord * 3.0) * min(1.0, (chord_len - t_in_chord) * 3.0)
-            val += vol * env * math.sin(2 * math.pi * f * vibrato * t)
-            val += (vol * 0.35) * env * math.sin(2 * math.pi * (f * 2) * t)
-
-        # Ambient bell arpeggio every 0.375s
-        arp_step = int((t / 0.375) % 4)
-        arp_freq = freqs[arp_step % 3] * 2.0
-        t_arp = t % 0.375
-        arp_env = math.exp(-t_arp * 9.0)
-        val += 0.07 * arp_env * math.sin(2 * math.pi * arp_freq * t)
-
-        # Soft heartbeat kick every 1.5s
-        t_kick = t % 1.5
-        if t_kick < 0.2:
-            kick_freq = 120.0 * math.exp(-t_kick * 20.0)
-            kick_val = math.sin(2 * math.pi * kick_freq * t_kick) * math.exp(-t_kick * 15.0)
-            val += 0.22 * kick_val
-
-        # Master fade in & fade out
-        fade = min(1.0, t / 1.5) * min(1.0, (duration - t) / 2.0)
-        val *= fade
-
-        val = max(-0.95, min(0.95, val))
-        sample_int = int(val * 32767.0)
-        samples.append(sample_int)
-        samples.append(sample_int)
-
-    with wave.open(filename, 'w') as wf:
-        wf.setnchannels(2)
-        wf.setsampwidth(2)
-        wf.setframerate(sample_rate)
-        raw_data = struct.pack(f'<{len(samples)}h', *samples)
-        wf.writeframes(raw_data)
-    print("Soundtrack ready.")
-
-# -------------------------------------------------------------
-# 2. Helper: Build Rounded Phone Frame with Realistic Shadow
+# 1. Helper: Build Rounded Phone Frame with Realistic Shadow
 # -------------------------------------------------------------
 def create_phone_mockup(screen_path, target_h=860):
     screen = Image.open(screen_path).convert("RGBA")
@@ -137,17 +67,44 @@ def create_phone_mockup(screen_path, target_h=860):
     return final_mockup
 
 # -------------------------------------------------------------
-# 3. Pre-render Background & Phone Mockups
+# 2. Pre-render Background & Phone Mockups
 # -------------------------------------------------------------
-print("Preparing graphics and pre-rendering backgrounds...")
+print("Preparing graphics and pre-rendering backgrounds...", flush=True)
 app_icon = Image.open(os.path.join(OUTPUT_DIR, "app_icon_512.png")).convert("RGBA")
 
-icon_size = 220
-app_icon_resized = app_icon.resize((icon_size, icon_size), Image.Resampling.LANCZOS)
-icon_mask = Image.new("L", (icon_size, icon_size), 0)
-ImageDraw.Draw(icon_mask).rounded_rectangle([0, 0, icon_size-1, icon_size-1], radius=44, fill=255)
-rounded_icon = Image.new("RGBA", (icon_size, icon_size), (0, 0, 0, 0))
-rounded_icon.paste(app_icon_resized, (0, 0), icon_mask)
+# Pre-render clean icon with smooth ambient glow and squircle shadow
+def get_rendered_icon_composite(size, alpha=255):
+    icon_resized = app_icon.resize((size, size), Image.Resampling.LANCZOS)
+    
+    # Glow layer
+    glow_pad = 80
+    glow = Image.new("RGBA", (size + glow_pad * 2, size + glow_pad * 2), (0, 0, 0, 0))
+    g_draw = ImageDraw.Draw(glow)
+    c = glow.width // 2
+    g_draw.ellipse([c - size//2, c - size//2, c + size//2, c + size//2], fill=(139, 92, 246, int(alpha * 0.55)))
+    glow = glow.filter(ImageFilter.GaussianBlur(36))
+    
+    # Shadow layer matching squircle
+    shadow = Image.new("RGBA", (size + glow_pad * 2, size + glow_pad * 2), (0, 0, 0, 0))
+    s_draw = ImageDraw.Draw(shadow)
+    sx = glow_pad
+    sy = glow_pad + 8
+    s_draw.rounded_rectangle([sx, sy, sx + size, sy + size], radius=int(size * 0.22), fill=(0, 0, 0, int(alpha * 0.65)))
+    shadow = shadow.filter(ImageFilter.GaussianBlur(20))
+    
+    # Composite
+    comp = Image.new("RGBA", (size + glow_pad * 2, size + glow_pad * 2), (0, 0, 0, 0))
+    comp.alpha_composite(glow)
+    comp.alpha_composite(shadow)
+    
+    if alpha < 255:
+        # Apply master alpha to icon
+        r, g, b, a = icon_resized.split()
+        a = a.point(lambda p: int(p * (alpha / 255.0)))
+        icon_resized = Image.merge("RGBA", (r, g, b, a))
+        
+    comp.alpha_composite(icon_resized, (glow_pad, glow_pad))
+    return comp, glow_pad
 
 mockup_1 = create_phone_mockup(os.path.join(OUTPUT_DIR, "screenshot_1_discover.png"))
 mockup_2 = create_phone_mockup(os.path.join(OUTPUT_DIR, "screenshot_2_experience_detail.png"))
@@ -155,11 +112,9 @@ mockup_3 = create_phone_mockup(os.path.join(OUTPUT_DIR, "screenshot_3_connection
 mockup_4 = create_phone_mockup(os.path.join(OUTPUT_DIR, "screenshot_4_chat.png"))
 mockup_5 = create_phone_mockup(os.path.join(OUTPUT_DIR, "screenshot_5_profile_trust.png"))
 
-# Pre-render static base background with rich bokeh/glows once!
 def create_master_bg():
     bg = Image.new("RGBA", (WIDTH, HEIGHT), (18, 14, 28, 255))
     
-    # Ambient glows
     glow1 = Image.new("RGBA", (WIDTH, HEIGHT), (0, 0, 0, 0))
     g1_draw = ImageDraw.Draw(glow1)
     g1_draw.ellipse([WIDTH * 0.20 - 380, HEIGHT * 0.45 - 380, WIDTH * 0.20 + 380, HEIGHT * 0.45 + 380], fill=(124, 58, 237, 50))
@@ -181,7 +136,7 @@ font_title = get_font(FONT_BOLD_PATH, 56)
 font_subtitle = get_font(FONT_BOLD_PATH, 32)
 font_body = get_font(FONT_REG_PATH, 24)
 font_pill = get_font(FONT_BOLD_PATH, 19)
-font_brand = get_font(FONT_BOLD_PATH, 76)
+font_brand = get_font(FONT_BOLD_PATH, 78)
 font_brand_tag = get_font(FONT_REG_PATH, 30)
 
 def draw_pill(draw, x, y, text, bg_color=(124, 58, 237, 220), text_color=(255, 255, 255, 255)):
@@ -202,7 +157,7 @@ def draw_bullet(draw, x, y, headline, description, alpha=255):
     draw.text((x + 42, y + 44), description, font=font_body, fill=(195, 185, 215, alpha))
 
 # -------------------------------------------------------------
-# 4. Render Video Pipeline
+# 3. Render Video Pipeline
 # -------------------------------------------------------------
 def render_frame(frame_idx):
     bg = MASTER_BG.copy()
@@ -215,27 +170,24 @@ def render_frame(frame_idx):
         fade_out = 1.0 if frame_idx < 115 else max(0.0, (135 - frame_idx) / 20.0)
         alpha = int(255 * fade_out)
         
-        pulse = 1.0 + 0.03 * math.sin(frame_idx * 0.08)
-        cur_icon_size = int(icon_size * pulse * min(1.0, 0.6 + 0.4 * ease))
-        icon_frame = rounded_icon.resize((cur_icon_size, cur_icon_size), Image.Resampling.LANCZOS)
+        pulse = 1.0 + 0.02 * math.sin(frame_idx * 0.08)
+        cur_size = int(220 * pulse * min(1.0, 0.7 + 0.3 * ease))
+        icon_comp, pad = get_rendered_icon_composite(cur_size, alpha)
         
-        ix = (WIDTH - cur_icon_size) // 2
+        ix = (WIDTH - cur_size) // 2
         iy = int(HEIGHT * 0.28 - 20 * ease)
-        bg.paste(icon_frame, (ix, iy), icon_frame)
-        
-        ring_r = cur_icon_size // 2 + 18
-        draw.ellipse([WIDTH//2 - ring_r, iy + cur_icon_size//2 - ring_r, WIDTH//2 + ring_r, iy + cur_icon_size//2 + ring_r], outline=(167, 139, 250, int(alpha * 0.6)), width=3)
+        bg.alpha_composite(icon_comp, (ix - pad, iy - pad))
         
         brand_text = "MELSAVA"
         bbox = font_brand.getbbox(brand_text)
         bw = bbox[2] - bbox[0]
-        draw.text(((WIDTH - bw) // 2, iy + cur_icon_size + 36), brand_text, font=font_brand, fill=(255, 255, 255, alpha))
+        draw.text(((WIDTH - bw) // 2, iy + cur_size + 36), brand_text, font=font_brand, fill=(255, 255, 255, alpha))
         
         pill_text = "18+ ACTIVITY-FIRST SOCIAL DISCOVERY"
         p_bbox = font_pill.getbbox(pill_text)
         pw = p_bbox[2] - p_bbox[0] + 36
         px = (WIDTH - pw) // 2
-        py = iy + cur_icon_size + 140
+        py = iy + cur_size + 140
         draw.rounded_rectangle([px, py, px + pw, py + 38], radius=19, fill=(124, 58, 237, int(alpha * 0.9)))
         draw.text((px + 18, py + 8), pill_text, font=font_pill, fill=(255, 255, 255, alpha))
         
@@ -336,47 +288,44 @@ def render_frame(frame_idx):
         fade_out = 1.0 if frame_idx < 780 else max(0.0, (810 - frame_idx) / 30.0)
         alpha = int(255 * fade_out)
         
-        center_x = WIDTH // 2
-        center_y = int(HEIGHT * 0.35)
-        
-        pulse = 1.0 + 0.04 * math.sin(local_idx * 0.1)
+        pulse = 1.0 + 0.02 * math.sin(local_idx * 0.1)
         cur_size = int(240 * pulse)
-        icon_frame = rounded_icon.resize((cur_size, cur_size), Image.Resampling.LANCZOS)
+        icon_comp, pad = get_rendered_icon_composite(cur_size, alpha)
         
-        ix = center_x - cur_size // 2
-        iy = center_y - cur_size // 2
-        bg.paste(icon_frame, (ix, iy), icon_frame)
-        
-        draw.ellipse([center_x - 150, center_y - 150, center_x + 150, center_y + 150], outline=(167, 139, 250, int(alpha * 0.7)), width=3)
-        draw.ellipse([center_x - 170, center_y - 170, center_x + 170, center_y + 170], outline=(124, 58, 237, int(alpha * 0.4)), width=2)
+        ix = (WIDTH - cur_size) // 2
+        iy = int(HEIGHT * 0.35 - cur_size // 2)
+        bg.alpha_composite(icon_comp, (ix - pad, iy - pad))
         
         brand_text = "MELSAVA"
         bbox = font_brand.getbbox(brand_text)
         bw = bbox[2] - bbox[0]
-        draw.text(((WIDTH - bw) // 2, center_y + 150), brand_text, font=font_brand, fill=(255, 255, 255, alpha))
+        draw.text(((WIDTH - bw) // 2, iy + cur_size + 36), brand_text, font=font_brand, fill=(255, 255, 255, alpha))
         
         cta_text = "Available Now on Google Play"
         c_bbox = font_subtitle.getbbox(cta_text)
         cw = c_bbox[2] - c_bbox[0] + 56
         ch = c_bbox[3] - c_bbox[1] + 28
         cx = (WIDTH - cw) // 2
-        cy = center_y + 260
+        cy = iy + cur_size + 140
         draw.rounded_rectangle([cx, cy, cx + cw, cy + ch], radius=ch // 2, fill=(124, 58, 237, alpha))
         draw.text((cx + 28, cy + 12), cta_text, font=font_subtitle, fill=(255, 255, 255, alpha))
         
-        dev_text = "Developed with ❤️ by TechnOrchid"
+        # Clean plain English text - NO missing emoji glyphs
+        dev_text = "Official App - Developed with Dedication by TechnOrchid"
         d_bbox = font_body.getbbox(dev_text)
         dw = d_bbox[2] - d_bbox[0]
-        draw.text(((WIDTH - dw) // 2, cy + 90), dev_text, font=font_body, fill=(180, 170, 205, int(alpha * 0.8)))
+        draw.text(((WIDTH - dw) // 2, cy + 86), dev_text, font=font_body, fill=(195, 185, 215, int(alpha * 0.85)))
 
     return bg.convert("RGB")
 
 # -------------------------------------------------------------
-# 5. Main Execution: Pipe Frames Directly to FFmpeg
+# 4. Main Execution: Pipe Frames Directly to FFmpeg
 # -------------------------------------------------------------
 def main():
-    generate_soundtrack(AUDIO_PATH, DURATION_SEC)
-    
+    if not os.path.exists(AUDIO_PATH):
+        print(f"Error: Audio file {AUDIO_PATH} not found!")
+        return
+
     ffmpeg_cmd = [
         "ffmpeg",
         "-y",
@@ -387,7 +336,7 @@ def main():
         "-s", f"{WIDTH}x{HEIGHT}",
         "-pix_fmt", "rgb24",
         "-r", str(FPS),
-        "-i", "-",  # Pipe input
+        "-i", "-",  # Pipe video input
         "-i", AUDIO_PATH,
         "-c:v", "libx264",
         "-preset", "veryfast",
@@ -399,7 +348,7 @@ def main():
         VIDEO_PATH
     ]
     
-    print(f"Starting optimized video encoding pipeline ({TOTAL_FRAMES} frames @ 30fps)...", flush=True)
+    print(f"Encoding Full HD Promo Video with studio soundtrack ({TOTAL_FRAMES} frames)...", flush=True)
     process = subprocess.Popen(ffmpeg_cmd, stdin=subprocess.PIPE, stderr=subprocess.DEVNULL)
     
     for i in range(TOTAL_FRAMES):
@@ -411,15 +360,9 @@ def main():
     process.stdin.close()
     process.wait()
     
-    if os.path.exists(AUDIO_PATH):
-        try:
-            os.remove(AUDIO_PATH)
-        except:
-            pass
-            
     if process.returncode == 0:
         file_size = os.path.getsize(VIDEO_PATH) / (1024 * 1024)
-        print(f"SUCCESS: Video exported to {VIDEO_PATH} ({file_size:.2f} MB)", flush=True)
+        print(f"SUCCESS: Promo video re-rendered and exported to {VIDEO_PATH} ({file_size:.2f} MB)", flush=True)
     else:
         print(f"FFmpeg exited with code {process.returncode}", flush=True)
 
