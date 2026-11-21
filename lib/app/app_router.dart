@@ -17,6 +17,7 @@ import '../features/chat/presentation/conversation_screen.dart';
 import '../features/chat/presentation/inbox_screen.dart';
 import '../features/connections/presentation/connections_screen.dart';
 import '../features/discovery/presentation/discover_screen.dart';
+import '../features/experiences/presentation/create_circle_screen.dart';
 import '../features/experiences/presentation/experiences_screen.dart';
 import '../features/main_shell/main_shell_screen.dart';
 import '../features/onboarding/presentation/onboarding_screen.dart';
@@ -204,6 +205,12 @@ class AppRouter {
         GoRoute(
           path: '/moderation',
           builder: (context, state) => const ModerationScreen(),
+        ),
+
+        // Create Circle (User-Created Activities)
+        GoRoute(
+          path: '/create-circle',
+          builder: (context, state) => const CreateCircleScreen(),
         ),
 
         // Welcome & Auth routes (Smooth fluid switching between pages)

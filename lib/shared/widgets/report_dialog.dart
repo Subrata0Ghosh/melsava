@@ -38,15 +38,16 @@ class ReportDialog extends StatefulWidget {
 
 class _ReportDialogState extends State<ReportDialog> {
   static const List<String> _reasons = [
-    'Inappropriate or offensive behavior',
     'Harassment or unwanted contact',
-    'Hate speech or discrimination',
     'Commercial solicitation or spam',
-    'Misrepresentation or fake profile',
-    'Safety concern at an activity',
-    'No-show or unexcused absence',
-    'Non-consensual contact or privacy violation',
-    'Other community guideline concern',
+    'Spam or fake activity',
+    'Fake identity or impersonation',
+    'Inappropriate behaviour',
+    'Unsafe meetup or suspicious location',
+    'Scam or payment fraud',
+    'Activity did not happen',
+    'Underage user concern',
+    'Other',
   ];
 
   String? _selectedReason;

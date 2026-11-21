@@ -7,6 +7,7 @@ import 'package:melsava/features/discovery/presentation/discover_screen.dart';
 import 'package:melsava/features/experiences/data/experiences_repository.dart';
 import 'package:melsava/features/experiences/presentation/experiences_screen.dart';
 import 'package:melsava/features/experiences/presentation/join_experience_sheet.dart';
+import 'package:melsava/features/experiences/domain/circle_creation_model.dart';
 import 'package:melsava/shared/models/experience_model.dart';
 
 /// Fake In-Memory Experiences Repository implementing all atomic RPC behaviors
@@ -246,6 +247,39 @@ class FakeExperiencesRepository implements ExperiencesRepository {
       'Wellness',
       'Arts & Culture',
     ];
+  }
+
+  @override
+  Future<List<({String id, String name, String icon})>> fetchCategoriesWithIds() async {
+    return const [
+      (id: 'cat-1', name: 'Outdoors', icon: '⛰️'),
+      (id: 'cat-2', name: 'Social', icon: '☕'),
+      (id: 'cat-3', name: 'Wellness', icon: '🧘'),
+    ];
+  }
+
+  @override
+  Future<CircleCreationResult> createCircle(CircleCreationInput input) async {
+    return const CircleCreationResult(
+      success: true,
+      experienceId: 'test-created-circle',
+      status: 'published',
+      moderationStatus: 'approved',
+      message: 'Circle created successfully!',
+    );
+  }
+
+  @override
+  Future<List<ExperienceModel>> fetchNewInYourArea({
+    String? city,
+    String? area,
+  }) async {
+    return _experiences;
+  }
+
+  @override
+  Future<List<ExperienceModel>> fetchPendingExperiences() async {
+    return const [];
   }
 }
 

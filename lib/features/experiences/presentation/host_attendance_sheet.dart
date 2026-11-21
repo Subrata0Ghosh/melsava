@@ -549,18 +549,28 @@ class _HostAttendanceSheetState extends ConsumerState<HostAttendanceSheet> {
                               }
                             } catch (e) {
                               if (!mounted) return;
-                              String cleanMsg = e
-                                  .toString()
-                                  .replaceAll('Exception:', '')
-                                  .trim();
+                              String cleanMsg = e.toString();
                               if (e is PostgrestException) {
                                 cleanMsg = e.message;
+                              } else {
+                                final match = RegExp(
+                                  r'message:\s*([^,\n]+)',
+                                ).firstMatch(cleanMsg);
+                                if (match != null) {
+                                  cleanMsg = match.group(1)?.trim() ?? cleanMsg;
+                                }
                               }
+                              cleanMsg = cleanMsg
+                                  .replaceAll('Exception:', '')
+                                  .trim();
                               if (cleanMsg.contains(
-                                'Cannot complete experience before its scheduled end time',
-                              )) {
+                                    'Cannot complete experience before its scheduled end time',
+                                  ) ||
+                                  cleanMsg.contains(
+                                    'Cannot complete experience more than 24 hours before',
+                                  )) {
                                 cleanMsg =
-                                    'Cannot complete experience before its scheduled end time. Attendance confirmation unlocks once the meetup ends.';
+                                    'Attendance confirmation unlocks once the meetup time arrives.';
                               }
                               setState(() {
                                 _isSubmitting = false;

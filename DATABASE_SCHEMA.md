@@ -506,6 +506,58 @@ Platform moderation roles and access control.
 | `resolve_moderation_report(UUID, TEXT)` | 014 | Moderation RPC: updates report status (reviewed, resolved, dismissed) |
 | `apply_moderation_action(UUID, TEXT, TEXT, UUID, TIMESTAMPTZ)` | 014 | Moderation RPC: records moderation action and immediately suspends account when action is suspension/ban |
 | `delete_user_account_permanent(TEXT)` | 014 | Account RPC: requires explicit confirmation keyword 'DELETE', cascades all user data safely |
+| `create_user_experience(...)` | 019 | Activity creation RPC: anti-spam rate limits, cold-start limits (max 10), automated heuristics |
+| `submit_experience_review(...)` | 019 | Review RPC: verified attendee only, 1 per completed circle, auto-triggers reputation recalculation |
+| `recalculate_user_reputation(UUID)` | 019 | Reputation RPC: server-computed host tiers, verified attendance counts, average rating (>=5 reviews) |
+| `get_host_reputation(UUID)` | 019 | Reputation RPC: returns public host trust signals and badges |
+| `get_host_reviews(UUID, INT, INT)` | 019 | Review RPC: returns paginated public reviews for host profile |
+| `moderator_moderate_experience(UUID, TEXT, TEXT)` | 019 | Moderation RPC: approves or removes user-submitted circles |
+| `submit_moderation_appeal(UUID, TEXT, TEXT)` | 019 | Appeals RPC: allows restricted hosts to submit appeal with reason & explanation |
+| `get_moderation_appeals(TEXT)` | 019 | Appeals RPC: moderator queue for pending appeals |
+| `resolve_moderation_appeal(UUID, TEXT, TEXT)` | 019 | Appeals RPC: moderator resolution (approved/rejected) lifting restrictions |
+
+---
+
+### Migration 019 Tables (Community Trust & Reputation)
+
+#### 18. `experience_reviews`
+- `id` (UUID, PK)
+- `experience_id` (UUID, FK -> `experiences.id` ON DELETE CASCADE)
+- `reviewer_id` (UUID, FK -> `profiles.id` ON DELETE CASCADE)
+- `host_id` (UUID, FK -> `profiles.id` ON DELETE CASCADE)
+- `rating` (NUMERIC(2,1), CHECK 1.0 to 5.0)
+- `was_as_described` (BOOLEAN)
+- `was_host_respectful` (BOOLEAN)
+- `did_host_arrive` (BOOLEAN)
+- `felt_safe_comfortable` (BOOLEAN)
+- `would_join_again` (BOOLEAN)
+- `feedback_text` (TEXT, 10 to 1000 characters)
+- `created_at` (TIMESTAMPTZ)
+- Constraint: `UNIQUE(experience_id, reviewer_id)`
+- Constraint: `reviewer_id != host_id`
+
+#### 19. `user_reputation`
+- `user_id` (UUID, PK, FK -> `profiles.id` ON DELETE CASCADE)
+- `reputation_level` (TEXT: `'new_host'`, `'active_host'`, `'reliable_host'`, `'trusted_host'`)
+- `completed_circles_count` (INTEGER)
+- `total_reviews_count` (INTEGER)
+- `average_rating` (NUMERIC(3,2), NULL until >= 5 verified reviews)
+- `show_rating` (BOOLEAN, generated/enforced: TRUE if `total_reviews_count >= 5`)
+- `activity_creation_restricted` (BOOLEAN)
+- `restriction_reason` (TEXT)
+- `updated_at` (TIMESTAMPTZ)
+
+#### 20. `moderation_appeals`
+- `id` (UUID, PK)
+- `user_id` (UUID, FK -> `profiles.id` ON DELETE CASCADE)
+- `action_id` (UUID, FK -> `moderation_actions.id` ON DELETE SET NULL)
+- `appeal_reason` (TEXT)
+- `explanation` (TEXT)
+- `status` (TEXT: `'pending'`, `'approved'`, `'rejected'`)
+- `resolved_by` (UUID, FK -> `profiles.id`)
+- `resolved_at` (TIMESTAMPTZ)
+- `resolution_notes` (TEXT)
+- `created_at` (TIMESTAMPTZ)
 
 ---
 

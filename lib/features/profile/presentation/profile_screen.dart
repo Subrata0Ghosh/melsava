@@ -14,7 +14,9 @@ import '../../auth/presentation/auth_providers.dart';
 import '../../connections/data/connections_repository.dart';
 import '../../experiences/data/experiences_repository.dart';
 import '../../experiences/presentation/experience_detail_sheet.dart';
+import '../../reviews/data/reviews_repository.dart';
 import 'edit_profile_sheet.dart';
+import 'widgets/host_trust_card.dart';
 
 /// Screen 12: Profile Screen
 ///
@@ -714,6 +716,63 @@ class ProfileScreen extends ConsumerWidget {
                         borderColor,
                       ),
 
+                      // ── Host Trust & Reputation ──
+                      if (user != null) ...[
+                        const SizedBox(height: 22),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Host Trust & Reputation',
+                              style: AppTypography.titleMedium.copyWith(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 16.5,
+                                color: primaryTextColor,
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 9,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: isDark
+                                    ? AppColors.darkElevated
+                                    : const Color(0xFFF3EEFC),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: borderColor,
+                                  width: 0.8,
+                                ),
+                              ),
+                              child: Text(
+                                'Verified by Attendees',
+                                style: TextStyle(
+                                  color: isDark
+                                      ? AppColors.brightViolet
+                                      : AppColors.primaryPurple,
+                                  fontWeight: FontWeight.w700,
+                                  fontSize: 10.5,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 10),
+                        HostTrustCard(hostId: user.id),
+                        const SizedBox(height: 12),
+                        _buildHostReviewsSection(
+                          context,
+                          ref,
+                          user.id,
+                          isDark,
+                          primaryTextColor,
+                          mutedTextColor,
+                          cardBg,
+                          borderColor,
+                        ),
+                      ],
+
                       const SizedBox(height: 22),
 
                       // ── Safety & Community Badges ──
@@ -965,6 +1024,186 @@ class ProfileScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildHostReviewsSection(
+    BuildContext context,
+    WidgetRef ref,
+    String hostId,
+    bool isDark,
+    Color primaryTextColor,
+    Color mutedTextColor,
+    Color cardBg,
+    Color borderColor,
+  ) {
+    final reviewsAsync = ref.watch(hostReviewsProvider(hostId));
+
+    return reviewsAsync.when(
+      loading: () => const Center(
+        child: Padding(
+          padding: EdgeInsets.symmetric(vertical: 12),
+          child: CircularProgressIndicator(
+            strokeWidth: 2,
+            color: AppColors.primaryPurple,
+          ),
+        ),
+      ),
+      error: (_, _) => const SizedBox.shrink(),
+      data: (reviews) {
+        if (reviews.isEmpty) {
+          return Container(
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: cardBg,
+              borderRadius: BorderRadius.circular(18),
+              border: Border.all(color: borderColor, width: 0.8),
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.verified_outlined,
+                  size: 20,
+                  color: isDark
+                      ? AppColors.brightViolet
+                      : AppColors.primaryPurple,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Text(
+                    'No reviews yet. Complete your first hosted circle to receive verified attendee feedback.',
+                    style: TextStyle(
+                      color: mutedTextColor,
+                      fontSize: 11.5,
+                      height: 1.35,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              'Recent Attendee Reviews (${reviews.length})',
+              style: TextStyle(
+                color: primaryTextColor,
+                fontWeight: FontWeight.w700,
+                fontSize: 13,
+              ),
+            ),
+            const SizedBox(height: 8),
+            ListView.separated(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              itemCount: reviews.take(3).length,
+              separatorBuilder: (_, _) => const SizedBox(height: 8),
+              itemBuilder: (context, index) {
+                final r = reviews[index];
+                return Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: cardBg,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: borderColor, width: 0.8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Row(
+                        children: [
+                          ClipOval(
+                            child: SizedBox(
+                              width: 28,
+                              height: 28,
+                              child: AppSmartImage(
+                                imagePath: r.reviewerAvatarUrl ?? '',
+                                isAvatar: true,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  r.reviewerName,
+                                  style: TextStyle(
+                                    color: primaryTextColor,
+                                    fontWeight: FontWeight.w700,
+                                    fontSize: 12.5,
+                                  ),
+                                ),
+                                Text(
+                                  r.experienceTitle.isNotEmpty
+                                      ? r.experienceTitle
+                                      : 'Verified Circle',
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 11,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 7,
+                              vertical: 3,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(
+                                0xFFF59E0B,
+                              ).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.star_rounded,
+                                  size: 13,
+                                  color: Color(0xFFF59E0B),
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${r.rating}',
+                                  style: const TextStyle(
+                                    color: Color(0xFFD97706),
+                                    fontWeight: FontWeight.w800,
+                                    fontSize: 11.5,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                      if (r.reviewFeedback != null &&
+                          r.reviewFeedback!.isNotEmpty) ...[
+                        const SizedBox(height: 8),
+                        Text(
+                          '"${r.reviewFeedback!}"',
+                          style: TextStyle(
+                            color: primaryTextColor.withValues(alpha: 0.9),
+                            fontStyle: FontStyle.italic,
+                            fontSize: 12,
+                            height: 1.35,
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        );
+      },
     );
   }
 

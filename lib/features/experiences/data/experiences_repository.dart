@@ -7,6 +7,7 @@ import '../../../core/services/supabase_service.dart';
 import '../../../shared/models/experience_model.dart';
 import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_providers.dart';
+import '../domain/circle_creation_model.dart';
 
 /// Upcoming date filter for live experience discovery.
 enum ExperienceDateFilter { any, today, thisWeek, thisWeekend }
@@ -173,6 +174,18 @@ abstract class ExperiencesRepository {
   Future<CancelMembershipResult> cancelMembership(String experienceId);
 
   Future<List<String>> fetchAvailableCategories();
+
+  Future<List<({String id, String name, String icon})>>
+  fetchCategoriesWithIds();
+
+  Future<CircleCreationResult> createCircle(CircleCreationInput input);
+
+  Future<List<ExperienceModel>> fetchNewInYourArea({
+    String? city,
+    String? area,
+  });
+
+  Future<List<ExperienceModel>> fetchPendingExperiences();
 
   DateTime? get lastSyncedAt;
   bool get isServingCachedOfflineData;
@@ -402,6 +415,13 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
       experienceStatus: statusStr,
       membershipStatus: membershipStatus,
       joinedAt: joinedAt,
+      area: (row['area'] as String?)?.trim(),
+      isFree: (row['is_free'] as bool?) ?? true,
+      priceAmount: (row['price_amount'] as num?)?.toDouble() ?? 0.0,
+      isRecurring: (row['is_recurring'] as bool?) ?? false,
+      moderationStatus: (row['moderation_status'] as String?) ?? 'approved',
+      reputationLevel: row['reputation_level'] as String?,
+      isNewHost: row['is_new_host'] as bool?,
     );
   }
 
@@ -494,6 +514,15 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
       if (userCity.isNotEmpty && exp.city.toLowerCase().contains(userCity)) {
         score += 3;
       }
+      // Locality boost for matching area
+      if (exp.area != null &&
+          exp.area!.trim().isNotEmpty &&
+          userCity.isNotEmpty) {
+        if (exp.area!.toLowerCase().contains(userCity) ||
+            userCity.contains(exp.area!.toLowerCase())) {
+          score += 2;
+        }
+      }
       final catLower = exp.categoryName.toLowerCase();
       if (userPreferredCats.any(
         (c) => catLower == c || catLower.contains(c) || c.contains(catLower),
@@ -506,6 +535,15 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
         if (interest.isNotEmpty && searchable.contains(interest)) {
           score += 1;
         }
+      }
+      // Cold-start new host & new activity fairness boost:
+      // Prevents established hosts from monopolizing Discover solely from accumulated history.
+      if (exp.isNewHost) {
+        score += 2;
+      }
+      // Available spots bonus
+      if (exp.spotsLeft > 0) {
+        score += 1;
       }
       return score;
     }
@@ -596,13 +634,14 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
       var queryBuilder = client
           .from('experiences')
           .select(
-            'id, title, description, cover_image_url, city, venue_name, venue_address, '
+            'id, title, description, cover_image_url, city, area, venue_name, venue_address, '
             'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
-            'cancellation_policy, host_id, '
+            'cancellation_policy, host_id, is_free, price_amount, is_recurring, moderation_status, '
             'activity_categories(name, icon, color), '
             'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
           )
           .eq('status', 'published')
+          .eq('moderation_status', 'approved')
           .gt('starts_at', nowIso);
 
       if (filter.format == ExperienceFormatFilter.online) {
@@ -685,9 +724,9 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
     final row = await client
         .from('experiences')
         .select(
-          'id, title, description, cover_image_url, city, venue_name, venue_address, '
+          'id, title, description, cover_image_url, city, area, venue_name, venue_address, '
           'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
-          'cancellation_policy, host_id, '
+          'cancellation_policy, host_id, is_free, price_amount, is_recurring, moderation_status, '
           'activity_categories(name, icon, color), '
           'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
         )
@@ -861,6 +900,148 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
       return const ['All'];
     }
   }
+
+  @override
+  Future<List<({String id, String name, String icon})>>
+  fetchCategoriesWithIds() async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final rows = await SupabaseService.client!
+          .from('activity_categories')
+          .select('id, name, icon')
+          .order('display_order');
+      return (rows as List)
+          .whereType<Map>()
+          .map(
+            (r) => (
+              id: r['id']?.toString() ?? '',
+              name: r['name']?.toString() ?? '',
+              icon: r['icon']?.toString() ?? '✨',
+            ),
+          )
+          .where((c) => c.id.isNotEmpty && c.name.isNotEmpty)
+          .toList();
+    } catch (_) {
+      return const [];
+    }
+  }
+
+  @override
+  Future<CircleCreationResult> createCircle(CircleCreationInput input) async {
+    final client = _requireClient();
+    try {
+      final res = await client.rpc(
+        'create_user_experience',
+        params: input.toRpcParams(),
+      );
+      if (res is Map) {
+        return CircleCreationResult.fromJson(Map<String, dynamic>.from(res));
+      }
+      throw Exception('Invalid circle creation response format.');
+    } catch (e) {
+      debugPrint('[SupabaseExperiencesRepository] createCircle error: $e');
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<ExperienceModel>> fetchNewInYourArea({
+    String? city,
+    String? area,
+  }) async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final client = _requireClient();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
+      var query = client
+          .from('experiences')
+          .select(
+            'id, title, description, cover_image_url, city, area, venue_name, venue_address, '
+            'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
+            'cancellation_policy, host_id, is_free, price_amount, is_recurring, moderation_status, '
+            'activity_categories(name, icon, color), '
+            'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
+          )
+          .eq('status', 'published')
+          .eq('moderation_status', 'approved')
+          .gt('starts_at', nowIso);
+
+      if (city != null && city.trim().isNotEmpty) {
+        query = query.ilike('city', '%${city.trim()}%');
+      }
+
+      final rows = await query.order('created_at', ascending: false).limit(8);
+
+      final rawList = (rows as List)
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
+
+      if (rawList.isEmpty) return const [];
+      final ids = rawList.map((r) => r['id'].toString()).toList();
+      final results = await Future.wait([
+        _fetchCounts(client, ids),
+        _fetchUserMemberships(client, ids),
+      ]);
+      final countsMap =
+          results[0] as Map<String, ({int joined, int waitlisted})>;
+      final membershipMap =
+          results[1]
+              as Map<String, ({MembershipStatus status, DateTime? joinedAt})>;
+
+      return rawList.map((r) {
+        final id = r['id'].toString();
+        final c = countsMap[id] ?? (joined: 0, waitlisted: 0);
+        final m =
+            membershipMap[id] ??
+            (status: MembershipStatus.none, joinedAt: null);
+        return _mapRowToModel(
+          r,
+          joinedCount: c.joined,
+          waitlistCount: c.waitlisted,
+          membershipStatus: m.status,
+          joinedAt: m.joinedAt,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint(
+        '[SupabaseExperiencesRepository] fetchNewInYourArea error: $e',
+      );
+      return const [];
+    }
+  }
+
+  @override
+  Future<List<ExperienceModel>> fetchPendingExperiences() async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final client = _requireClient();
+      final rows = await client
+          .from('experiences')
+          .select('*, categories(name, icon_key)')
+          .eq('moderation_status', 'pending_review')
+          .order('created_at', ascending: false);
+
+      final rawList = List<Map<String, dynamic>>.from(rows);
+      final expIds = rawList.map((r) => r['id'].toString()).toList();
+      final countsMap = await _fetchCounts(client, expIds);
+
+      return rawList.map((r) {
+        final id = r['id'].toString();
+        final c = countsMap[id] ?? (joined: 0, waitlisted: 0);
+        return _mapRowToModel(
+          r,
+          joinedCount: c.joined,
+          waitlistCount: c.waitlisted,
+        );
+      }).toList();
+    } catch (e) {
+      debugPrint(
+        '[SupabaseExperiencesRepository] fetchPendingExperiences error: $e',
+      );
+      return const [];
+    }
+  }
 }
 
 // ── Riverpod Providers (Shared by Discover, Experiences, Details, Profile) ───
@@ -929,8 +1110,27 @@ class ExperienceActionController {
     _ref.invalidate(publishedExperiencesProvider);
     _ref.invalidate(myExperiencesProvider);
     _ref.invalidate(experienceDetailProvider(experienceId));
+    _ref.invalidate(newInYourAreaExperiencesProvider);
   }
 }
+
+final categoriesWithIdsProvider =
+    FutureProvider<List<({String id, String name, String icon})>>((ref) {
+      return ref.watch(experiencesRepositoryProvider).fetchCategoriesWithIds();
+    });
+
+final newInYourAreaExperiencesProvider = FutureProvider<List<ExperienceModel>>((
+  ref,
+) {
+  final user = ref.watch(currentUserProvider);
+  return ref
+      .watch(experiencesRepositoryProvider)
+      .fetchNewInYourArea(city: user?.city);
+});
+
+final pendingExperiencesProvider = FutureProvider<List<ExperienceModel>>((ref) {
+  return ref.watch(experiencesRepositoryProvider).fetchPendingExperiences();
+});
 
 final experienceActionControllerProvider = Provider<ExperienceActionController>(
   (ref) => ExperienceActionController(ref),

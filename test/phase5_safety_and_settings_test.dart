@@ -221,6 +221,32 @@ class _FakePhase5ConnectionsRepository implements ConnectionsRepository {
   }) => null;
 
   @override
+  Future<bool> moderateExperience({
+    required String experienceId,
+    required String action,
+    required String reason,
+  }) async => true;
+
+  @override
+  Future<List<ModerationAppealModel>> fetchModerationAppeals({
+    String status = 'pending',
+  }) async => const [];
+
+  @override
+  Future<bool> resolveModerationAppeal({
+    required String appealId,
+    required String resolution,
+    String? notes,
+  }) async => true;
+
+  @override
+  Future<bool> submitAppeal({
+    String? actionId,
+    required String reason,
+    required String explanation,
+  }) async => true;
+
+  @override
   void unsubscribe(RealtimeChannel channel) {}
 }
 

@@ -503,7 +503,9 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                             Row(
                               children: [
                                 Icon(
-                                  Icons.place_rounded,
+                                  exp.isOnline
+                                      ? Icons.videocam_rounded
+                                      : Icons.place_rounded,
                                   size: 15,
                                   color: isDark
                                       ? AppColors.luminousMauve
@@ -512,7 +514,9 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                                 const SizedBox(width: 5),
                                 Expanded(
                                   child: Text(
-                                    '${exp.venueName} · ${exp.venueAddress}',
+                                    exp.isOnline
+                                        ? 'Interactive Online Session · Live Room'
+                                        : '${exp.venueName} · ${exp.venueAddress}',
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: AppTypography.bodySmall.copyWith(
@@ -522,7 +526,7 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                                   ),
                                 ),
                                 const SizedBox(width: 8),
-                                // "Map Spot" action pill
+                                // "Map Spot" or "Meeting Link" action pill
                                 GestureDetector(
                                   onTap: () {
                                     HapticFeedback.lightImpact();
@@ -557,13 +561,15 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                                     child: Row(
                                       mainAxisSize: MainAxisSize.min,
                                       children: [
-                                        const Text(
-                                          '🗺️',
-                                          style: TextStyle(fontSize: 11),
+                                        Text(
+                                          exp.isOnline ? '💻' : '🗺️',
+                                          style: const TextStyle(fontSize: 11),
                                         ),
                                         const SizedBox(width: 4),
                                         Text(
-                                          'Spot Map',
+                                          exp.isOnline
+                                              ? 'Meeting Link'
+                                              : 'Spot Map',
                                           style: AppTypography.labelSmall
                                               .copyWith(
                                                 color: isDark
@@ -1531,6 +1537,11 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
     bool isDark,
     Color primaryTextColor,
   ) {
+    final isOnline = exp.isOnline;
+    final meetingUrl = exp.venueAddress.isNotEmpty
+        ? exp.venueAddress
+        : 'https://meet.melsava.com/circle-${exp.id.substring(0, 8)}';
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
@@ -1538,11 +1549,11 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
         title: Row(
           children: [
-            const Text('🗺️', style: TextStyle(fontSize: 22)),
+            Text(isOnline ? '💻' : '🗺️', style: const TextStyle(fontSize: 22)),
             const SizedBox(width: 8),
             Expanded(
               child: Text(
-                exp.venueName,
+                isOnline ? 'Live Online Circle Room' : exp.venueName,
                 style: AppTypography.titleMedium.copyWith(
                   fontWeight: FontWeight.w800,
                   color: primaryTextColor,
@@ -1556,7 +1567,9 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              exp.venueAddress,
+              isOnline
+                  ? 'Access link for confirmed circle members:\n$meetingUrl'
+                  : exp.venueAddress,
               style: TextStyle(
                 color: isDark ? Colors.white70 : AppColors.mutedText,
                 fontSize: 13,
@@ -1581,7 +1594,9 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: Text(
-                      'Vetted Public Venue • Safety Checked',
+                      isOnline
+                          ? 'Encrypted Room • Only Confirmed Members Can Join'
+                          : 'Vetted Public Venue • Safety Checked',
                       style: TextStyle(
                         fontSize: 11.5,
                         fontWeight: FontWeight.w600,
@@ -1612,17 +1627,25 @@ class _ExperienceHubSheetState extends ConsumerState<ExperienceHubSheet> {
             onPressed: () {
               Navigator.pop(ctx);
               Clipboard.setData(
-                ClipboardData(text: '${exp.venueName}, ${exp.venueAddress}'),
+                ClipboardData(
+                  text: isOnline
+                      ? meetingUrl
+                      : '${exp.venueName}, ${exp.venueAddress}',
+                ),
               );
               ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(
-                  content: Text('Venue address copied to clipboard!'),
-                  duration: Duration(seconds: 2),
+                SnackBar(
+                  content: Text(
+                    isOnline
+                        ? 'Meeting room link copied to clipboard!'
+                        : 'Venue address copied to clipboard!',
+                  ),
+                  duration: const Duration(seconds: 2),
                   behavior: SnackBarBehavior.floating,
                 ),
               );
             },
-            child: const Text('Copy Address'),
+            child: Text(isOnline ? 'Copy Link' : 'Copy Address'),
           ),
         ],
       ),

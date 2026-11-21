@@ -316,6 +316,59 @@ class ModerationReportModel {
   }
 }
 
+/// Represents an appeal against a moderation action or restriction.
+class ModerationAppealModel {
+  final String appealId;
+  final String userId;
+  final String userName;
+  final String userAvatar;
+  final String? actionId;
+  final String actionType;
+  final String actionReason;
+  final String appealReason;
+  final String explanation;
+  final String status;
+  final DateTime? createdAt;
+
+  const ModerationAppealModel({
+    required this.appealId,
+    required this.userId,
+    required this.userName,
+    required this.userAvatar,
+    this.actionId,
+    required this.actionType,
+    required this.actionReason,
+    required this.appealReason,
+    required this.explanation,
+    required this.status,
+    this.createdAt,
+  });
+
+  factory ModerationAppealModel.fromMap(Map<String, dynamic> map) {
+    DateTime? dt;
+    final rawDt = map['created_at'];
+    if (rawDt != null) {
+      dt = DateTime.tryParse(rawDt.toString());
+    }
+    return ModerationAppealModel(
+      appealId: map['appeal_id']?.toString() ?? map['id']?.toString() ?? '',
+      userId: map['user_id']?.toString() ?? '',
+      userName: (map['user_name'] as String?)?.trim().isNotEmpty == true
+          ? (map['user_name'] as String).trim()
+          : 'Member',
+      userAvatar: (map['user_avatar'] as String?)?.trim() ?? '',
+      actionId: map['action_id']?.toString(),
+      actionType: map['action_type']?.toString() ?? 'restriction',
+      actionReason:
+          map['action_reason']?.toString() ?? 'Moderation restriction',
+      appealReason: map['appeal_reason']?.toString() ?? '',
+      explanation: map['explanation']?.toString() ?? '',
+      status: map['status']?.toString() ?? 'pending',
+      createdAt: dt,
+    );
+  }
+}
+
 /// Contract for connections and messaging data.
 abstract class ConnectionsRepository {
   Future<List<ConnectionModel>> fetchConnections();
@@ -350,6 +403,24 @@ abstract class ConnectionsRepository {
     required String reason,
     String? reportId,
     DateTime? expiresAt,
+  });
+  Future<bool> moderateExperience({
+    required String experienceId,
+    required String action,
+    required String reason,
+  });
+  Future<List<ModerationAppealModel>> fetchModerationAppeals({
+    String status = 'pending',
+  });
+  Future<bool> resolveModerationAppeal({
+    required String appealId,
+    required String resolution,
+    String? notes,
+  });
+  Future<bool> submitAppeal({
+    String? actionId,
+    required String reason,
+    required String explanation,
   });
   RealtimeChannel? subscribeToConversationMessages({
     required String conversationId,
@@ -704,6 +775,101 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
   }
 
   @override
+  Future<bool> moderateExperience({
+    required String experienceId,
+    required String action,
+    required String reason,
+  }) async {
+    if (!_hasLiveSupabase || experienceId.isEmpty) return false;
+    try {
+      final res = await _client!.rpc(
+        'moderator_moderate_experience',
+        params: {
+          'p_experience_id': experienceId,
+          'p_action': action,
+          'p_reason': reason,
+        },
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] moderateExperience error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<List<ModerationAppealModel>> fetchModerationAppeals({
+    String status = 'pending',
+  }) async {
+    if (!_hasLiveSupabase) return const [];
+    try {
+      final rows = await _client!.rpc(
+        'get_moderation_appeals',
+        params: {'p_status': status},
+      );
+      if (rows is List) {
+        return rows
+            .whereType<Map>()
+            .map(
+              (r) =>
+                  ModerationAppealModel.fromMap(Map<String, dynamic>.from(r)),
+            )
+            .toList();
+      }
+      return const [];
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] fetchModerationAppeals error: $e');
+      return const [];
+    }
+  }
+
+  @override
+  Future<bool> resolveModerationAppeal({
+    required String appealId,
+    required String resolution,
+    String? notes,
+  }) async {
+    if (!_hasLiveSupabase || appealId.isEmpty) return false;
+    try {
+      final res = await _client!.rpc(
+        'resolve_moderation_appeal',
+        params: {
+          'p_appeal_id': appealId,
+          'p_resolution': resolution,
+          'p_notes': ?notes,
+        },
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] resolveModerationAppeal error: $e');
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> submitAppeal({
+    String? actionId,
+    required String reason,
+    required String explanation,
+  }) async {
+    if (!_hasLiveSupabase) return false;
+    try {
+      final res = await _client!.rpc(
+        'submit_moderation_appeal',
+        params: {
+          'p_action_id': ?actionId,
+          'p_reason': reason,
+          'p_explanation': explanation,
+        },
+      );
+      return res != null && res['success'] == true;
+    } catch (e) {
+      debugPrint('[ConnectionsRepository] submitAppeal error: $e');
+      rethrow;
+    }
+  }
+
+  @override
   void unsubscribe(RealtimeChannel channel) {
     if (_client != null) {
       _client!.removeChannel(channel);
@@ -754,4 +920,10 @@ final moderationReportsProvider = FutureProvider.autoDispose
     .family<List<ModerationReportModel>, String>((ref, status) async {
       final repo = ref.watch(connectionsRepositoryProvider);
       return repo.fetchModerationReports(status: status);
+    });
+
+final moderationAppealsProvider = FutureProvider.autoDispose
+    .family<List<ModerationAppealModel>, String>((ref, status) async {
+      final repo = ref.watch(connectionsRepositoryProvider);
+      return repo.fetchModerationAppeals(status: status);
     });

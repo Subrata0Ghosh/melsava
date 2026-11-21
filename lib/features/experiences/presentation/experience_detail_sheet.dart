@@ -10,7 +10,10 @@ import '../../../shared/widgets/app_smart_image.dart';
 import '../../../shared/widgets/botanical_leaf_decoration.dart';
 import '../../../shared/widgets/confirmation_dialog.dart';
 import '../../../shared/widgets/experience_share_sheet.dart';
+import '../../../shared/widgets/report_dialog.dart';
 import '../../../shared/widgets/trending_badge.dart';
+import '../../connections/data/connections_repository.dart';
+import '../../profile/presentation/widgets/host_trust_card.dart';
 import '../data/experiences_repository.dart';
 import '../data/followed_hosts_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -774,6 +777,15 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                   ),
                                 ),
 
+                                if (exp.hostId != null &&
+                                    exp.hostId!.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  HostTrustCard(
+                                    hostId: exp.hostId!,
+                                    hostName: exp.hostName,
+                                  ),
+                                ],
+
                                 const SizedBox(height: 24),
 
                                 // ── Cancellation Policy Card ──
@@ -891,6 +903,120 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                     ],
                                   ),
                                 ),
+
+                                // ── Community Safety & Reporting ──
+                                if (!isHost) ...[
+                                  const SizedBox(height: 16),
+                                  Row(
+                                    children: [
+                                      Expanded(
+                                        child: OutlinedButton.icon(
+                                          onPressed: () {
+                                            ReportDialog.show(
+                                              context,
+                                              targetTitle: exp.title,
+                                              onSubmit: (reason, desc) async {
+                                                return ref
+                                                    .read(
+                                                      connectionsRepositoryProvider,
+                                                    )
+                                                    .reportUser(
+                                                      reportedUserId:
+                                                          exp.hostId ?? '',
+                                                      reason: reason,
+                                                      description: desc,
+                                                      contentType: 'experience',
+                                                      contentId: exp.id,
+                                                    );
+                                              },
+                                            );
+                                          },
+                                          icon: const Icon(
+                                            Icons.flag_outlined,
+                                            size: 16,
+                                          ),
+                                          label: const Text(
+                                            'Report Circle',
+                                            style: TextStyle(fontSize: 12),
+                                          ),
+                                          style: OutlinedButton.styleFrom(
+                                            foregroundColor: isDark
+                                                ? Colors.white70
+                                                : AppColors.darkSurface,
+                                            side: BorderSide(
+                                              color: borderColor,
+                                            ),
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(14),
+                                            ),
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 10,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      if (exp.hostId != null &&
+                                          exp.hostId!.isNotEmpty) ...[
+                                        const SizedBox(width: 10),
+                                        Expanded(
+                                          child: OutlinedButton.icon(
+                                            onPressed: () async {
+                                              final confirmed =
+                                                  await ConfirmationDialog.show(
+                                                    context,
+                                                    title: 'Block Host?',
+                                                    message:
+                                                        'You won\'t see circles hosted by ${exp.hostName} and they won\'t be able to connect with you.',
+                                                    confirmLabel: 'Block',
+                                                    isDestructive: true,
+                                                  );
+                                              if (confirmed == true) {
+                                                await ref
+                                                    .read(
+                                                      connectionsRepositoryProvider,
+                                                    )
+                                                    .blockUser(exp.hostId!);
+                                                if (!context.mounted) return;
+                                                ref.invalidate(
+                                                  publishedExperiencesProvider,
+                                                );
+                                                Navigator.of(context).pop();
+                                              }
+                                            },
+                                            icon: const Icon(
+                                              Icons.block_rounded,
+                                              size: 16,
+                                              color: Color(0xFFEF4444),
+                                            ),
+                                            label: const Text(
+                                              'Block Host',
+                                              style: TextStyle(
+                                                fontSize: 12,
+                                                color: Color(0xFFEF4444),
+                                              ),
+                                            ),
+                                            style: OutlinedButton.styleFrom(
+                                              side: BorderSide(
+                                                color: const Color(
+                                                  0xFFEF4444,
+                                                ).withValues(alpha: 0.4),
+                                              ),
+                                              shape: RoundedRectangleBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(14),
+                                              ),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    vertical: 10,
+                                                  ),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ],
+                                  ),
+                                ],
 
                                 // Bottom clearance for sticky bar
                                 const SizedBox(height: 110),

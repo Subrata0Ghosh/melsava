@@ -276,6 +276,45 @@ Located under Tab 2 of the Experiences screen, organized into four functional se
 
 ---
 
+## H.2. User Activity Creation ("Create a Circle")
+
+Eligible community members can create and host local activities directly from the app without mandatory prior admin approval or subscription fees.
+
+### Steps
+1. User taps **+ Create Circle** floating action button or header CTA on Discover / Experiences screen (`/create-circle`).
+2. User provides activity details:
+   - **Title**: Clear, friendly name (min 5 characters).
+   - **Description**: Detailed meetup schedule and theme (min 15 characters).
+   - **Category**: Outlined category chip picker.
+   - **Date & Time**: Date picker (>30m in future, max 90 days ahead) + Time picker.
+   - **Duration**: Interactive slider (30 to 240 minutes).
+   - **Venue / Location**: Broad area and vetted public meeting spot or online interactive video room.
+   - **Capacity**: Maximum participant slider (capped at 10 for new hosts, up to 30 for trusted hosts).
+   - **Fee Option**: Free activity toggle or cost-sharing fee.
+   - **Schedule**: One-time or weekly recurring circle.
+3. System executes `create_user_experience` atomic RPC:
+   - Enforces user account verification and non-restricted status.
+   - Validates anti-spam heuristics, rate limits (3/day), and text constraints.
+   - Activities matching normal safety parameters are published immediately (`status = 'published'`, `moderation_status = 'approved'`).
+   - Activities flagged by anti-spam heuristics enter `'pending_review'` status for moderator inspection with clear notification to the creator.
+4. The new circle appears immediately on Discover in the **"New in Your Area"** row with a cold-start fairness ranking boost.
+
+---
+
+## H.3. Post-Experience Verified Review System
+
+After an activity is completed:
+1. Attended participants can submit a verified review from **My Circles -> Attended** or from the Circle Hub.
+2. The user fills the **Submit Review Sheet** (`/submit-review`):
+   - Overall rating (1 to 5 stars).
+   - 5 structured questions: Was it as described? Did the host arrive? Was the host respectful? Did you feel safe and comfortable? Would you join again?
+   - Optional written feedback (up to 1,000 characters).
+3. The server validates that the reviewer actually attended (`membership.status = 'attended'`) and is not the host (`reviewer_id != host_id`).
+4. Submitting triggers an atomic recalculation of the host's reputation score.
+5. If the host has gathered fewer than 5 reviews, their profile cleanly shows **"Not yet rated • New Host"** without numerical prejudice. Once 5 or more verified reviews are logged, their true arithmetic rating is displayed.
+
+---
+
 ## I. Experience Room
 
 ### Before the Activity

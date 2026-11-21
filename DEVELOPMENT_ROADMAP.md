@@ -232,6 +232,43 @@ This roadmap tracks the incremental delivery of MELSAVA following the specificat
 
 ---
 
+## Phase 0 / Phase 6.5 — Community Trust, User Activities, Verified Reviews & Anti-Spam (Completed)
+- [x] **User-Created Local Activities ("Create a Circle")**:
+  - Unlocked activity creation for eligible community members without mandatory prior admin approval or paid tier restrictions.
+  - Complete `CreateCircleScreen` (`/create-circle`): title, description, category, date/time, duration (30-240m), city/broad area, venue or online video room, max participant limits (10 for new hosts, up to 30 for trusted hosts), free or paid fee handling, and one-time vs recurring scheduling.
+  - Rate limiting (max 3 circles/day, min 30m in future, max 90d ahead), text length validations, external link filtering, and automated anti-spam heuristic holding suspicious activities for moderator review.
+- [x] **Verified Post-Experience Reviews System**:
+  - Table `public.experience_reviews` with strict attendee-only review policy (`membership.status = 'attended'`).
+  - Strict self-review blocking (`reviewer_id != host_id`) and completed experience validation.
+  - Structured 5-point safety questionnaire (as described, host arrival, respectful host, safety/comfort, join again) + 1-5 star rating + optional written feedback.
+  - Public verified reviews carousel on host profiles with private PII safely excluded.
+- [x] **Fair Reputation & Cold-Start Trust Engine**:
+  - Table `public.user_reputation` with server-computed metrics via `recalculate_user_reputation` RPC.
+  - Dynamic reputation tiers: `New Host`, `Active Host`, `Reliable Host`, `Trusted Host`.
+  - **No Fake / Zero-Star Ratings**: Unrated or new hosts with < 5 reviews display "Not yet rated" and "New Host" without numerical star prejudice. Full arithmetic average rating is displayed only after gathering >= 5 verified attendee reviews.
+  - Cold-start fair discovery boost (+40 points) preventing established hosts from monopolizing Discover solely from accumulated history.
+  - "New in Your Area" horizontal discovery section prioritizing newly created local circles.
+- [x] **Moderation Console & Appeals Workflow**:
+  - Segmented moderator dashboard (`ModerationScreen`): Reports, Pending Circles, and Appeals tabs.
+  - Support for 9 canonical report categories across activities, profiles, and messages.
+  - Moderator actions: Approve circle, Remove circle, Restrict activity creation, Issue warnings, Suspend account.
+  - Table `public.moderation_appeals` and RPCs (`submit_moderation_appeal`, `get_moderation_appeals`, `resolve_moderation_appeal`) allowing restricted users to contest moderation actions fairly.
+- [x] **Database Migration & Concurrency RPCs (`019_community_trust_and_user_activities.sql`)**:
+  - Live applied to Supabase PostgreSQL database.
+  - Atomic RPCs: `create_user_experience`, `submit_experience_review`, `recalculate_user_reputation`, `get_host_reputation`, `get_host_reviews`, `submit_user_report`, `moderator_moderate_experience`, `submit_moderation_appeal`, `get_moderation_appeals`, `resolve_moderation_appeal`.
+- [x] **UI Polish & Image Issue Resolutions**:
+  - Sanitized attendance completion exception messaging in `host_attendance_sheet.dart`.
+  - Added golden host badge for followed hosts with discovery priority boost.
+  - 100% dynamic profile badges (zero hardcoded mock badges).
+  - Redesigned My Circles card footer into a balanced luxury layout (`Cancel RSVP` + `Circle Hub`).
+  - Implemented functioning Live Online Circle Room dialog with meeting link launching, clipboard copying, and encrypted room verification.
+- [x] **Automated Verification**:
+  - 11 new unit and widget tests in `test/community_trust_and_reviews_test.dart` (100% passing).
+  - 99 total test cases passing across the entire test suite.
+  - 0 static analysis errors or warnings in `flutter analyze`.
+
+---
+
 ## Phase 7 — Closed Beta & Production Launch (Planned)
 - [ ] Seed production data for inaugural launch city.
 - [ ] Host-curated experience management tools.

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_typography.dart';
 import '../../../shared/models/experience_model.dart';
@@ -10,6 +11,7 @@ import '../../../shared/widgets/experience_card.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
 import '../../../shared/widgets/offline_notice_bar.dart';
 import '../../../shared/widgets/primary_button.dart';
+import '../../reviews/presentation/submit_review_sheet.dart';
 import '../data/experiences_repository.dart';
 import '../data/followed_hosts_provider.dart';
 import '../../auth/presentation/auth_providers.dart';
@@ -212,6 +214,44 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
           ),
         ),
         actions: [
+          Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () => context.push('/create-circle'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 7,
+                ),
+                decoration: BoxDecoration(
+                  gradient: AppColors.purpleGradient,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: AppColors.primaryPurple.withValues(alpha: 0.3),
+                      blurRadius: 6,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 4),
+                    Text(
+                      'Create',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 12.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
           Padding(
             padding: const EdgeInsets.only(right: 16),
             child: GestureDetector(
@@ -967,20 +1007,63 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                         ),
                                       ),
                                       const SizedBox(height: 10),
-                                      SizedBox(
-                                        width: double.infinity,
-                                        child: PrimaryButton(
-                                          label: 'Make Reconnect Choices →',
-                                          backgroundColor: isDark
-                                              ? AppColors.brightViolet
-                                              : AppColors.primaryPurple,
-                                          onPressed: () {
-                                            PostExperienceChoiceScreen.show(
-                                              context,
-                                              exp,
-                                            );
-                                          },
-                                        ),
+                                      Row(
+                                        children: [
+                                          Expanded(
+                                            child: PrimaryButton(
+                                              label: 'Reconnect Choices →',
+                                              backgroundColor: isDark
+                                                  ? AppColors.brightViolet
+                                                  : AppColors.primaryPurple,
+                                              onPressed: () {
+                                                PostExperienceChoiceScreen.show(
+                                                  context,
+                                                  exp,
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                          if (currentUser?.id !=
+                                              exp.hostId) ...[
+                                            const SizedBox(width: 8),
+                                            OutlinedButton.icon(
+                                              onPressed: () {
+                                                SubmitReviewSheet.show(
+                                                  context,
+                                                  experience: exp,
+                                                );
+                                              },
+                                              icon: const Icon(
+                                                Icons.rate_review_outlined,
+                                                size: 15,
+                                              ),
+                                              label: const Text(
+                                                'Review',
+                                                style: TextStyle(
+                                                  fontWeight: FontWeight.w700,
+                                                  fontSize: 12,
+                                                ),
+                                              ),
+                                              style: OutlinedButton.styleFrom(
+                                                foregroundColor:
+                                                    AppColors.primaryPurple,
+                                                side: const BorderSide(
+                                                  color:
+                                                      AppColors.primaryPurple,
+                                                ),
+                                                shape: RoundedRectangleBorder(
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
+                                                ),
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10,
+                                                    ),
+                                              ),
+                                            ),
+                                          ],
+                                        ],
                                       ),
                                     ],
                                   );

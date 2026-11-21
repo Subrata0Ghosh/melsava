@@ -11,7 +11,10 @@ MELSAVA is an experience-first social connection platform for adults. Instead of
 ## ✨ Features
 
 - **Experience Discovery** — Browse curated activities like coffee meetups, photography walks, board game evenings, and more
-- **Small Group Experiences** — Join intimate groups of 3–5 people for genuine interaction
+- **User-Created Activities ("Create a Circle")** — Any verified community member can create and publish local activities with anti-spam heuristics and cold-start support
+- **Small Group Experiences** — Join intimate groups of 3–8 people for genuine interaction
+- **Verified Post-Experience Reviews** — Verified attendee-only reviews with structured safety questions and fair reputation scoring
+- **Host Trust & Reputation Engine** — Transparent host tiers (New, Active, Reliable, Trusted) and cold-start ranking fairness (no zero-star penalties for unrated hosts)
 - **Post-Experience Mutual Connection** — Privately choose who you'd like to meet again; connections form only when both people agree
 - **Multiple Connection Types** — Friendship, activity partner, casual dating, meaningful dating, serious relationship, marriage-minded, or open to discovery
 - **Privacy-First Design** — Selections are always private; rejections are never revealed

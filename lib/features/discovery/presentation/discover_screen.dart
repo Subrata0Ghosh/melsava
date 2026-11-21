@@ -586,6 +586,117 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                     ),
                   ),
 
+                  // ── New in Your Area Section (Cold-Start Fairness) ──
+                  ref
+                      .watch(newInYourAreaExperiencesProvider)
+                      .when(
+                        data: (newCircles) {
+                          if (newCircles.isEmpty) {
+                            return const SliverToBoxAdapter(
+                              child: SizedBox.shrink(),
+                            );
+                          }
+                          return SliverToBoxAdapter(
+                            child: Padding(
+                              padding: const EdgeInsets.only(bottom: 16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 20,
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 7,
+                                                    vertical: 3,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: const Color(
+                                                  0xFF10B981,
+                                                ).withValues(alpha: 0.15),
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                              ),
+                                              child: const Text(
+                                                'NEW',
+                                                style: TextStyle(
+                                                  color: Color(0xFF10B981),
+                                                  fontWeight: FontWeight.w900,
+                                                  fontSize: 10,
+                                                  letterSpacing: 0.5,
+                                                ),
+                                              ),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              'New in your area',
+                                              style: AppTypography.titleMedium
+                                                  .copyWith(
+                                                    fontWeight: FontWeight.w800,
+                                                    fontSize: 16.5,
+                                                    color: primaryTextColor,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                        Text(
+                                          user?.city != null &&
+                                                  user!.city!.isNotEmpty
+                                              ? user.city!
+                                              : 'Nearby',
+                                          style: AppTypography.labelSmall
+                                              .copyWith(
+                                                color: mutedTextColor,
+                                                fontSize: 12,
+                                              ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                  const SizedBox(height: 10),
+                                  SizedBox(
+                                    height: 165,
+                                    child: ListView.separated(
+                                      scrollDirection: Axis.horizontal,
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 20,
+                                      ),
+                                      itemCount: newCircles.length,
+                                      separatorBuilder: (_, _) =>
+                                          const SizedBox(width: 14),
+                                      itemBuilder: (ctx, idx) {
+                                        final circle = newCircles[idx];
+                                        return _buildNewCircleCard(
+                                          circle,
+                                          isDark: isDark,
+                                          borderColor: isDark
+                                              ? AppColors.darkBorder
+                                              : const Color(0xFFEDE9FE),
+                                          primaryTextColor: primaryTextColor,
+                                          mutedTextColor: mutedTextColor,
+                                        );
+                                      },
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          );
+                        },
+                        loading: () =>
+                            const SliverToBoxAdapter(child: SizedBox.shrink()),
+                        error: (_, _) =>
+                            const SliverToBoxAdapter(child: SizedBox.shrink()),
+                      ),
+
                   // ── Featured Upcoming Experience Preview ──
                   if (featuredExp != null)
                     SliverToBoxAdapter(
@@ -968,6 +1079,146 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewCircleCard(
+    ExperienceModel exp, {
+    required bool isDark,
+    required Color borderColor,
+    required Color primaryTextColor,
+    required Color mutedTextColor,
+  }) {
+    return GestureDetector(
+      onTap: () => ExperienceDetailSheet.show(context, experience: exp),
+      child: Container(
+        width: 240,
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: isDark ? AppColors.darkElevated : Colors.white,
+          borderRadius: BorderRadius.circular(18),
+          border: Border.all(color: borderColor, width: 0.9),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: isDark ? 0.2 : 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 32,
+                  height: 32,
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryPurple.withValues(alpha: 0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Center(
+                    child: Text(
+                      exp.categoryIcon,
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        exp.categoryName,
+                        style: const TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.primaryPurple,
+                        ),
+                      ),
+                      Text(
+                        exp.area?.isNotEmpty == true
+                            ? exp.area!
+                            : (exp.city.isNotEmpty ? exp.city : 'Local'),
+                        style: TextStyle(fontSize: 11, color: mutedTextColor),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (exp.isNewHost)
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 6,
+                      vertical: 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFEC4899).withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(6),
+                    ),
+                    child: const Text(
+                      'New Host',
+                      style: TextStyle(
+                        fontSize: 9.5,
+                        fontWeight: FontWeight.w800,
+                        color: Color(0xFFEC4899),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            const SizedBox(height: 8),
+            Text(
+              exp.title,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.titleSmall.copyWith(
+                color: primaryTextColor,
+                fontWeight: FontWeight.w800,
+                fontSize: 13,
+                height: 1.25,
+              ),
+            ),
+            const Spacer(),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  exp.spotsLeft > 0 ? '${exp.spotsLeft} spots' : 'Waitlist',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: exp.spotsLeft > 0
+                        ? const Color(0xFF10B981)
+                        : AppColors.softCoral,
+                  ),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.primaryPurple,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Text(
+                    'View →',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
         ),
       ),
     );

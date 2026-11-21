@@ -31,6 +31,7 @@ class ExperienceModel {
   final String categoryIcon;
   final String coverImageUrl;
   final String city;
+  final String? area;
   final String venueName;
   final String venueAddress;
   final bool isOnline;
@@ -51,6 +52,13 @@ class ExperienceModel {
   final DateTime? joinedAt;
   final bool hasJoined;
   final bool isCompleted;
+  final bool isFree;
+  final double priceAmount;
+  final String currency;
+  final bool isRecurring;
+  final String moderationStatus;
+  final String? reputationLevel;
+  final bool isNewHost;
 
   const ExperienceModel({
     required this.id,
@@ -60,6 +68,7 @@ class ExperienceModel {
     required this.categoryIcon,
     required this.coverImageUrl,
     required this.city,
+    this.area,
     required this.venueName,
     required this.venueAddress,
     this.isOnline = false,
@@ -80,7 +89,17 @@ class ExperienceModel {
     this.joinedAt,
     bool? hasJoined,
     bool? isCompleted,
-  }) : membershipStatus =
+    this.isFree = true,
+    this.priceAmount = 0.0,
+    this.currency = 'INR',
+    this.isRecurring = false,
+    this.moderationStatus = 'approved',
+    this.reputationLevel,
+    bool? isNewHost,
+  }) : isNewHost =
+           isNewHost ??
+           (reputationLevel == 'new_host' || reputationLevel == null),
+       membershipStatus =
            membershipStatus ??
            ((hasJoined ?? false)
                ? MembershipStatus.joined
@@ -125,6 +144,7 @@ class ExperienceModel {
     String? categoryIcon,
     String? coverImageUrl,
     String? city,
+    String? area,
     String? venueName,
     String? venueAddress,
     bool? isOnline,
@@ -145,6 +165,13 @@ class ExperienceModel {
     DateTime? joinedAt,
     bool? hasJoined,
     bool? isCompleted,
+    bool? isFree,
+    double? priceAmount,
+    String? currency,
+    bool? isRecurring,
+    String? moderationStatus,
+    String? reputationLevel,
+    bool? isNewHost,
   }) {
     final resolvedStatus =
         membershipStatus ??
@@ -160,6 +187,7 @@ class ExperienceModel {
       categoryIcon: categoryIcon ?? this.categoryIcon,
       coverImageUrl: coverImageUrl ?? this.coverImageUrl,
       city: city ?? this.city,
+      area: area ?? this.area,
       venueName: venueName ?? this.venueName,
       venueAddress: venueAddress ?? this.venueAddress,
       isOnline: isOnline ?? this.isOnline,
@@ -183,6 +211,13 @@ class ExperienceModel {
           (resolvedStatus == MembershipStatus.joined ||
               resolvedStatus == MembershipStatus.attended),
       isCompleted: isCompleted ?? this.isCompleted,
+      isFree: isFree ?? this.isFree,
+      priceAmount: priceAmount ?? this.priceAmount,
+      currency: currency ?? this.currency,
+      isRecurring: isRecurring ?? this.isRecurring,
+      moderationStatus: moderationStatus ?? this.moderationStatus,
+      reputationLevel: reputationLevel ?? this.reputationLevel,
+      isNewHost: isNewHost ?? this.isNewHost,
     );
   }
 
@@ -195,6 +230,7 @@ class ExperienceModel {
       'categoryIcon': categoryIcon,
       'coverImageUrl': coverImageUrl,
       'city': city,
+      'area': area,
       'venueName': venueName,
       'venueAddress': venueAddress,
       'isOnline': isOnline,
@@ -215,10 +251,18 @@ class ExperienceModel {
       'joinedAt': joinedAt?.toIso8601String(),
       'hasJoined': hasJoined,
       'isCompleted': isCompleted,
+      'isFree': isFree,
+      'priceAmount': priceAmount,
+      'currency': currency,
+      'isRecurring': isRecurring,
+      'moderationStatus': moderationStatus,
+      'reputationLevel': reputationLevel,
+      'isNewHost': isNewHost,
     };
   }
 
   factory ExperienceModel.fromJson(Map<String, dynamic> json) {
+    final repLevel = json['reputationLevel'] as String?;
     return ExperienceModel(
       id: json['id'] as String,
       title: json['title'] as String,
@@ -227,6 +271,7 @@ class ExperienceModel {
       categoryIcon: json['categoryIcon'] as String? ?? '✨',
       coverImageUrl: json['coverImageUrl'] as String? ?? '',
       city: json['city'] as String? ?? '',
+      area: json['area'] as String?,
       venueName: json['venueName'] as String? ?? '',
       venueAddress: json['venueAddress'] as String? ?? '',
       isOnline: json['isOnline'] as bool? ?? false,
@@ -259,6 +304,15 @@ class ExperienceModel {
           : null,
       hasJoined: json['hasJoined'] as bool? ?? false,
       isCompleted: json['isCompleted'] as bool? ?? false,
+      isFree: json['isFree'] as bool? ?? true,
+      priceAmount: (json['priceAmount'] as num?)?.toDouble() ?? 0.0,
+      currency: json['currency'] as String? ?? 'INR',
+      isRecurring: json['isRecurring'] as bool? ?? false,
+      moderationStatus: json['moderationStatus'] as String? ?? 'approved',
+      reputationLevel: repLevel,
+      isNewHost:
+          json['isNewHost'] as bool? ??
+          (repLevel == 'new_host' || repLevel == null),
     );
   }
 }

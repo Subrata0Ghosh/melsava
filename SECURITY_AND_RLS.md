@@ -270,4 +270,32 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 - Zero private PII, unread messages, or conversation histories are cached in unencrypted flat files.
 - Mutations strictly require online status; offline state blocks writing to prevent inconsistent or out-of-order state synchronizations.
 
+---
+
+## Community Trust, User Activities & Reviews Security (`019_community_trust_and_user_activities.sql`)
+
+### 28. Verified Attendee Review Constraints
+- **Strict Verification Gate**: Direct inserts on `public.experience_reviews` are disabled. Reviews must be submitted via `submit_experience_review` RPC.
+- **Attendance Verification**: The RPC verifies that `public.experience_members.status = 'attended'` for the caller. Non-attendees cannot review.
+- **Self-Review Prevention**: Database constraint and RPC invariant `reviewer_id != host_id` prevents hosts from reviewing their own activities.
+- **Single Review Guarantee**: Unique constraint `UNIQUE(experience_id, reviewer_id)` prevents review spam or duplicate reviews.
+- **PII Protection**: Attendee full names, emails, and private answers are never leaked in `get_host_reviews`.
+
+### 29. Host Reputation & Fair Cold-Start Display
+- **Server-Side Recalculation**: `recalculate_user_reputation` is an atomic `SECURITY DEFINER` function computing statistics from actual attendance and reviews.
+- **No Client Writes**: Direct `INSERT`/`UPDATE` on `user_reputation` is revoked from `anon` and `authenticated`.
+- **Hiding 0-Star Averages**: `average_rating` remains `NULL` until at least 5 verified reviews are gathered (`show_rating = false`). This protects new hosts from cold-start bias.
+
+### 30. User Activity Creation & Anti-Spam Safety
+- **Rate Limiting**: Verified in `create_user_experience` RPC (maximum 3 activities per 24 hours per user).
+- **First-Time Capacity Caps**: New hosts are capped at 10 participants initially to ensure safe, manageable meetups.
+- **Automated Anti-Spam Heuristic**: Checks for suspicious patterns, duplicate descriptions, and spam links, holding questionable activities in `'pending_review'` status for manual moderator sign-off.
+- **Restriction Invariant**: If a user is restricted (`activity_creation_restricted = true`), creation is immediately halted with a friendly explanation.
+
+### 31. Moderation Appeals Workflow
+- Restricted hosts can contest decisions via `submit_moderation_appeal` RPC.
+- Appeals are queued in `moderation_appeals` with RLS allowing users to view only their own appeals and moderators to review and resolve all appeals.
+- Resolving an appeal (`resolve_moderation_appeal`) automatically lifts restrictions in `user_reputation` when approved.
+
+
 
