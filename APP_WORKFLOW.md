@@ -48,17 +48,20 @@ This document describes every step of the MELSAVA user experience, from first la
 3. On success → Discover screen (if profile complete) or Onboarding (if not)
 
 ### Password Reset
-1. User taps **Forgot Password?**
-2. Enter email address
-3. Supabase Auth sends reset email
-4. User resets password via email link
+1. User taps **Forgot Password?** on the Sign In screen
+2. Enter registered email address
+3. Supabase Auth generates a password reset email with deep link redirecting to `melsava://reset-password`
+4. Tapping email link opens the app directly into **ResetPasswordScreen** (`/reset-password`)
+5. User enters and confirms new password (minimum 6 characters)
+6. Password updated securely via Supabase Auth; user is redirected to Sign In with success notification
 
-### Email Verification
+### Email Verification & Auth Deep Links
 1. Waiting screen with instructions:
    - *"We've sent a verification link to your email."*
    - *"Check your inbox and tap the link to continue."*
-2. Resend option available
-3. On verification → continue to Adult Eligibility
+2. Magic links and verification emails redirect to `melsava://auth-callback`
+3. GoRouter handles `/auth-callback`, establishes authenticated session, and redirects to Adult Eligibility / Onboarding
+4. Resend option available on waiting screen
 
 ### Session Persistence
 - Auth state persisted across app restarts
@@ -534,9 +537,9 @@ The navigation bar is **persistent** across all main screens.
 
 ---
 
-## State Handling
+## State Handling & Offline Resilience
 
-Every screen handles four states consistently:
+Every screen handles states consistently:
 
 | State | Behaviour |
 |---|---|
@@ -544,6 +547,12 @@ Every screen handles four states consistently:
 | **Empty** | Friendly empty-state message with suggested action |
 | **Error** | Clear error message with retry option |
 | **Success** | Content displayed normally |
+| **Offline** | Displays `OfflineNoticeBar` with last synced timestamp (`Cached at HH:mm`) and one-tap Retry action |
+
+### Offline Mode & Graceful Degradation (Phase 6)
+- **Experience Feed**: Upcoming published experiences are cached locally in device storage (`SharedPreferences`). If network connectivity fails, the app automatically falls back to cached data without interrupting exploration.
+- **Visual Feedback**: The `OfflineNoticeBar` alerts the user that cached data is being displayed and offers an immediate re-fetch button.
+- **Mutation Safety**: All write actions (joining experiences, cancelling RSVPs, submitting post-experience choices, reporting users) require an active network connection and fail gracefully with clear feedback rather than leaving half-applied or corrupt local state.
 
 ### Empty State Copy Examples
 

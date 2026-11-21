@@ -7,6 +7,7 @@ import '../features/auth/domain/app_user.dart';
 import '../features/auth/presentation/adults_only_screen.dart';
 import '../features/auth/presentation/auth_providers.dart';
 import '../features/auth/presentation/forgot_password_screen.dart';
+import '../features/auth/presentation/reset_password_screen.dart';
 import '../features/auth/presentation/sign_in_screen.dart';
 import '../features/auth/presentation/sign_up_screen.dart';
 import '../features/auth/presentation/splash_screen.dart';
@@ -68,6 +69,8 @@ class AppRouter {
     '/sign-in',
     '/sign-up',
     '/forgot-password',
+    '/reset-password',
+    '/auth-callback',
   };
 
   static const Set<String> _gateRoutes = {
@@ -87,8 +90,11 @@ class AppRouter {
     required AppUser? user,
     String? pendingVerificationEmail,
   }) {
-    // Allow Splash and About routes without redirect interference
-    if (location == '/' || location == '/about') {
+    // Allow Splash, About, Reset Password, and Auth Callback routes without redirect interference
+    if (location == '/' ||
+        location == '/about' ||
+        location == '/reset-password' ||
+        location == '/auth-callback') {
       return null;
     }
 
@@ -227,6 +233,20 @@ class AppRouter {
           pageBuilder: (context, state) => _buildAuthPageTransition(
             key: state.pageKey,
             child: const ForgotPasswordScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/reset-password',
+          pageBuilder: (context, state) => _buildAuthPageTransition(
+            key: state.pageKey,
+            child: const ResetPasswordScreen(),
+          ),
+        ),
+        GoRoute(
+          path: '/auth-callback',
+          pageBuilder: (context, state) => _buildAuthPageTransition(
+            key: state.pageKey,
+            child: const SplashScreen(),
           ),
         ),
         GoRoute(

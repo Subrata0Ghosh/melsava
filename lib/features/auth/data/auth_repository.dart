@@ -23,6 +23,7 @@ abstract class AuthRepository {
   Future<AppUser?> signInWithGoogle();
   Future<void> sendMagicLinkEmail({required String email});
   Future<void> sendPasswordResetEmail({required String email});
+  Future<void> updatePassword({required String newPassword});
   Future<void> resendVerificationEmail({required String email});
   Future<AppUser?> refreshEmailVerificationStatus();
   Future<AppUser?> refreshCurrentUser();
@@ -568,7 +569,10 @@ class SupabaseAuthRepository implements AuthRepository {
     _ensureBackendAvailable();
 
     if (_hasLiveSupabase) {
-      await SupabaseService.client!.auth.signInWithOtp(email: email);
+      await SupabaseService.client!.auth.signInWithOtp(
+        email: email,
+        emailRedirectTo: 'melsava://auth-callback',
+      );
     } else if (isDebugMockMode) {
       await Future.delayed(const Duration(milliseconds: 350));
     }
@@ -579,7 +583,23 @@ class SupabaseAuthRepository implements AuthRepository {
     _ensureBackendAvailable();
 
     if (_hasLiveSupabase) {
-      await SupabaseService.client!.auth.resetPasswordForEmail(email);
+      await SupabaseService.client!.auth.resetPasswordForEmail(
+        email,
+        redirectTo: 'melsava://reset-password',
+      );
+    } else if (isDebugMockMode) {
+      await Future.delayed(const Duration(milliseconds: 350));
+    }
+  }
+
+  @override
+  Future<void> updatePassword({required String newPassword}) async {
+    _ensureBackendAvailable();
+
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!.auth.updateUser(
+        UserAttributes(password: newPassword),
+      );
     } else if (isDebugMockMode) {
       await Future.delayed(const Duration(milliseconds: 350));
     }

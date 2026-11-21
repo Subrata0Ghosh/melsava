@@ -94,6 +94,7 @@ supabase/migrations/014_phase5_safety_and_profile.sql
 supabase/migrations/015_phase4_security_hardening.sql
 supabase/migrations/016_fix_inbox_and_rpc_signature.sql
 supabase/migrations/017_phase5_security_and_integrity_hardening.sql
+supabase/migrations/018_phase6_production_hardening.sql
 ```
 
 *(Alternatively, execute the versioned migrations in the Supabase SQL Editor).*
@@ -149,7 +150,7 @@ supabase/
 | 3 | Real Attendance, Private Mutual Choice & Connection Creation | ✅ Completed |
 | 4 | Connections & Realtime Messaging | ✅ Completed |
 | 5 | Safety, Moderation & Account Settings | ✅ Completed |
-| 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
+| 6 | Multi-Account Verification & Production Hardening | ✅ Completed |
 | 7 | Closed Beta & Production Launch | ⬜ Planned |
 
 See [DEVELOPMENT_ROADMAP.md](DEVELOPMENT_ROADMAP.md) for detailed checklists.

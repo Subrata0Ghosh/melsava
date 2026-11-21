@@ -251,4 +251,23 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
 - `update_privacy_settings(p_settings JSONB)`: Merges updated privacy keys into `profile_private.privacy_settings` atomically for `auth.uid()`.
 - Protected profile columns (`id`, `date_of_birth`, `is_verified`, `is_suspended`) are completely immutable from client RPCs.
 
+---
+
+## Phase 6 Production Hardening & Multi-Account Security Audit (`018_phase6_production_hardening.sql`)
+
+### 25. Complete Table RLS & Function Search Path Enforcement
+- **100% RLS Coverage**: All 24 tables in the `public` schema have Row Level Security enabled (`rowsecurity = true`). Zero tables permit unauthenticated or bypass access.
+- **Function search_path Hardening**: All 37 database functions enforce explicit schema isolation (`SET search_path = public, pg_temp;`) to eliminate search path spoofing vulnerabilities.
+- **Anonymous Key Protection**: The client bundles only the public anonymous key (`ANON`). All sensitive administrative operations (e.g. account cascading deletion, moderation queue resolution) require verified Bearer JWT tokens with verified permissions.
+
+### 26. Deep Link & Authentication Callback Security
+- Handled exclusively through custom URL scheme `melsava://` (`auth-callback` and `reset-password`).
+- Route transitions are sanitized in `AppRouter.computeRedirect`, prohibiting unauthenticated users from bypassing onboarding or eligibility guards.
+- Password updates require authenticated session or verified recovery token, enforcing minimum 6-character length before transmitting to Supabase Auth.
+
+### 27. Offline Data Isolation
+- Local offline caching is limited to public experience feed metadata in `SharedPreferences`.
+- Zero private PII, unread messages, or conversation histories are cached in unencrypted flat files.
+- Mutations strictly require online status; offline state blocks writing to prevent inconsistent or out-of-order state synchronizations.
+
 

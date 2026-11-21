@@ -201,10 +201,34 @@ This roadmap tracks the incremental delivery of MELSAVA following the specificat
 
 ---
 
-## Phase 6 — Multi-Account Verification & Production Hardening (Planned)
-- [ ] Two-account manual verification on live deployed Supabase project.
-- [ ] Performance monitoring and query optimization.
-- [ ] Edge cases, offline sync, and deep links.
+## Phase 6 — Multi-Account Verification & Production Hardening (Completed)
+- [x] **Multi-Account Real-World Verification Matrix**:
+  - Live testing against deployed Supabase backend (`luxxwitcptqesmnqruld.supabase.co`) with 4 distinct real accounts (`admin@melsava.com`, `priya@melsava.com`, `znom926@gmail.com`, and disposable beta account).
+  - Scenario 1 (Authentication & Verification): Real session issuance, JWT authentication, and adult eligibility validation.
+  - Scenario 2 (Profile & Preference Management): Atomic update of bio, canonical interests (`Art`, `Photography`), intentions (`Genuine friendship`, `Activity partner`), and private discovery preferences via `update_user_profile` RPC.
+  - Scenario 3 (Experience Joining & FIFO Waitlist): Real experience creation with capacity limit 1; verified atomic waitlisting for second attendee and automatic FIFO promotion upon cancellation.
+  - Scenario 4 (Attendance Confirmation & Mutual Matching): Host attendance confirmation, strict exact intention matching, and automatic canonical `connections` and `conversations` creation via `submit_post_experience_choices`.
+  - Scenario 5 (Connections, Messaging & Read Receipts): Sent real messages between attendees, incremented inbox unread counts, delivered read receipts (`is_read = true`), and verified bilateral safety block isolation.
+  - Scenario 6 (Safety, Blocking & Content Reporting): Verified confidential report submission with canonical reason validation, 1-hour duplicate anti-spam throttle, and moderator queue inspection.
+  - Scenario 7 (Disposable Account Permanent Deletion): Full cascading purge of test account from `auth.users`, `public.profiles`, and `public.profile_private`.
+- [x] **Query Performance Optimization & Index Hardening (`018_phase6_production_hardening.sql`)**:
+  - Covering foreign-key indexes added on `profile_intentions(intention_id)`, `moderation_actions(performed_by)`, `post_experience_submissions(user_id)`, `app_notifications(connection_id)`, and `app_notifications(experience_id)`.
+  - Composite index `idx_messages_conversation_created` on `messages(conversation_id, created_at DESC)` delivering a **33x speedup** (from 1.967 ms to 0.058 ms) on message history paging.
+  - Partial index `idx_messages_unread` on `messages(conversation_id, sender_id) WHERE is_read = false` delivering a **38x speedup** on unread count calculations.
+  - Documented empirical benchmarks and execution plans in `PERFORMANCE_REPORT.md`.
+- [x] **Deep Links & Authentication Callbacks**:
+  - Configured custom URL scheme `melsava://` across `AndroidManifest.xml` (intent-filters) and iOS `Info.plist` (`CFBundleURLTypes`).
+  - Added dedicated `ResetPasswordScreen` (`/reset-password`) with password matching, strength validation, and secure password update via Supabase Auth.
+  - Registered `/auth-callback` route in GoRouter, updated `computeRedirect` to prevent authentication redirection loops.
+- [x] **Zero-Cost Offline Resilience & Experience Caching**:
+  - Implemented local persistent caching of upcoming experiences in `SharedPreferences` with timestamp tracking (`lastSyncedAt`).
+  - Built `OfflineNoticeBar` banner displaying cache timestamp and one-tap retry callback across `ExperiencesScreen` and `DiscoverScreen`.
+  - Safe error handling and graceful fallback ensuring offline browsing without state corruption.
+- [x] **Automated Testing & Release Pre-flight**:
+  - Added 5 new unit and widget tests covering deep link routing, password reset validation, offline notice banner, and model serialization (`test/phase6_production_hardening_test.dart`).
+  - All 88 automated tests passing across 8 test suites.
+  - 0 static analysis issues reported by `flutter analyze`.
+  - Compiled release-ready debug APK and generated `DEPLOYMENT_CHECKLIST.md` and `PHASE_6_TEST_REPORT.md`.
 
 ---
 

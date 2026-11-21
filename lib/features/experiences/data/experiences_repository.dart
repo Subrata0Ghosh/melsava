@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../../core/services/supabase_service.dart';
 import '../../../shared/models/experience_model.dart';
@@ -171,6 +173,9 @@ abstract class ExperiencesRepository {
   Future<CancelMembershipResult> cancelMembership(String experienceId);
 
   Future<List<String>> fetchAvailableCategories();
+
+  DateTime? get lastSyncedAt;
+  bool get isServingCachedOfflineData;
 }
 
 /// Production Supabase-backed implementation of [ExperiencesRepository].
@@ -183,6 +188,60 @@ abstract class ExperiencesRepository {
 ///   cannot be bypassed by clients.
 class SupabaseExperiencesRepository implements ExperiencesRepository {
   static const int defaultPageLimit = 30;
+
+  DateTime? _lastSyncedAt;
+  bool _isServingCachedOfflineData = false;
+
+  @override
+  DateTime? get lastSyncedAt => _lastSyncedAt;
+
+  @override
+  bool get isServingCachedOfflineData => _isServingCachedOfflineData;
+
+  static const String _cacheKey = 'cached_published_experiences_v1';
+  static const String _cacheTimestampKey =
+      'cached_published_experiences_time_v1';
+
+  Future<void> _persistCachedExperiences(
+    List<ExperienceModel> experiences,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonList = experiences.map((e) => e.toJson()).toList();
+      await prefs.setString(_cacheKey, jsonEncode(jsonList));
+      await prefs.setString(
+        _cacheTimestampKey,
+        DateTime.now().toIso8601String(),
+      );
+    } catch (e) {
+      debugPrint(
+        '[SupabaseExperiencesRepository] Error persisting offline cache: $e',
+      );
+    }
+  }
+
+  Future<List<ExperienceModel>> _loadCachedExperiences() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final timeStr = prefs.getString(_cacheTimestampKey);
+      if (timeStr != null) {
+        _lastSyncedAt = DateTime.tryParse(timeStr);
+      }
+      final raw = prefs.getString(_cacheKey);
+      if (raw != null && raw.isNotEmpty) {
+        final decoded = jsonDecode(raw) as List;
+        return decoded
+            .whereType<Map>()
+            .map((m) => ExperienceModel.fromJson(Map<String, dynamic>.from(m)))
+            .toList();
+      }
+    } catch (e) {
+      debugPrint(
+        '[SupabaseExperiencesRepository] Error loading offline cache: $e',
+      );
+    }
+    return const [];
+  }
 
   bool get _hasLiveSupabase =>
       SupabaseService.isConfigured && SupabaseService.client != null;
@@ -517,76 +576,106 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
     int offset = 0,
   }) async {
     if (!_hasLiveSupabase) {
+      final cached = await _loadCachedExperiences();
+      if (cached.isNotEmpty) {
+        _isServingCachedOfflineData = true;
+        return applyFiltersAndRanking(
+          cached,
+          filter: filter,
+          currentUser: currentUser,
+        );
+      }
       if (kDebugMode) return const [];
       _requireClient();
     }
 
-    final client = _requireClient();
-    final nowIso = DateTime.now().toUtc().toIso8601String();
+    try {
+      final client = _requireClient();
+      final nowIso = DateTime.now().toUtc().toIso8601String();
 
-    var queryBuilder = client
-        .from('experiences')
-        .select(
-          'id, title, description, cover_image_url, city, venue_name, venue_address, '
-          'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
-          'cancellation_policy, host_id, '
-          'activity_categories(name, icon, color), '
-          'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
-        )
-        .eq('status', 'published')
-        .gt('starts_at', nowIso);
+      var queryBuilder = client
+          .from('experiences')
+          .select(
+            'id, title, description, cover_image_url, city, venue_name, venue_address, '
+            'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
+            'cancellation_policy, host_id, '
+            'activity_categories(name, icon, color), '
+            'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
+          )
+          .eq('status', 'published')
+          .gt('starts_at', nowIso);
 
-    if (filter.format == ExperienceFormatFilter.online) {
-      queryBuilder = queryBuilder.eq('is_online', true);
-    } else if (filter.format == ExperienceFormatFilter.inPerson) {
-      queryBuilder = queryBuilder.eq('is_online', false);
-    }
+      if (filter.format == ExperienceFormatFilter.online) {
+        queryBuilder = queryBuilder.eq('is_online', true);
+      } else if (filter.format == ExperienceFormatFilter.inPerson) {
+        queryBuilder = queryBuilder.eq('is_online', false);
+      }
 
-    if (filter.city.trim().isNotEmpty) {
-      queryBuilder = queryBuilder.ilike('city', '%${filter.city.trim()}%');
-    }
+      if (filter.city.trim().isNotEmpty) {
+        queryBuilder = queryBuilder.ilike('city', '%${filter.city.trim()}%');
+      }
 
-    final safeLimit = limit.clamp(1, 50);
-    final rows = await queryBuilder
-        .order('starts_at', ascending: true)
-        .range(offset, offset + safeLimit - 1);
+      final safeLimit = limit.clamp(1, 50);
+      final rows = await queryBuilder
+          .order('starts_at', ascending: true)
+          .range(offset, offset + safeLimit - 1);
 
-    final rawList = (rows as List)
-        .whereType<Map>()
-        .map((m) => Map<String, dynamic>.from(m))
-        .toList();
+      final rawList = (rows as List)
+          .whereType<Map>()
+          .map((m) => Map<String, dynamic>.from(m))
+          .toList();
 
-    if (rawList.isEmpty) return const [];
+      if (rawList.isEmpty) return const [];
 
-    final ids = rawList.map((r) => r['id'].toString()).toList();
-    final results = await Future.wait([
-      _fetchCounts(client, ids),
-      _fetchUserMemberships(client, ids),
-    ]);
+      final ids = rawList.map((r) => r['id'].toString()).toList();
+      final results = await Future.wait([
+        _fetchCounts(client, ids),
+        _fetchUserMemberships(client, ids),
+      ]);
 
-    final countsMap = results[0] as Map<String, ({int joined, int waitlisted})>;
-    final membershipMap =
-        results[1]
-            as Map<String, ({MembershipStatus status, DateTime? joinedAt})>;
+      final countsMap =
+          results[0] as Map<String, ({int joined, int waitlisted})>;
+      final membershipMap =
+          results[1]
+              as Map<String, ({MembershipStatus status, DateTime? joinedAt})>;
 
-    final models = rawList.map((row) {
-      final id = row['id'].toString();
-      final counts = countsMap[id];
-      final member = membershipMap[id];
-      return _mapRowToModel(
-        row,
-        joinedCount: counts?.joined ?? 0,
-        waitlistCount: counts?.waitlisted ?? 0,
-        membershipStatus: member?.status ?? MembershipStatus.none,
-        joinedAt: member?.joinedAt,
+      final models = rawList.map((row) {
+        final id = row['id'].toString();
+        final counts = countsMap[id];
+        final member = membershipMap[id];
+        return _mapRowToModel(
+          row,
+          joinedCount: counts?.joined ?? 0,
+          waitlistCount: counts?.waitlisted ?? 0,
+          membershipStatus: member?.status ?? MembershipStatus.none,
+          joinedAt: member?.joinedAt,
+        );
+      }).toList();
+
+      _lastSyncedAt = DateTime.now();
+      _isServingCachedOfflineData = false;
+      _persistCachedExperiences(models);
+
+      return applyFiltersAndRanking(
+        models,
+        filter: filter,
+        currentUser: currentUser,
       );
-    }).toList();
-
-    return applyFiltersAndRanking(
-      models,
-      filter: filter,
-      currentUser: currentUser,
-    );
+    } catch (e) {
+      debugPrint(
+        '[SupabaseExperiencesRepository] Error fetching experiences, attempting offline cache: $e',
+      );
+      final cached = await _loadCachedExperiences();
+      if (cached.isNotEmpty) {
+        _isServingCachedOfflineData = true;
+        return applyFiltersAndRanking(
+          cached,
+          filter: filter,
+          currentUser: currentUser,
+        );
+      }
+      rethrow;
+    }
   }
 
   @override
@@ -846,3 +935,13 @@ class ExperienceActionController {
 final experienceActionControllerProvider = Provider<ExperienceActionController>(
   (ref) => ExperienceActionController(ref),
 );
+
+final isOfflineExperiencesProvider = Provider<bool>((ref) {
+  final repo = ref.watch(experiencesRepositoryProvider);
+  return repo.isServingCachedOfflineData;
+});
+
+final experiencesLastSyncedProvider = Provider<DateTime?>((ref) {
+  final repo = ref.watch(experiencesRepositoryProvider);
+  return repo.lastSyncedAt;
+});

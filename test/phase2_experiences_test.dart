@@ -23,6 +23,12 @@ class FakeExperiencesRepository implements ExperiencesRepository {
     : _experiences = List.from(initialExperiences ?? []);
 
   @override
+  DateTime? get lastSyncedAt => null;
+
+  @override
+  bool get isServingCachedOfflineData => false;
+
+  @override
   Future<List<ExperienceModel>> fetchPublishedUpcomingExperiences({
     ExperienceFilter filter = const ExperienceFilter(),
     AppUser? currentUser,

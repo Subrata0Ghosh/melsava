@@ -16,6 +16,7 @@ import '../../../shared/widgets/explore_all_intents_sheet.dart';
 import '../../../shared/widgets/explore_all_categories_sheet.dart';
 import '../../../shared/widgets/intent_3d_cards_section.dart';
 import '../../../shared/widgets/location_venue_picker_sheet.dart';
+import '../../../shared/widgets/offline_notice_bar.dart';
 import '../../../shared/widgets/popular_categories_row.dart';
 import '../../../shared/widgets/primary_button.dart';
 import '../../../shared/widgets/stacked_trending_cards_deck.dart';
@@ -155,6 +156,8 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
         : AppColors.mutedText;
 
     final displayName = user?.displayName ?? 'Friend';
+    final isOffline = ref.watch(isOfflineExperiencesProvider);
+    final lastSyncedAt = ref.watch(experiencesLastSyncedProvider);
     final featuredExp =
         filteredExperiences.firstOrNull ?? allExperiences.firstOrNull;
     final dateFormat = DateFormat('EEE, MMM d • h:mm a');
@@ -184,6 +187,16 @@ class _DiscoverScreenState extends ConsumerState<DiscoverScreen> {
                 parent: ClampingScrollPhysics(),
               ),
               slivers: [
+                if (isOffline)
+                  SliverToBoxAdapter(
+                    child: OfflineNoticeBar(
+                      lastSyncedAt: lastSyncedAt,
+                      onRetry: () {
+                        ref.invalidate(publishedExperiencesProvider);
+                        ref.invalidate(activityCategoriesProvider);
+                      },
+                    ),
+                  ),
                 // ── Top Header: User Greeting, Notifications & Location ──
                 SliverToBoxAdapter(
                   child: Padding(

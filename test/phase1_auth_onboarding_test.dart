@@ -99,6 +99,9 @@ class _InMemoryAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<void> updatePassword({required String newPassword}) async {}
+
+  @override
   Future<void> resendVerificationEmail({required String email}) async {
     resendCalled = true;
   }

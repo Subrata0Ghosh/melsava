@@ -34,6 +34,9 @@ class _FakeGoogleAuthRepository implements AuthRepository {
   Future<void> sendPasswordResetEmail({required String email}) async {}
 
   @override
+  Future<void> updatePassword({required String newPassword}) async {}
+
+  @override
   Future<void> resendVerificationEmail({required String email}) async {}
 
   @override

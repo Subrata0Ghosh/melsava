@@ -185,4 +185,80 @@ class ExperienceModel {
       isCompleted: isCompleted ?? this.isCompleted,
     );
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'description': description,
+      'categoryName': categoryName,
+      'categoryIcon': categoryIcon,
+      'coverImageUrl': coverImageUrl,
+      'city': city,
+      'venueName': venueName,
+      'venueAddress': venueAddress,
+      'isOnline': isOnline,
+      'startsAt': startsAt.toIso8601String(),
+      'endsAt': endsAt?.toIso8601String(),
+      'durationMinutes': durationMinutes,
+      'maxParticipants': maxParticipants,
+      'currentParticipants': currentParticipants,
+      'waitlistCount': waitlistCount,
+      'hostId': hostId,
+      'hostName': hostName,
+      'hostAvatar': hostAvatar,
+      'hostBio': hostBio,
+      'cancellationPolicy': cancellationPolicy,
+      'attendeeAvatars': attendeeAvatars,
+      'experienceStatus': experienceStatus,
+      'membershipStatus': membershipStatus.name,
+      'joinedAt': joinedAt?.toIso8601String(),
+      'hasJoined': hasJoined,
+      'isCompleted': isCompleted,
+    };
+  }
+
+  factory ExperienceModel.fromJson(Map<String, dynamic> json) {
+    return ExperienceModel(
+      id: json['id'] as String,
+      title: json['title'] as String,
+      description: json['description'] as String? ?? '',
+      categoryName: json['categoryName'] as String? ?? 'Community',
+      categoryIcon: json['categoryIcon'] as String? ?? '✨',
+      coverImageUrl: json['coverImageUrl'] as String? ?? '',
+      city: json['city'] as String? ?? '',
+      venueName: json['venueName'] as String? ?? '',
+      venueAddress: json['venueAddress'] as String? ?? '',
+      isOnline: json['isOnline'] as bool? ?? false,
+      startsAt:
+          DateTime.tryParse(json['startsAt']?.toString() ?? '') ??
+          DateTime.now(),
+      endsAt: json['endsAt'] != null
+          ? DateTime.tryParse(json['endsAt'].toString())
+          : null,
+      durationMinutes: json['durationMinutes'] as int? ?? 0,
+      maxParticipants: json['maxParticipants'] as int? ?? 0,
+      currentParticipants: json['currentParticipants'] as int? ?? 0,
+      waitlistCount: json['waitlistCount'] as int? ?? 0,
+      hostId: json['hostId'] as String?,
+      hostName: json['hostName'] as String? ?? 'Host',
+      hostAvatar: json['hostAvatar'] as String? ?? '',
+      hostBio: json['hostBio'] as String?,
+      cancellationPolicy: json['cancellationPolicy'] as String?,
+      attendeeAvatars:
+          (json['attendeeAvatars'] as List?)
+              ?.map((e) => e.toString())
+              .toList() ??
+          const [],
+      experienceStatus: json['experienceStatus'] as String? ?? 'published',
+      membershipStatus: MembershipStatus.fromDb(
+        json['membershipStatus'] as String?,
+      ),
+      joinedAt: json['joinedAt'] != null
+          ? DateTime.tryParse(json['joinedAt'].toString())
+          : null,
+      hasJoined: json['hasJoined'] as bool? ?? false,
+      isCompleted: json['isCompleted'] as bool? ?? false,
+    );
+  }
 }

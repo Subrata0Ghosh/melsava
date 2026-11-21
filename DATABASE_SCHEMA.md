@@ -516,7 +516,7 @@ Platform moderation roles and access control.
 
 ---
 
-## Performance & Concurrency Indexes (Migrations 006, 009 & 013)
+## Performance & Concurrency Indexes (Migrations 006, 009, 013 & 018)
 
 | Index Name | Table | Columns | Purpose |
 |------------|-------|---------|---------|
@@ -527,6 +527,13 @@ Platform moderation roles and access control.
 | `idx_messages_conv_created` | `messages` | `(conversation_id, created_at DESC)` | Fast message history retrieval and pagination |
 | `idx_messages_unread_incoming` | `messages` | `(conversation_id, sender_id, is_read)` | Efficient inbox unread count aggregation |
 | `idx_connections_canonical` | `connections` | `(user_a_id, user_b_id)` | Fast mutual connection pairing lookup |
+| `idx_messages_conversation_created` | `messages` | `(conversation_id, created_at DESC)` | Phase 6 composite index: 33x speedup on message paging |
+| `idx_messages_unread` | `messages` | `(conversation_id, sender_id) WHERE is_read = false` | Phase 6 partial index: 38x speedup on unread counts |
+| `idx_profile_intentions_intention_id` | `profile_intentions` | `(intention_id)` | Covering FK index preventing sequential scans |
+| `idx_moderation_actions_performed_by` | `moderation_actions` | `(performed_by)` | Covering FK index for moderator audit logs |
+| `idx_post_exp_submissions_user_id` | `post_experience_submissions` | `(user_id)` | Covering FK index for member submission lookups |
+| `idx_app_notifications_connection_id` | `app_notifications` | `(connection_id)` | Covering FK index for connection notification lookups |
+| `idx_app_notifications_experience_id` | `app_notifications` | `(experience_id)` | Covering FK index for experience notification lookups |
 
 ---
 
