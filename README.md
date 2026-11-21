@@ -91,9 +91,12 @@ supabase/migrations/011_connections_and_inbox_rpcs.sql
 supabase/migrations/012_phase3_hardening.sql
 supabase/migrations/013_phase4_connections_and_realtime.sql
 supabase/migrations/014_phase5_safety_and_profile.sql
+supabase/migrations/015_phase4_security_hardening.sql
+supabase/migrations/016_fix_inbox_and_rpc_signature.sql
+supabase/migrations/017_phase5_security_and_integrity_hardening.sql
 ```
 
-*(Alternatively, for Phase 5 directly execute `supabase/PHASE_5_ALL_IN_ONE.sql` in the Supabase SQL Editor).*
+*(Alternatively, execute the versioned migrations in the Supabase SQL Editor).*
 
 ### 5. Run the App
 
@@ -146,8 +149,6 @@ supabase/
 | 3 | Real Attendance, Private Mutual Choice & Connection Creation | ✅ Completed |
 | 4 | Connections & Realtime Messaging | ✅ Completed |
 | 5 | Safety, Moderation & Account Settings | ✅ Completed |
-| 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
-| 7 | Closed Beta & Production Launch | ⬜ Planned |
 | 6 | Multi-Account Verification & Production Hardening | ⬜ Planned |
 | 7 | Closed Beta & Production Launch | ⬜ Planned |
 

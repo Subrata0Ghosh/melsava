@@ -107,6 +107,16 @@ class _FakeGoogleAuthRepository implements AuthRepository {
   Future<String?> uploadAvatar(dynamic file) async {
     return 'https://example.com/uploaded_avatar.png';
   }
+
+  @override
+  Future<Map<String, dynamic>> getPrivacySettings() async => const {
+    'public_radar': true,
+    'ghost_mode': false,
+    'show_city': true,
+  };
+
+  @override
+  Future<void> updatePrivacySettings(Map<String, dynamic> settings) async {}
 }
 
 void main() {

@@ -555,7 +555,8 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                         itemCount: filteredPublished.length,
                         itemBuilder: (context, index) {
                           final exp = filteredPublished[index];
-                          final isFollowed = (exp.hostId != null &&
+                          final isFollowed =
+                              (exp.hostId != null &&
                                   followedHosts.contains(exp.hostId)) ||
                               followedHosts.contains(exp.hostName);
                           return ExperienceCard(
@@ -745,10 +746,11 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                         ? AppColors.softCoral
                                         : const Color(0xFFDC2626),
                                     side: BorderSide(
-                                      color: (isDark
-                                              ? AppColors.softCoral
-                                              : const Color(0xFFDC2626))
-                                          .withValues(alpha: 0.35),
+                                      color:
+                                          (isDark
+                                                  ? AppColors.softCoral
+                                                  : const Color(0xFFDC2626))
+                                              .withValues(alpha: 0.35),
                                       width: 1,
                                     ),
                                     padding: const EdgeInsets.symmetric(
@@ -843,10 +845,11 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                         ? AppColors.softCoral
                                         : const Color(0xFFDC2626),
                                     side: BorderSide(
-                                      color: (isDark
-                                              ? AppColors.softCoral
-                                              : const Color(0xFFDC2626))
-                                          .withValues(alpha: 0.35),
+                                      color:
+                                          (isDark
+                                                  ? AppColors.softCoral
+                                                  : const Color(0xFFDC2626))
+                                              .withValues(alpha: 0.35),
                                       width: 1,
                                     ),
                                     padding: const EdgeInsets.symmetric(
@@ -936,8 +939,9 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                                   borderRadius: BorderRadius.circular(20),
                                   boxShadow: [
                                     BoxShadow(
-                                      color: AppColors.primaryPurple
-                                          .withValues(alpha: 0.28),
+                                      color: AppColors.primaryPurple.withValues(
+                                        alpha: 0.28,
+                                      ),
                                       blurRadius: 8,
                                       offset: const Offset(0, 3),
                                     ),
@@ -966,7 +970,8 @@ class _ExperiencesScreenState extends ConsumerState<ExperiencesScreen>
                             );
                           }
 
-                          final isFollowed = (exp.hostId != null &&
+                          final isFollowed =
+                              (exp.hostId != null &&
                                   followedHosts.contains(exp.hostId)) ||
                               followedHosts.contains(exp.hostName);
                           return ExperienceCard(

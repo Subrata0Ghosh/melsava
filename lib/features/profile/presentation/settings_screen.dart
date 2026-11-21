@@ -737,13 +737,38 @@ class SettingsScreen extends ConsumerWidget {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                'Two-Factor Authentication (TOTP)',
-                                style: TextStyle(
-                                  color: primaryTextColor,
-                                  fontWeight: FontWeight.w700,
-                                  fontSize: 13.5,
-                                ),
+                              Row(
+                                children: [
+                                  Text(
+                                    'Two-Factor Authentication (TOTP)',
+                                    style: TextStyle(
+                                      color: primaryTextColor,
+                                      fontWeight: FontWeight.w700,
+                                      fontSize: 13.5,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 6,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: const Color(
+                                        0xFF8B5CF6,
+                                      ).withValues(alpha: 0.15),
+                                      borderRadius: BorderRadius.circular(6),
+                                    ),
+                                    child: const Text(
+                                      'Coming Soon',
+                                      style: TextStyle(
+                                        color: Color(0xFF8B5CF6),
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w700,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                               Text(
                                 'Authenticator app (TOTP) support coming soon for enhanced account security.',
@@ -1233,47 +1258,13 @@ class SettingsScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: () async {
+                        onPressed: () {
                           Navigator.of(bottomSheetContext).pop();
-                          final confirm = await ConfirmationDialog.show(
+                          _showPermanentDeleteConfirmationDialog(
                             context,
-                            title: 'Permanently Delete Account?',
-                            message:
-                                'Are you sure you want to permanently delete your MELSAVA account? All your photos, messages, mutual connections, and RSVP history will be immediately erased. This action CANNOT be undone.',
-                            confirmLabel: 'Delete Permanently',
-                            isDestructive: true,
+                            ref,
+                            isDark,
                           );
-                          if (confirm != true || !context.mounted) return;
-                          final messenger = ScaffoldMessenger.of(context);
-                          try {
-                            await ref
-                                .read(authRepositoryProvider)
-                                .deleteAccountPermanent();
-                            ref.read(currentUserProvider.notifier).state = null;
-                            if (context.mounted) {
-                              context.go('/welcome');
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                    'Your MELSAVA account and personal data have been permanently deleted.',
-                                  ),
-                                  duration: Duration(seconds: 4),
-                                ),
-                              );
-                            }
-                          } catch (err) {
-                            if (context.mounted) {
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  backgroundColor: AppColors.error,
-                                  content: Text(
-                                    'Account deletion failed: $err',
-                                  ),
-                                  duration: const Duration(seconds: 5),
-                                ),
-                              );
-                            }
-                          }
                         },
                         child: const Text(
                           'Delete Account Permanently',
@@ -1292,6 +1283,215 @@ class SettingsScreen extends ConsumerWidget {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  void _showPermanentDeleteConfirmationDialog(
+    BuildContext context,
+    WidgetRef ref,
+    bool isDark,
+  ) {
+    final textController = TextEditingController();
+    bool isDeleting = false;
+    String? localError;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogCtx) => StatefulBuilder(
+        builder: (context, setDialogState) {
+          final canDelete = textController.text.trim() == 'DELETE';
+          final cardBg = isDark ? const Color(0xFF221A33) : Colors.white;
+          final primaryTextColor = isDark
+              ? AppColors.darkTextPrimary
+              : const Color(0xFF1E1435);
+          final mutedTextColor = isDark
+              ? AppColors.darkMutedText
+              : const Color(0xFF7E7394);
+
+          return AlertDialog(
+            backgroundColor: cardBg,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(24),
+            ),
+            title: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF43F5E).withValues(alpha: 0.15),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Color(0xFFF43F5E),
+                    size: 24,
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    'Confirm Deletion',
+                    style: TextStyle(
+                      color: primaryTextColor,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 17,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'All your personal data, profile photos, connections, chat history, and RSVPs will be permanently erased. This action CANNOT be undone.',
+                  style: TextStyle(
+                    color: mutedTextColor,
+                    fontSize: 12.5,
+                    height: 1.4,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Please type "DELETE" below to confirm permanent removal:',
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontWeight: FontWeight.w700,
+                    fontSize: 12,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                TextField(
+                  controller: textController,
+                  autofocus: true,
+                  enabled: !isDeleting,
+                  onChanged: (_) => setDialogState(() {}),
+                  style: TextStyle(
+                    color: primaryTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  decoration: InputDecoration(
+                    hintText: 'Type DELETE',
+                    hintStyle: TextStyle(
+                      color: mutedTextColor.withValues(alpha: 0.6),
+                    ),
+                    filled: true,
+                    fillColor: isDark
+                        ? const Color(0xFF1A1329)
+                        : const Color(0xFFF8F6FD),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 14,
+                      vertical: 12,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(
+                        color: const Color(0xFFF43F5E).withValues(alpha: 0.5),
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(
+                        color: Color(0xFFF43F5E),
+                        width: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                if (localError != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    localError!,
+                    style: const TextStyle(
+                      color: Color(0xFFF43F5E),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: isDeleting
+                    ? null
+                    : () => Navigator.of(dialogCtx).pop(),
+                child: Text(
+                  'Cancel',
+                  style: TextStyle(
+                    color: mutedTextColor,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF43F5E),
+                  foregroundColor: Colors.white,
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                onPressed: (!canDelete || isDeleting)
+                    ? null
+                    : () async {
+                        setDialogState(() {
+                          isDeleting = true;
+                          localError = null;
+                        });
+                        try {
+                          await ref
+                              .read(authRepositoryProvider)
+                              .deleteAccountPermanent();
+                          ref.read(currentUserProvider.notifier).state = null;
+                          if (!context.mounted) return;
+                          Navigator.of(dialogCtx).pop();
+                          context.go('/welcome');
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text(
+                                'Your MELSAVA account and personal data have been permanently deleted.',
+                              ),
+                              duration: Duration(seconds: 4),
+                            ),
+                          );
+                        } catch (err) {
+                          setDialogState(() {
+                            isDeleting = false;
+                            final errStr = err.toString();
+                            if (errStr.contains('recent_login_required') ||
+                                errStr.contains('re-authenticate') ||
+                                errStr.contains('recent')) {
+                              localError =
+                                  'For security, please sign out and sign back in before deleting your account.';
+                            } else {
+                              localError =
+                                  'Account deletion failed: $err. Please re-authenticate and try again.';
+                            }
+                          });
+                        }
+                      },
+                child: isDeleting
+                    ? const SizedBox(
+                        width: 18,
+                        height: 18,
+                        child: CircularProgressIndicator(
+                          strokeWidth: 2,
+                          color: Colors.white,
+                        ),
+                      )
+                    : const Text(
+                        'Permanently Delete',
+                        style: TextStyle(fontWeight: FontWeight.w700),
+                      ),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -1676,10 +1876,6 @@ class SettingsScreen extends ConsumerWidget {
         ? const Color(0xFF382E4D)
         : const Color(0xFFEDE9FE);
 
-    bool ghostMode = false;
-    bool publicRadar = true;
-    bool showCity = true;
-
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -1693,6 +1889,11 @@ class SettingsScreen extends ConsumerWidget {
         final blockedCount = ref
             .watch(blockedUsersProvider)
             .maybeWhen(data: (list) => list.length, orElse: () => 0);
+
+        final privacyAsync = ref.watch(privacySettingsProvider);
+        bool publicRadar = privacyAsync.value?['public_radar'] ?? true;
+        bool ghostMode = privacyAsync.value?['ghost_mode'] ?? false;
+        bool showCity = privacyAsync.value?['show_city'] ?? true;
 
         return StatefulBuilder(
           builder: (context, setSheetState) => Padding(
@@ -1802,7 +2003,7 @@ class SettingsScreen extends ConsumerWidget {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'MELSAVA strictly restricts meetups to certified public spaces (licensed cafés, public trails, registered studios). Private addresses are never permitted.',
+                                'MELSAVA strictly restricts meetups to vetted public venues (licensed cafés, public trails, community studios). Private residences or secluded rendezvous are never permitted.',
                                 style: TextStyle(
                                   color: primaryTextColor.withValues(
                                     alpha: 0.85,
@@ -1832,8 +2033,17 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle:
                               'Appear on radar for other attendees joining the same events',
                           value: publicRadar,
-                          onChanged: (val) =>
-                              setSheetState(() => publicRadar = val),
+                          onChanged: (val) async {
+                            setSheetState(() => publicRadar = val);
+                            await ref
+                                .read(authRepositoryProvider)
+                                .updatePrivacySettings({
+                                  'public_radar': val,
+                                  'ghost_mode': ghostMode,
+                                  'show_city': showCity,
+                                });
+                            ref.invalidate(privacySettingsProvider);
+                          },
                           primaryTextColor: primaryTextColor,
                           mutedTextColor: mutedTextColor,
                         ),
@@ -1848,8 +2058,17 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle:
                               'Browse experiences completely hidden from discovery',
                           value: ghostMode,
-                          onChanged: (val) =>
-                              setSheetState(() => ghostMode = val),
+                          onChanged: (val) async {
+                            setSheetState(() => ghostMode = val);
+                            await ref
+                                .read(authRepositoryProvider)
+                                .updatePrivacySettings({
+                                  'public_radar': publicRadar,
+                                  'ghost_mode': val,
+                                  'show_city': showCity,
+                                });
+                            ref.invalidate(privacySettingsProvider);
+                          },
                           primaryTextColor: primaryTextColor,
                           mutedTextColor: mutedTextColor,
                         ),
@@ -1864,8 +2083,17 @@ class SettingsScreen extends ConsumerWidget {
                           subtitle:
                               'Let other attendees know your home city badge',
                           value: showCity,
-                          onChanged: (val) =>
-                              setSheetState(() => showCity = val),
+                          onChanged: (val) async {
+                            setSheetState(() => showCity = val);
+                            await ref
+                                .read(authRepositoryProvider)
+                                .updatePrivacySettings({
+                                  'public_radar': publicRadar,
+                                  'ghost_mode': ghostMode,
+                                  'show_city': val,
+                                });
+                            ref.invalidate(privacySettingsProvider);
+                          },
                           primaryTextColor: primaryTextColor,
                           mutedTextColor: mutedTextColor,
                         ),

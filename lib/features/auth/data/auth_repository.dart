@@ -33,6 +33,8 @@ abstract class AuthRepository {
   Future<void> restoreSession();
   Future<void> updateProfile(AppUser updatedUser);
   Future<String?> uploadAvatar(dynamic file);
+  Future<Map<String, dynamic>> getPrivacySettings();
+  Future<void> updatePrivacySettings(Map<String, dynamic> settings);
   void syncCachedUser(AppUser user);
 }
 
@@ -643,49 +645,73 @@ class SupabaseAuthRepository implements AuthRepository {
 
   @override
   Future<void> updateProfile(AppUser updatedUser) async {
+    _ensureBackendAvailable();
     if (_hasLiveSupabase) {
-      try {
-        await SupabaseService.client!.rpc(
-          'update_user_profile',
-          params: {
-            'p_display_name': updatedUser.displayName ?? '',
-            'p_avatar_url': updatedUser.avatarUrl ?? '',
-            'p_bio': updatedUser.bio ?? '',
-            'p_city': updatedUser.city ?? '',
-            'p_interests': updatedUser.interests ?? <String>[],
-            'p_primary_intent': updatedUser.primaryIntent ?? '',
-            'p_secondary_intents': updatedUser.secondaryIntents,
-            'p_preferred_categories': updatedUser.preferredActivityCategories,
-            'p_discovery_preferences': {
-              'min_age': updatedUser.discoveryMinAge,
-              'max_age': updatedUser.discoveryMaxAge,
-              'max_distance_km': updatedUser.discoveryMaxDistanceKm,
-              'format': updatedUser.discoveryFormat,
-            },
+      // Validate and persist atomically via update_user_profile RPC only.
+      // Direct-table fallback removed to prevent partial updates and data corruption.
+      await SupabaseService.client!.rpc(
+        'update_user_profile',
+        params: {
+          'p_display_name': updatedUser.displayName ?? '',
+          'p_avatar_url': updatedUser.avatarUrl ?? '',
+          'p_bio': updatedUser.bio ?? '',
+          'p_city': updatedUser.city ?? '',
+          'p_interests': updatedUser.interests ?? <String>[],
+          'p_primary_intent': updatedUser.primaryIntent ?? '',
+          'p_secondary_intents': updatedUser.secondaryIntents,
+          'p_preferred_categories': updatedUser.preferredActivityCategories,
+          'p_discovery_preferences': {
+            'min_age': updatedUser.discoveryMinAge,
+            'max_age': updatedUser.discoveryMaxAge,
+            'max_distance_km': updatedUser.discoveryMaxDistanceKm,
+            'format': updatedUser.discoveryFormat,
           },
-        );
-      } catch (e) {
-        debugPrint(
-          '[SupabaseAuthRepository] update_user_profile RPC error: $e',
-        );
-        await SupabaseService.client!
-            .from('profiles')
-            .update({
-              if (updatedUser.displayName != null)
-                'display_name': updatedUser.displayName,
-              if (updatedUser.avatarUrl != null)
-                'avatar_url': updatedUser.avatarUrl,
-              if (updatedUser.bio != null) 'bio': updatedUser.bio,
-              if (updatedUser.city != null) 'city': updatedUser.city,
-              'onboarding_completed': updatedUser.onboardingCompleted,
-              'updated_at': DateTime.now().toUtc().toIso8601String(),
-            })
-            .eq('id', updatedUser.id);
-      }
+        },
+      );
     }
 
     _cachedUser = updatedUser;
     _controller.add(_cachedUser);
+  }
+
+  @override
+  Future<Map<String, dynamic>> getPrivacySettings() async {
+    if (!_hasLiveSupabase) {
+      return const {
+        'public_radar': true,
+        'ghost_mode': false,
+        'show_city': true,
+      };
+    }
+    try {
+      final res = await SupabaseService.client!.rpc('get_privacy_settings');
+      if (res is Map) {
+        return Map<String, dynamic>.from(res);
+      }
+      return const {
+        'public_radar': true,
+        'ghost_mode': false,
+        'show_city': true,
+      };
+    } catch (e) {
+      debugPrint('[SupabaseAuthRepository] getPrivacySettings error: $e');
+      return const {
+        'public_radar': true,
+        'ghost_mode': false,
+        'show_city': true,
+      };
+    }
+  }
+
+  @override
+  Future<void> updatePrivacySettings(Map<String, dynamic> settings) async {
+    _ensureBackendAvailable();
+    if (_hasLiveSupabase) {
+      await SupabaseService.client!.rpc(
+        'update_privacy_settings',
+        params: {'p_settings': settings},
+      );
+    }
   }
 
   @override
@@ -766,20 +792,10 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> deactivateAccount() async {
     _ensureBackendAvailable();
     if (_hasLiveSupabase) {
-      try {
-        await SupabaseService.client!.rpc('deactivate_user_account');
-      } catch (e) {
-        debugPrint('[AuthRepository] deactivateAccount RPC error: $e');
-        try {
-          if (_cachedUser != null) {
-            await SupabaseService.client!
-                .from('profiles')
-                .update({'is_deactivated': true})
-                .eq('id', _cachedUser!.id);
-          }
-        } catch (_) {}
-      }
+      // Must succeed via deactivate_user_account RPC; do not swallow error or fallback
+      await SupabaseService.client!.rpc('deactivate_user_account');
     }
+    // Only sign out on confirmed deactivation
     await signOut();
   }
 
@@ -787,49 +803,15 @@ class SupabaseAuthRepository implements AuthRepository {
   Future<void> deleteAccountPermanent() async {
     _ensureBackendAvailable();
     if (_hasLiveSupabase) {
-      bool deleted = false;
-      String? lastError;
+      // Single permanent deletion mechanism: Supabase Edge Function 'delete-account'
+      final res = await SupabaseService.client!.functions.invoke(
+        'delete-account',
+        body: {'confirmation': 'DELETE'},
+      );
 
-      // 1. Try Supabase Edge Function 'delete-account' first
-      try {
-        final res = await SupabaseService.client!.functions.invoke(
-          'delete-account',
-        );
-        if (res.status == 200) {
-          deleted = true;
-        } else {
-          lastError =
-              res.data?['error']?.toString() ??
-              'Edge Function status: ${res.status}';
-        }
-      } catch (e) {
-        lastError = e.toString();
-        debugPrint('[AuthRepository] delete-account Edge Function error: $e');
-      }
-
-      // 2. Fallback to delete_user_account_permanent RPC if Edge Function was unavailable
-      if (!deleted) {
-        try {
-          final res = await SupabaseService.client!.rpc(
-            'delete_user_account_permanent',
-            params: {'p_confirmation': 'DELETE'},
-          );
-          if (res != null && res['success'] == true) {
-            deleted = true;
-          }
-        } catch (rpcErr) {
-          lastError = rpcErr.toString();
-          debugPrint(
-            '[AuthRepository] delete_user_account_permanent RPC error: $rpcErr',
-          );
-        }
-      }
-
-      // If both server methods failed, STOP. Never delete profiles row alone!
-      if (!deleted) {
-        throw Exception(
-          'Failed to permanently delete account from server: $lastError. Your account was not deleted.',
-        );
+      if (res.status != 200) {
+        final err = res.data?['error']?.toString() ?? 'Status: ${res.status}';
+        throw Exception(err);
       }
     }
 

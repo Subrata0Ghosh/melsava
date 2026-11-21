@@ -481,7 +481,7 @@ Full-featured interactive sheet allowing real-time edits:
 ### Community Guidelines (`CommunityGuidelinesScreen`)
 - Dedicated screen detailing MELSAVA's 10 Core Guidelines:
   1. Authentic Identity
-  2. Vetted Public Spaces Only
+  2. Public Venues Only
   3. Zero Tolerance for Harassment
   4. Explicit Consent & Boundaries
   5. Punctuality & RSVP Etiquette
@@ -492,6 +492,12 @@ Full-featured interactive sheet allowing real-time edits:
   10. Proactive Safety & Reporting
 - Accessible from Settings, Profile, and Report dialogs.
 
+### Privacy & Safety Controls
+- Stored in `public.profile_private.privacy_settings` JSONB via `get_privacy_settings` / `update_privacy_settings` RPCs:
+  - **Public Activity Radar**: Attendee discovery visibility on event radar.
+  - **Incognito Ghost Mode**: Complete discovery browsing concealment.
+  - **Display Active City**: Home city badge toggle on member profile.
+
 ### Basic Moderation Console (`ModerationScreen`)
 - Restricted to verified community moderators (`is_moderator()` / `isModeratorProvider`).
 - Filter reports by status: Pending, Reviewed, Resolved, Dismissed, All.
@@ -501,13 +507,13 @@ Full-featured interactive sheet allowing real-time edits:
   - **Suspend Account**: Sets `profiles.is_suspended = TRUE` and records action, revoking access to all conversations and circles.
 
 ### Account Deletion & Deactivation
-- **Temporary Deactivation**: Sets `is_deactivated = TRUE`, hides profile and activities, preserves connections for return.
+- **Temporary Deactivation**: Sets `is_deactivated = TRUE` via atomic `deactivate_user_account` RPC, hides profile and activities, preserves connections for return.
 - **Permanent Account Deletion**:
-  - Requires explicit `'DELETE'` confirmation.
-  - Executed via `delete-account` Supabase Edge Function (Deno) or `delete_user_account_permanent` RPC.
+  - Requires user to explicitly type `'DELETE'` in a dedicated confirmation dialog with progress spinner.
+  - Executed exclusively via `delete-account` Supabase Edge Function (Deno) with server-side recent re-authentication verification (<15 minutes).
   - Purges user avatar from Supabase Storage `avatars` bucket.
   - Cascades profile foreign keys (blocks, reports, choices, connections, conversations).
-  - Deletes user from Supabase Auth via Admin API.
+  - Deletes user from Supabase Auth via Admin API (`adminClient.auth.admin.deleteUser(userId)`).
   - Never deletes `profiles` record alone on failure; rethrows clear errors while keeping user session intact until confirmed server completion.
 
 ---

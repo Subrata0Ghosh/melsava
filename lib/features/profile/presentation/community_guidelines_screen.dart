@@ -21,9 +21,9 @@ class CommunityGuidelinesScreen extends StatelessWidget {
     {
       'number': '02',
       'icon': Icons.storefront_outlined,
-      'title': 'Vetted Public Spaces Only',
+      'title': 'Public Venues Only',
       'desc':
-          'All MELSAVA micro-group meetups occur exclusively at verified public venues (licensed cafés, public botanical gardens, verified studios). Private residences or secluded rendezvous are never sanctioned.',
+          'All MELSAVA micro-group meetups occur exclusively at public venues (cafés, public botanical gardens, and creative studios). Private residences or secluded rendezvous are never sanctioned.',
     },
     {
       'number': '03',
@@ -79,7 +79,7 @@ class CommunityGuidelinesScreen extends StatelessWidget {
       'icon': Icons.security_rounded,
       'title': 'Proactive Safety & Reporting',
       'desc':
-          'If you witness misconduct or feel unsafe, notify your host or report the member immediately through the app. Our trust and safety team investigates every submission.',
+          'If you witness misconduct or feel unsafe, notify your host or report the member immediately through the app. Our community moderation team reviews every submission with care.',
     },
   ];
 

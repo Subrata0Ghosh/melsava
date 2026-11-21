@@ -556,6 +556,12 @@ class _HostAttendanceSheetState extends ConsumerState<HostAttendanceSheet> {
                               if (e is PostgrestException) {
                                 cleanMsg = e.message;
                               }
+                              if (cleanMsg.contains(
+                                'Cannot complete experience before its scheduled end time',
+                              )) {
+                                cleanMsg =
+                                    'Cannot complete experience before its scheduled end time. Attendance confirmation unlocks once the meetup ends.';
+                              }
                               setState(() {
                                 _isSubmitting = false;
                                 _errorMessage = cleanMsg;

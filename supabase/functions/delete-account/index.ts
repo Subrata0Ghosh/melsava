@@ -34,6 +34,13 @@ serve(async (req: Request) => {
     }
 
     const token = authHeader.replace("Bearer ", "").trim();
+    if (!token) {
+      return new Response(
+        JSON.stringify({ error: "Empty or invalid Authorization Bearer token." }),
+        { status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
     const userClient = createClient(supabaseUrl, supabaseAnonKey, {
       global: { headers: { Authorization: `Bearer ${token}` } },
     });
@@ -48,50 +55,103 @@ serve(async (req: Request) => {
 
     const userId = user.id;
 
-    // 2. Admin client with service_role key to delete storage & auth user
+    // 2. Verify recent reauthentication server-side (do not trust client timestamps)
+    // Inspect token auth_time or iat claims (max 15 minutes = 900s)
+    let authTime = 0;
+    try {
+      const parts = token.split(".");
+      if (parts.length === 3) {
+        // Base64URL decode
+        const b64 = parts[1].replace(/-/g, "+").replace(/_/g, "/");
+        const payloadJson = atob(b64);
+        const claims = JSON.parse(payloadJson);
+        authTime = claims.auth_time || claims.iat || 0;
+      }
+    } catch (_) {
+      authTime = 0;
+    }
+
+    if (authTime === 0 && user.last_sign_in_at) {
+      authTime = Math.floor(new Date(user.last_sign_in_at).getTime() / 1000);
+    }
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const maxAuthAgeSec = 15 * 60; // 15 minutes
+    if (authTime > 0 && nowSec - authTime > maxAuthAgeSec) {
+      return new Response(
+        JSON.stringify({
+          error: "Recent reauthentication required. For your security, please sign in again before permanently deleting your account.",
+        }),
+        { status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 3. Verify explicit typed confirmation phrase "DELETE"
+    let body: any = {};
+    try {
+      body = await req.json();
+    } catch (_) {
+      body = {};
+    }
+
+    const confirmation = (body?.confirmation ?? "").toString().trim();
+    if (confirmation !== "DELETE") {
+      return new Response(
+        JSON.stringify({
+          error: "Explicit confirmation phrase 'DELETE' is required to permanently delete your account.",
+        }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+
+    // 4. Admin client with service_role key to delete storage & auth user
     const adminClient = createClient(supabaseUrl, supabaseServiceKey);
 
-    // Clean up avatar files in storage if any
+    // 5. Clean up user-owned avatar files safely in Supabase Storage
     try {
-      const { data: avatarFiles } = await adminClient.storage
+      const { data: avatarFiles, error: listErr } = await adminClient.storage
         .from("avatars")
         .list(userId);
 
       if (avatarFiles && avatarFiles.length > 0) {
         const filePaths = avatarFiles.map((f) => `${userId}/${f.name}`);
-        await adminClient.storage.from("avatars").remove(filePaths);
+        const { error: removeErr } = await adminClient.storage.from("avatars").remove(filePaths);
+        if (removeErr) {
+          console.warn(`Storage avatar deletion notice for ${userId}:`, removeErr);
+        }
       }
     } catch (storageErr) {
-      console.warn("Storage cleanup notice:", storageErr);
+      console.warn(`Storage avatar cleanup error for ${userId}:`, storageErr);
     }
 
-    // Clean up user blocks, reports, and profile records
-    await adminClient.from("blocks").delete().or(`blocker_id.eq.${userId},blocked_id.eq.${userId}`);
-    await adminClient.from("reports").delete().or(`reporter_id.eq.${userId},reported_user_id.eq.${userId}`);
-    await adminClient.from("moderation_actions").delete().eq("user_id", userId);
-    await adminClient.from("profiles").delete().eq("id", userId);
-
-    // 3. Delete from Supabase Auth permanently via admin client
+    // 6. Delete from Supabase Auth permanently via admin client
+    // Note: Deleting from auth.users cascades through PostgreSQL foreign keys to:
+    // public.profiles -> profile_private, profile_interests, profile_intentions,
+    // connections, conversations, messages, app_notifications, blocks, reports.
+    // Crucially: we do NOT delete public.profiles BEFORE confirming Auth deletion!
     const { error: deleteError } = await adminClient.auth.admin.deleteUser(userId);
     if (deleteError) {
-      console.error("Failed to delete user in auth.admin:", deleteError);
+      console.error(`Failed to delete user in auth.admin for ${userId}:`, deleteError);
       return new Response(
-        JSON.stringify({ error: `Account deletion failed: ${deleteError.message}` }),
+        JSON.stringify({
+          error: `Account deletion failed: ${deleteError.message}. Your account was not deleted. Please try again.`,
+        }),
         { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
     }
 
+    // 7. Success confirmation
     return new Response(
       JSON.stringify({
         success: true,
         status: "deleted",
-        message: "Account and associated data permanently deleted.",
+        message: "Your MELSAVA account and associated personal data have been permanently deleted.",
       }),
       { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   } catch (err: any) {
     return new Response(
-      JSON.stringify({ error: err.message || "An unexpected error occurred." }),
+      JSON.stringify({ error: err.message || "An unexpected error occurred during account deletion." }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

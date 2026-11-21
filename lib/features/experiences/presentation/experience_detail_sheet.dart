@@ -156,14 +156,15 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
 
     final currentUser = ref.watch(currentUserProvider);
     final followedHosts = ref.watch(followedHostsProvider);
-    final isHost = currentUser != null &&
+    final isHost =
+        currentUser != null &&
         exp.hostId != null &&
         currentUser.id == exp.hostId;
     final hostKey = (exp.hostId != null && exp.hostId!.isNotEmpty)
         ? exp.hostId!
         : exp.hostName;
-    final isFollowing = followedHosts.contains(hostKey) ||
-        followedHosts.contains(exp.hostName);
+    final isFollowing =
+        followedHosts.contains(hostKey) || followedHosts.contains(exp.hostName);
 
     final dateFormat = DateFormat('EEEE, MMMM d · h:mm a');
 
@@ -593,17 +594,20 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                             vertical: 7,
                                           ),
                                           decoration: BoxDecoration(
-                                            color: (isDark
-                                                    ? AppColors.softCoral
-                                                    : AppColors.deepPlum)
-                                                .withValues(alpha: 0.12),
-                                            borderRadius:
-                                                BorderRadius.circular(20),
+                                            color:
+                                                (isDark
+                                                        ? AppColors.softCoral
+                                                        : AppColors.deepPlum)
+                                                    .withValues(alpha: 0.12),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
                                             border: Border.all(
-                                              color: (isDark
-                                                      ? AppColors.softCoral
-                                                      : AppColors.deepPlum)
-                                                  .withValues(alpha: 0.35),
+                                              color:
+                                                  (isDark
+                                                          ? AppColors.softCoral
+                                                          : AppColors.deepPlum)
+                                                      .withValues(alpha: 0.35),
                                               width: 1.2,
                                             ),
                                           ),
@@ -636,18 +640,22 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                           onTap: () async {
                                             HapticFeedback.lightImpact();
                                             await ref
-                                                .read(followedHostsProvider
-                                                    .notifier)
+                                                .read(
+                                                  followedHostsProvider
+                                                      .notifier,
+                                                )
                                                 .toggleFollow(hostKey);
                                             if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
                                                   'Unfollowed ${exp.hostName}.',
                                                 ),
-                                                duration:
-                                                    const Duration(seconds: 2),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
                                               ),
                                             );
                                           },
@@ -657,10 +665,12 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                               vertical: 7,
                                             ),
                                             decoration: BoxDecoration(
-                                              color: (isDark
-                                                      ? AppColors.darkElevated
-                                                      : Colors.white)
-                                                  .withValues(alpha: 0.85),
+                                              color:
+                                                  (isDark
+                                                          ? AppColors
+                                                                .darkElevated
+                                                          : Colors.white)
+                                                      .withValues(alpha: 0.85),
                                               borderRadius:
                                                   BorderRadius.circular(20),
                                               border: Border.all(
@@ -686,7 +696,8 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                                   style: TextStyle(
                                                     color: isDark
                                                         ? AppColors.brightViolet
-                                                        : AppColors.primaryPurple,
+                                                        : AppColors
+                                                              .primaryPurple,
                                                     fontWeight: FontWeight.w700,
                                                     fontSize: 12,
                                                   ),
@@ -700,18 +711,22 @@ class _ExperienceDetailSheetState extends ConsumerState<ExperienceDetailSheet> {
                                           onTap: () async {
                                             HapticFeedback.mediumImpact();
                                             await ref
-                                                .read(followedHostsProvider
-                                                    .notifier)
+                                                .read(
+                                                  followedHostsProvider
+                                                      .notifier,
+                                                )
                                                 .toggleFollow(hostKey);
                                             if (!context.mounted) return;
-                                            ScaffoldMessenger.of(context)
-                                                .showSnackBar(
+                                            ScaffoldMessenger.of(
+                                              context,
+                                            ).showSnackBar(
                                               SnackBar(
                                                 content: Text(
                                                   'You are now following ${exp.hostName}. You\'ll see their new curated experiences prioritized.',
                                                 ),
-                                                duration:
-                                                    const Duration(seconds: 3),
+                                                duration: const Duration(
+                                                  seconds: 3,
+                                                ),
                                               ),
                                             );
                                           },

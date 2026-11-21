@@ -97,6 +97,16 @@ class _FakePhase5AuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> getPrivacySettings() async => const {
+    'public_radar': true,
+    'ghost_mode': false,
+    'show_city': true,
+  };
+
+  @override
+  Future<void> updatePrivacySettings(Map<String, dynamic> settings) async {}
+
+  @override
   void syncCachedUser(AppUser updatedUser) {
     user = updatedUser;
   }
@@ -390,7 +400,7 @@ void main() {
 
       expect(find.text('Community Guidelines'), findsOneWidget);
       expect(find.text('Authentic Identity'), findsOneWidget);
-      expect(find.text('Vetted Public Spaces Only'), findsOneWidget);
+      expect(find.text('Public Venues Only'), findsOneWidget);
       expect(find.text('Zero Tolerance for Harassment'), findsOneWidget);
       expect(find.text('Proactive Safety & Reporting'), findsOneWidget);
     });
@@ -504,6 +514,33 @@ void main() {
       expect(find.text('Dismiss'), findsOneWidget);
       expect(find.text('Issue Warning'), findsOneWidget);
       expect(find.text('Suspend'), findsOneWidget);
+    });
+
+    testWidgets(
+      'CommunityGuidelinesScreen contains updated guidelines without unsupported claims',
+      (tester) async {
+        await tester.pumpWidget(
+          const MaterialApp(home: CommunityGuidelinesScreen()),
+        );
+        await tester.pump();
+
+        expect(find.text('Public Venues Only'), findsOneWidget);
+        expect(find.text('Proactive Safety & Reporting'), findsOneWidget);
+      },
+    );
+
+    test('Privacy settings can be retrieved and updated', () async {
+      final fakeAuth = _FakePhase5AuthRepository();
+      final settings = await fakeAuth.getPrivacySettings();
+      expect(settings['public_radar'], isTrue);
+      expect(settings['ghost_mode'], isFalse);
+      expect(settings['show_city'], isTrue);
+
+      await fakeAuth.updatePrivacySettings({
+        'public_radar': false,
+        'ghost_mode': true,
+        'show_city': false,
+      });
     });
   });
 }

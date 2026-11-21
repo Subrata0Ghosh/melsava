@@ -22,3 +22,15 @@ final currentUserProvider = StateProvider<AppUser?>((ref) {
   });
   return authRepo.currentUser;
 });
+
+final privacySettingsProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+      final repo = ref.watch(authRepositoryProvider);
+      return repo.getPrivacySettings();
+    });
+
+final privacySettingsProvider =
+    FutureProvider.autoDispose<Map<String, dynamic>>((ref) async {
+  final repo = ref.watch(authRepositoryProvider);
+  return repo.getPrivacySettings();
+});

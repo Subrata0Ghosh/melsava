@@ -187,10 +187,17 @@ This roadmap tracks the incremental delivery of MELSAVA following the specificat
   - Wired real blocked count and direct navigation to `/blocked-profiles`.
   - Connected direct navigation to `/community-guidelines` and conditional `/moderation` tile for moderators.
   - Hardened account deletion with clear error handling.
-- [x] **Automated Verification**:
-  - `phase5_safety_and_settings_test.dart` passing comprehensive unit and widget tests.
-  - All test suites passing in `flutter test`.
-  - `flutter analyze` passing with 0 warnings or errors.
+- [x] **Phase 5 Closeout & Integrity Hardening (`017_phase5_security_and_integrity_hardening.sql`)**:
+  - Removed all silent direct-table update fallbacks in `auth_repository.dart` (`profiles.update`) and `connections_repository.dart` (`blocks.upsert`, `blocks.delete`, `reports.insert`).
+  - Added missing columns to `profile_private`: `preferred_activity_categories`, `availability_preferences`, `discovery_preferences`, `privacy_settings`.
+  - Added atomic `get_privacy_settings` and `update_privacy_settings` RPCs with client persistence for `publicRadar`, `ghostMode`, and `showCity`.
+  - Hardened `update_user_profile` to validate all interest and intention names against canonical database dictionaries prior to any data mutation.
+  - Eliminated demo avatar presets and `user-local` dummy fallbacks in `edit_profile_sheet.dart`; requires authentic authenticated user session and custom image upload.
+  - Removed fabricated Mumbai coordinates for unknown cities.
+  - Hardened permanent account deletion via Edge Function with recent re-authentication (<15m) validation, typed "DELETE" confirmation UI, in-progress loading indicator, and exact success/error messaging.
+  - Dropped and revoked legacy SQL RPC `delete_user_account_permanent`.
+  - Updated Community Guidelines wording (#02, #10) to remove unsupported claims.
+  - Verified 0 analyzer warnings/errors and 100% test pass rate across 83 automated test cases.
 
 ---
 

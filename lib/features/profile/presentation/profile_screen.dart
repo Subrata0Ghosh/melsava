@@ -1007,7 +1007,8 @@ class ProfileScreen extends ConsumerWidget {
       badges.add({
         'icon': '⭐',
         'title': 'Reliable RSVP',
-        'desc': '$attendedCount ${attendedCount == 1 ? 'circle' : 'circles'} attended',
+        'desc':
+            '$attendedCount ${attendedCount == 1 ? 'circle' : 'circles'} attended',
         'unlocked': true,
       });
     } else {
@@ -1020,7 +1021,8 @@ class ProfileScreen extends ConsumerWidget {
     }
 
     // 3. Host / Community Badge (Real curated host role)
-    final isHost = user != null &&
+    final isHost =
+        user != null &&
         (myBundle.upcoming.any((e) => e.hostId == user.id) ||
             myBundle.attended.any((e) => e.hostId == user.id) ||
             user.email.toLowerCase().contains('admin'));
@@ -1031,14 +1033,18 @@ class ProfileScreen extends ConsumerWidget {
         'desc': 'Verified circle guide',
         'unlocked': true,
       });
-    } else if (interests.any((i) => i.contains('nature') || i.contains('hike') || i.contains('trek'))) {
+    } else if (interests.any(
+      (i) => i.contains('nature') || i.contains('hike') || i.contains('trek'),
+    )) {
       badges.add({
         'icon': '🌲',
         'title': 'Nature Lover',
         'desc': 'Outdoor explorer',
         'unlocked': true,
       });
-    } else if (interests.any((i) => i.contains('coffee') || i.contains('tea'))) {
+    } else if (interests.any(
+      (i) => i.contains('coffee') || i.contains('tea'),
+    )) {
       badges.add({
         'icon': '☕',
         'title': 'Coffee Buff',
@@ -1062,21 +1068,28 @@ class ProfileScreen extends ConsumerWidget {
         'desc': 'Photography enthusiast',
         'unlocked': true,
       });
-    } else if (interests.any((i) => i.contains('art') || i.contains('pottery') || i.contains('craft'))) {
+    } else if (interests.any(
+      (i) => i.contains('art') || i.contains('pottery') || i.contains('craft'),
+    )) {
       badges.add({
         'icon': '🎨',
         'title': 'Creative Spirit',
         'desc': 'Arts & culture lover',
         'unlocked': true,
       });
-    } else if (interests.any((i) => i.contains('mindful') || i.contains('yoga') || i.contains('meditat'))) {
+    } else if (interests.any(
+      (i) =>
+          i.contains('mindful') || i.contains('yoga') || i.contains('meditat'),
+    )) {
       badges.add({
         'icon': '🧘',
         'title': 'Mindful Soul',
         'desc': 'Wellness & peace',
         'unlocked': true,
       });
-    } else if (interests.any((i) => i.contains('coffee') || i.contains('tea')) &&
+    } else if (interests.any(
+          (i) => i.contains('coffee') || i.contains('tea'),
+        ) &&
         !badges.any((b) => b['title'] == 'Coffee Buff')) {
       badges.add({
         'icon': '☕',
@@ -1114,7 +1127,9 @@ class ProfileScreen extends ConsumerWidget {
               color: cardBg,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: isUnlocked ? borderColor : borderColor.withValues(alpha: 0.5),
+                color: isUnlocked
+                    ? borderColor
+                    : borderColor.withValues(alpha: 0.5),
                 width: 0.9,
               ),
             ),
@@ -1130,9 +1145,7 @@ class ProfileScreen extends ConsumerWidget {
                       Text(
                         b['title'] as String,
                         style: TextStyle(
-                          color: isUnlocked
-                              ? primaryTextColor
-                              : mutedTextColor,
+                          color: isUnlocked ? primaryTextColor : mutedTextColor,
                           fontWeight: FontWeight.w700,
                           fontSize: 12,
                         ),

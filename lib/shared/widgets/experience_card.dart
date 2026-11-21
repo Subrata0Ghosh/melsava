@@ -422,10 +422,11 @@ class _ExperienceCardState extends State<ExperienceCard>
                           vertical: 4.5,
                         ),
                         decoration: BoxDecoration(
-                          color: (isDark
-                                  ? AppColors.softCoral
-                                  : AppColors.primaryPurple)
-                              .withValues(alpha: 0.9),
+                          color:
+                              (isDark
+                                      ? AppColors.softCoral
+                                      : AppColors.primaryPurple)
+                                  .withValues(alpha: 0.9),
                           borderRadius: BorderRadius.circular(14),
                           border: Border.all(
                             color: Colors.white.withValues(alpha: 0.35),
@@ -435,8 +436,11 @@ class _ExperienceCardState extends State<ExperienceCard>
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: const [
-                            Icon(Icons.star_rounded,
-                                size: 12, color: Colors.amber),
+                            Icon(
+                              Icons.star_rounded,
+                              size: 12,
+                              color: Colors.amber,
+                            ),
                             SizedBox(width: 3),
                             Text(
                               'Followed Host',

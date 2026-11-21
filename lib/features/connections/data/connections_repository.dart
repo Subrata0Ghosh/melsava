@@ -502,7 +502,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return const [];
     } catch (e) {
       debugPrint('[ConnectionsRepository] fetchBlockedUsers error: $e');
-      return const [];
+      rethrow;
     }
   }
 
@@ -517,21 +517,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return res == true;
     } catch (e) {
       debugPrint('[ConnectionsRepository] blockUser RPC error: $e');
-      try {
-        final currentUserId = _client!.auth.currentUser?.id;
-        if (currentUserId == null) return false;
-
-        await _client!.from('blocks').upsert({
-          'blocker_id': currentUserId,
-          'blocked_id': partnerId,
-        });
-        return true;
-      } catch (tableErr) {
-        debugPrint(
-          '[ConnectionsRepository] blockUser table fallback error: $tableErr',
-        );
-        return false;
-      }
+      rethrow;
     }
   }
 
@@ -546,21 +532,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return res == true;
     } catch (e) {
       debugPrint('[ConnectionsRepository] unblockUser RPC error: $e');
-      try {
-        final currentUserId = _client!.auth.currentUser?.id;
-        if (currentUserId == null) return false;
-
-        await _client!.from('blocks').delete().match({
-          'blocker_id': currentUserId,
-          'blocked_id': blockedId,
-        });
-        return true;
-      } catch (tableErr) {
-        debugPrint(
-          '[ConnectionsRepository] unblockUser table fallback error: $tableErr',
-        );
-        return false;
-      }
+      rethrow;
     }
   }
 
@@ -594,28 +566,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
       return res != null && res['success'] == true;
     } catch (e) {
       debugPrint('[ConnectionsRepository] submit_user_report RPC error: $e');
-      try {
-        final currentUserId = _client!.auth.currentUser?.id;
-        if (currentUserId == null) return false;
-
-        await _client!.from('reports').insert({
-          'reporter_id': currentUserId,
-          'reported_user_id': reportedUserId,
-          'reported_content_type': finalContentType,
-          if (finalContentId != null && finalContentId.isNotEmpty)
-            'reported_content_id': finalContentId,
-          'reason': reason,
-          if (description != null && description.isNotEmpty)
-            'description': description,
-          'status': 'pending',
-        });
-        return true;
-      } catch (insertErr) {
-        debugPrint(
-          '[ConnectionsRepository] reportUser table fallback error: $insertErr',
-        );
-        return false;
-      }
+      rethrow;
     }
   }
 

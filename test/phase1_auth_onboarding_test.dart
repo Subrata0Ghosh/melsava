@@ -155,6 +155,16 @@ class _InMemoryAuthRepository implements AuthRepository {
   }
 
   @override
+  Future<Map<String, dynamic>> getPrivacySettings() async => const {
+    'public_radar': true,
+    'ghost_mode': false,
+    'show_city': true,
+  };
+
+  @override
+  Future<void> updatePrivacySettings(Map<String, dynamic> settings) async {}
+
+  @override
   void syncCachedUser(AppUser user) {
     _user = user;
     _controller.add(_user);

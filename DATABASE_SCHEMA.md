@@ -61,12 +61,16 @@ profiles ──▶ reports ──▶ moderation_actions
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | UUID (PK) | DEFAULT gen_random_uuid() | Row ID |
-| `user_id` | UUID | UNIQUE, FK → profiles(id) | Owning user |
+| `user_id` | UUID | UNIQUE, FK → profiles(id) ON DELETE CASCADE | Owning user |
 | `date_of_birth` | DATE | — | Date of birth |
 | `email` | TEXT | — | Email address |
 | `age_verified` | BOOLEAN | DEFAULT FALSE | Age verification flag |
 | `terms_accepted_at` | TIMESTAMPTZ | — | When terms were accepted |
 | `guidelines_accepted_at` | TIMESTAMPTZ | — | When guidelines were accepted |
+| `preferred_activity_categories` | TEXT[] | — | Preferred activity categories |
+| `availability_preferences` | JSONB | — | Availability schedule preferences |
+| `discovery_preferences` | JSONB | — | Age range, max distance, format |
+| `privacy_settings` | JSONB | DEFAULT '{"public_radar": true, "ghost_mode": false, "show_city": true}' | Public radar, ghost mode, show city |
 | `created_at` | TIMESTAMPTZ | DEFAULT now() | Row creation time |
 
 ---

@@ -7,7 +7,6 @@ import '../../../core/constants/app_typography.dart';
 import '../../../core/services/location_providers.dart';
 import '../../../core/services/worldwide_location_service.dart';
 import '../../../shared/widgets/app_smart_image.dart';
-import '../../auth/domain/app_user.dart';
 import '../../auth/presentation/auth_providers.dart';
 
 /// Full-featured interactive Edit Profile Sheet
@@ -45,13 +44,6 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   XFile? _pendingAvatarFile;
   bool _isSaving = false;
 
-  static const List<String> _avatarPresets = [
-    'assets/images/sneha_avatar.png',
-    'assets/images/aditi_avatar.png',
-    'assets/images/priya_avatar.png',
-    'assets/images/vikram_avatar.png',
-  ];
-
   static const List<String> _cities = [
     'Mumbai',
     'Kolkata',
@@ -64,33 +56,61 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
 
   static const List<Map<String, dynamic>> _intentOptions = [
     {
-      'name': 'Friendship',
+      'name': 'Genuine friendship',
       'icon': Icons.people_alt_rounded,
       'color': Color(0xFF6366F1),
     },
     {
-      'name': 'Exploring Dating',
+      'name': 'Meaningful dating',
       'icon': Icons.favorite_rounded,
       'color': Color(0xFFEC4899),
     },
     {
-      'name': 'Activity Partner',
+      'name': 'Casual dating',
+      'icon': Icons.wine_bar_rounded,
+      'color': Color(0xFFF43F5E),
+    },
+    {
+      'name': 'Activity partner',
       'icon': Icons.extension_rounded,
       'color': Color(0xFFF97316),
+    },
+    {
+      'name': 'Marriage-minded',
+      'icon': Icons.auto_awesome_rounded,
+      'color': Color(0xFF8B5CF6),
+    },
+    {
+      'name': 'Open to discovering',
+      'icon': Icons.explore_rounded,
+      'color': Color(0xFF10B981),
+    },
+    {
+      'name': 'Serious relationship',
+      'icon': Icons.favorite_border_rounded,
+      'color': Color(0xFFD946EF),
     },
   ];
 
   static const List<String> _availableInterests = [
-    'Specialty Coffee',
-    'Weekend Trekking',
-    'Badminton Doubles',
-    'Morning Yoga',
-    'Sourdough Baking',
-    'Stargazing & Camp',
-    'Art & Pottery',
-    'Board Games',
-    'Live Music',
+    'Art',
+    'Coffee',
+    'Cooking',
+    'Dancing',
+    'Fitness',
+    'Gaming',
+    'Gardening',
+    'Hiking',
+    'Languages',
+    'Meditation',
+    'Movies',
+    'Music',
     'Photography',
+    'Reading',
+    'Technology',
+    'Travel',
+    'Volunteering',
+    'Yoga',
   ];
 
   @override
@@ -101,9 +121,9 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
 
     _nameController = TextEditingController(text: user?.displayName ?? '');
     _bioController = TextEditingController(text: user?.bio ?? '');
-    _selectedAvatar = user?.avatarUrl ?? 'assets/images/sneha_avatar.png';
+    _selectedAvatar = user?.avatarUrl ?? '';
     _selectedCity = user?.city ?? userLoc.city;
-    _selectedIntent = user?.primaryIntent ?? 'Friendship';
+    _selectedIntent = user?.primaryIntent ?? 'Genuine friendship';
 
     _selectedInterests.addAll(user?.interests ?? []);
   }
@@ -136,6 +156,14 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
   }
 
   Future<void> _saveProfile() async {
+    final currentUser = ref.read(currentUserProvider);
+    if (currentUser == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please log in to edit your profile.')),
+      );
+      return;
+    }
+
     final name = _nameController.text.trim();
     if (name.length < 2) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -166,43 +194,50 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
         final uploadedUrl = await ref
             .read(authRepositoryProvider)
             .uploadAvatar(_pendingAvatarFile!);
-        if (uploadedUrl != null && uploadedUrl.isNotEmpty) {
-          finalAvatarUrl = uploadedUrl;
+        if (uploadedUrl == null || uploadedUrl.isEmpty) {
+          throw Exception('Failed to upload image. Please try again.');
         }
+        finalAvatarUrl = uploadedUrl;
       }
 
-      final currentUser = ref.read(currentUserProvider);
-      final updatedUser =
-          (currentUser ??
-                  const AppUser(id: 'user-local', email: 'user@melsava.app'))
-              .copyWith(
-                displayName: name,
-                avatarUrl: finalAvatarUrl,
-                city: _selectedCity,
-                bio: _bioController.text.trim(),
-                primaryIntent: _selectedIntent,
-                interests: _selectedInterests.toList(),
-              );
+      final updatedUser = currentUser.copyWith(
+        displayName: name,
+        avatarUrl: finalAvatarUrl,
+        city: _selectedCity,
+        bio: _bioController.text.trim(),
+        primaryIntent: _selectedIntent,
+        interests: _selectedInterests.toList(),
+      );
 
-      // Persist atomically via Auth Repository
+      // Persist atomically via update_user_profile RPC only
       await ref.read(authRepositoryProvider).updateProfile(updatedUser);
       ref.read(currentUserProvider.notifier).state = updatedUser;
 
-      // Sync Location Service if city changed
+      // Sync Location Service if city changed without fabricating Mumbai coords
       final matchedCity = WorldwideLocationService.featuredWorldCities
-          .firstWhere(
+          .where(
             (c) =>
                 c.name.toLowerCase() == _selectedCity.toLowerCase() ||
                 c.city.toLowerCase() == _selectedCity.toLowerCase(),
-            orElse: () => WorldLocation(
-              name: _selectedCity,
-              city: _selectedCity,
-              country: 'India',
-              lat: 19.0760,
-              lon: 72.8777,
-            ),
-          );
-      await ref.read(userLocationProvider.notifier).setLocation(matchedCity);
+          )
+          .firstOrNull;
+
+      if (matchedCity != null) {
+        await ref.read(userLocationProvider.notifier).setLocation(matchedCity);
+      } else {
+        final currentLoc = ref.read(userLocationProvider);
+        await ref
+            .read(userLocationProvider.notifier)
+            .setLocation(
+              WorldLocation(
+                name: _selectedCity,
+                city: _selectedCity,
+                country: currentLoc.country,
+                lat: currentLoc.lat,
+                lon: currentLoc.lon,
+              ),
+            );
+      }
 
       if (!mounted) return;
       setState(() => _isSaving = false);
@@ -233,10 +268,17 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
     } catch (e) {
       if (!mounted) return;
       setState(() => _isSaving = false);
+      // Retain edited form values and offer retry
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           backgroundColor: AppColors.error,
+          duration: const Duration(seconds: 6),
           content: Text('Failed to update profile: $e'),
+          action: SnackBarAction(
+            label: 'Retry',
+            textColor: Colors.white,
+            onPressed: _saveProfile,
+          ),
         ),
       );
     }
@@ -424,52 +466,37 @@ class _EditProfileSheetState extends ConsumerState<EditProfileSheet> {
                   ),
                   const SizedBox(height: 12),
 
-                  // Avatar Presets Quick Select
                   Center(
-                    child: Text(
-                      'Choose Avatar',
-                      style: AppTypography.labelSmall.copyWith(
-                        color: mutedTextColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 12,
+                    child: TextButton.icon(
+                      onPressed: _pickCustomAvatar,
+                      icon: const Icon(Icons.photo_library_rounded, size: 18),
+                      label: Text(
+                        _pendingAvatarFile != null
+                            ? 'Change Selected Photo'
+                            : 'Upload Profile Photo',
+                      ),
+                      style: TextButton.styleFrom(
+                        foregroundColor: isDark
+                            ? AppColors.brightViolet
+                            : AppColors.primaryPurple,
+                        textStyle: const TextStyle(
+                          fontWeight: FontWeight.w700,
+                          fontSize: 13,
+                        ),
                       ),
                     ),
                   ),
-                  const SizedBox(height: 8),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: _avatarPresets.map((path) {
-                      final isSelected = _selectedAvatar == path;
-                      return GestureDetector(
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          setState(() => _selectedAvatar = path);
-                        },
-                        child: Container(
-                          margin: const EdgeInsets.symmetric(horizontal: 6),
-                          width: 48,
-                          height: 48,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: isSelected
-                                  ? (isDark
-                                        ? AppColors.brightViolet
-                                        : AppColors.primaryPurple)
-                                  : Colors.transparent,
-                              width: 2.5,
-                            ),
-                          ),
-                          child: ClipOval(
-                            child: AppSmartImage(
-                              imagePath: path,
-                              fit: BoxFit.cover,
-                            ),
-                          ),
+                  if (_pendingAvatarFile != null)
+                    Center(
+                      child: Text(
+                        'New image selected · Tap Save to upload',
+                        style: TextStyle(
+                          color: const Color(0xFF10B981),
+                          fontSize: 11.5,
+                          fontWeight: FontWeight.w600,
                         ),
-                      );
-                    }).toList(),
-                  ),
+                      ),
+                    ),
 
                   const SizedBox(height: 24),
 

@@ -145,129 +145,130 @@ class _ModerationScreenState extends ConsumerState<ModerationScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-              // ── Top Header ──
-              Padding(
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: cardBg,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: borderColor, width: 0.9),
-                      ),
-                      child: IconButton(
-                        padding: EdgeInsets.zero,
-                        icon: Icon(
-                          Icons.arrow_back_rounded,
-                          color: primaryTextColor,
-                          size: 20,
+                // ── Top Header ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 40,
+                        height: 40,
+                        decoration: BoxDecoration(
+                          color: cardBg,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: borderColor, width: 0.9),
                         ),
-                        onPressed: () {
-                          HapticFeedback.lightImpact();
-                          if (context.canPop()) {
-                            context.pop();
-                          } else {
-                            context.go('/settings');
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Moderation Console',
-                            style: AppTypography.titleLarge.copyWith(
-                              fontWeight: FontWeight.w800,
-                              color: primaryTextColor,
-                              fontSize: 19,
-                            ),
+                        child: IconButton(
+                          padding: EdgeInsets.zero,
+                          icon: Icon(
+                            Icons.arrow_back_rounded,
+                            color: primaryTextColor,
+                            size: 20,
                           ),
-                          Text(
-                            'Review reports & protect community safety',
-                            style: TextStyle(
-                              color: mutedTextColor,
-                              fontSize: 11.5,
-                            ),
-                          ),
-                        ],
+                          onPressed: () {
+                            HapticFeedback.lightImpact();
+                            if (context.canPop()) {
+                              context.pop();
+                            } else {
+                              context.go('/settings');
+                            }
+                          },
+                        ),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-
-              // Check Moderator Permission
-              Expanded(
-                child: isModAsync.when(
-                  loading: () =>
-                      const Center(child: CircularProgressIndicator.adaptive()),
-                  error: (err, stack) => Center(
-                    child: Text(
-                      'Permission check error: $err',
-                      style: const TextStyle(color: AppColors.error),
-                    ),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Moderation Console',
+                              style: AppTypography.titleLarge.copyWith(
+                                fontWeight: FontWeight.w800,
+                                color: primaryTextColor,
+                                fontSize: 19,
+                              ),
+                            ),
+                            Text(
+                              'Review reports & protect community safety',
+                              style: TextStyle(
+                                color: mutedTextColor,
+                                fontSize: 11.5,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
-                  data: (isMod) {
-                    if (!isMod) {
-                      return Center(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              const Icon(
-                                Icons.gpp_bad_rounded,
-                                size: 54,
-                                color: AppColors.error,
-                              ),
-                              const SizedBox(height: 16),
-                              Text(
-                                'Access Restricted',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w800,
-                                  color: primaryTextColor,
-                                ),
-                              ),
-                              const SizedBox(height: 8),
-                              Text(
-                                'You do not have moderator or administrative credentials to access this console.',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  color: mutedTextColor,
-                                  fontSize: 13,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }
-
-                    return _buildModeratorBody(
-                      context: context,
-                      isDark: isDark,
-                      primaryTextColor: primaryTextColor,
-                      mutedTextColor: mutedTextColor,
-                      cardBg: cardBg,
-                      borderColor: borderColor,
-                    );
-                  },
                 ),
-              ),
-            ],
+
+                // Check Moderator Permission
+                Expanded(
+                  child: isModAsync.when(
+                    loading: () => const Center(
+                      child: CircularProgressIndicator.adaptive(),
+                    ),
+                    error: (err, stack) => Center(
+                      child: Text(
+                        'Permission check error: $err',
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    ),
+                    data: (isMod) {
+                      if (!isMod) {
+                        return Center(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                const Icon(
+                                  Icons.gpp_bad_rounded,
+                                  size: 54,
+                                  color: AppColors.error,
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Access Restricted',
+                                  style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w800,
+                                    color: primaryTextColor,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'You do not have moderator or administrative credentials to access this console.',
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    color: mutedTextColor,
+                                    fontSize: 13,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+
+                      return _buildModeratorBody(
+                        context: context,
+                        isDark: isDark,
+                        primaryTextColor: primaryTextColor,
+                        mutedTextColor: mutedTextColor,
+                        cardBg: cardBg,
+                        borderColor: borderColor,
+                      );
+                    },
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
-    ),
-  );
-}
+    );
+  }
 
   Widget _buildModeratorBody({
     required BuildContext context,

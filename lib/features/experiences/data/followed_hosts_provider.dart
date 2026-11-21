@@ -42,5 +42,5 @@ class FollowedHostsNotifier extends StateNotifier<Set<String>> {
 
 final followedHostsProvider =
     StateNotifierProvider<FollowedHostsNotifier, Set<String>>((ref) {
-  return FollowedHostsNotifier();
-});
+      return FollowedHostsNotifier();
+    });

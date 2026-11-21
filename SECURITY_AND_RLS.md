@@ -235,10 +235,20 @@ MELSAVA treats user privacy, safety, and mutual consent as paramount. Client app
   - `resolve_moderation_report(p_report_id, p_new_status)`: Updates status (`reviewed`, `resolved`, `dismissed`).
   - `apply_moderation_action(...)`: Logs administrative action in `moderation_actions` and instantly flips `is_suspended = TRUE` on `public.profiles` for suspensions and bans.
 
-### 23. Permanent Account Deletion Safeguards (`delete_user_account_permanent`)
-- Dedicated `delete-account` Supabase Edge Function validates Bearer JWT, cleans up avatars in Supabase Storage (`avatars/${userId}`), cascades database records, and removes credentials via Supabase Auth Admin API (`supabaseAdmin.auth.admin.deleteUser`).
-- Database fallback RPC `delete_user_account_permanent(TEXT)` requires explicit keyword `'DELETE'`.
-- Cleanly deletes associated blocks, reports, and moderation records before deleting `public.profiles` to avoid orphan records.
-- Completely removed dangerous client-side fallback of deleting `public.profiles` directly, preventing half-deleted or desynchronized accounts.
+### 23. Permanent Account Deletion Safeguards (`delete-account` Edge Function)
+- Dedicated `delete-account` Supabase Edge Function is the SINGLE permanent deletion mechanism.
+- Validates Bearer JWT via `auth.getUser()`.
+- Enforces recent re-authentication (<15 minutes) server-side from JWT claims/last_sign_in_at to prevent unauthorized or stale token deletions.
+- Requires typed payload confirmation `{"confirmation": "DELETE"}`.
+- Cleans up user avatars in Supabase Storage (`avatars/${userId}`).
+- Deletes user via Supabase Auth Admin API (`adminClient.auth.admin.deleteUser(userId)`), which cascades across all foreign keys on `profiles.id` and child tables.
+- Legacy SQL RPC `delete_user_account_permanent` has been completely dropped and revoked.
+- Client-side fallback to direct table deletion is strictly removed.
+
+### 24. Privacy Controls & Settings Persistence (`017_phase5_security_and_integrity_hardening.sql`)
+- Private user settings (`public_radar`, `ghost_mode`, `show_city`) are safely stored in `public.profile_private.privacy_settings` JSONB.
+- `get_privacy_settings()`: Returns caller's privacy settings safely, falling back to defaults if unconfigured.
+- `update_privacy_settings(p_settings JSONB)`: Merges updated privacy keys into `profile_private.privacy_settings` atomically for `auth.uid()`.
+- Protected profile columns (`id`, `date_of_birth`, `is_verified`, `is_suspended`) are completely immutable from client RPCs.
 
 
