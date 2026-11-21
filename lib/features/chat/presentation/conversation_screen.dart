@@ -263,19 +263,7 @@ class _ConversationScreenState extends ConsumerState<ConversationScreen> {
 
     try {
       final repo = ref.read(connectionsRepositoryProvider);
-      final bool success;
-      if (widget.partnerId != null && widget.partnerId!.isNotEmpty) {
-        // Real Signal Protocol E2EE message
-        final clientReqId = 'req_${DateTime.now().microsecondsSinceEpoch}';
-        success = await repo.sendEncryptedMessage(
-          conversationId: targetConvId,
-          recipientId: widget.partnerId!,
-          plaintext: text,
-          clientRequestId: clientReqId,
-        );
-      } else {
-        success = await repo.sendMessage(targetConvId, text);
-      }
+      final bool success = await repo.sendMessage(targetConvId, text);
 
       if (mounted) {
         if (success) {

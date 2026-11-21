@@ -542,7 +542,11 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
         final messages = <ChatMessageModel>[];
         for (final r in rows) {
           var msg = ChatMessageModel.fromMap(Map<String, dynamic>.from(r as Map));
+          final currentUid = _client?.auth.currentUser?.id;
+          final isFromMe = currentUid != null && msg.senderId == currentUid;
+
           if (msg.isEncrypted &&
+              !isFromMe &&
               msg.encryptedPayload != null &&
               msg.encryptedPayload!.isNotEmpty) {
             try {
@@ -555,7 +559,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
               msg = msg.copyWith(content: decrypted);
             } catch (e) {
               debugPrint('[ConnectionsRepository] Decryption failure for msg ${msg.id}: $e');
-              msg = msg.copyWith(content: '🔒 [Encrypted message]');
+              // If decryption fails, preserve any existing content rather than forcing ugly placeholder
             }
           }
           messages.add(msg);
@@ -843,7 +847,10 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
             final newRecord = payload.newRecord;
             if (newRecord.isNotEmpty) {
               var msg = ChatMessageModel.fromMap(newRecord);
+              final currentUid = _client?.auth.currentUser?.id;
+              final isFromMe = currentUid != null && msg.senderId == currentUid;
               if (msg.isEncrypted &&
+                  !isFromMe &&
                   msg.encryptedPayload != null &&
                   msg.encryptedPayload!.isNotEmpty) {
                 try {
@@ -855,7 +862,7 @@ class SupabaseConnectionsRepository implements ConnectionsRepository {
                   );
                   msg = msg.copyWith(content: decrypted);
                 } catch (e) {
-                  msg = msg.copyWith(content: '🔒 [Encrypted message]');
+                  debugPrint('[ConnectionsRepository] Realtime decryption error for ${msg.id}: $e');
                 }
               }
               onMessageInserted(msg);
