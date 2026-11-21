@@ -272,8 +272,8 @@ class SettingsScreen extends ConsumerWidget {
                             isDestructive: true,
                           );
                           if (confirm == true) {
-                            await ref.read(authRepositoryProvider).signOut();
                             ref.read(currentUserProvider.notifier).state = null;
+                            await ref.read(authRepositoryProvider).signOut();
                             if (context.mounted) {
                               context.go('/welcome');
                             }

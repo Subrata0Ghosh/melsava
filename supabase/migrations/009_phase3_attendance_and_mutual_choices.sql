@@ -336,10 +336,10 @@ BEGIN
 
     -- Verify caller actually attended this experience
     SELECT EXISTS (
-        SELECT 1 FROM public.experience_members
-        WHERE experience_id = p_experience_id
-          AND user_id = v_uid
-          AND status = 'attended'
+        SELECT 1 FROM public.experience_members em
+        WHERE em.experience_id = p_experience_id
+          AND em.user_id = v_uid
+          AND em.status = 'attended'
     ) INTO v_attended;
 
     IF NOT v_attended THEN

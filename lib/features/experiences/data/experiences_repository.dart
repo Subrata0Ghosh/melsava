@@ -1018,7 +1018,13 @@ class SupabaseExperiencesRepository implements ExperiencesRepository {
       final client = _requireClient();
       final rows = await client
           .from('experiences')
-          .select('*, categories(name, icon_key)')
+          .select(
+            'id, title, description, cover_image_url, city, area, venue_name, venue_address, '
+            'is_online, max_participants, status, starts_at, ends_at, duration_minutes, '
+            'cancellation_policy, host_id, is_free, price_amount, is_recurring, moderation_status, '
+            'activity_categories(name, icon, color), '
+            'profiles!experiences_host_id_fkey(id, display_name, avatar_url, bio)',
+          )
           .eq('moderation_status', 'pending_review')
           .order('created_at', ascending: false);
 
