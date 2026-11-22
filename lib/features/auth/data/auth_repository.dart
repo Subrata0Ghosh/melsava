@@ -519,6 +519,7 @@ class SupabaseAuthRepository implements AuthRepository {
       final res = await SupabaseService.client!.auth.signUp(
         email: email,
         password: password,
+        emailRedirectTo: 'melsava://auth-callback',
         data: {'display_name': email.split('@').first},
       );
       final user = res.user;
@@ -613,6 +614,7 @@ class SupabaseAuthRepository implements AuthRepository {
       await SupabaseService.client!.auth.resend(
         type: OtpType.signup,
         email: email,
+        emailRedirectTo: 'melsava://auth-callback',
       );
     } else if (isDebugMockMode) {
       await Future.delayed(const Duration(milliseconds: 350));
